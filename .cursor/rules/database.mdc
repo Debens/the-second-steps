@@ -1,0 +1,19 @@
+---
+description: PostgreSQL and Prisma schema, migrations, queries, and tenant isolation
+globs: prisma/**, **/*.prisma, **/*repository*.ts, **/db/**
+alwaysApply: false
+---
+
+# Database
+
+**Proposed, not installed:** PostgreSQL + Prisma. Do not create schemas or run migrations without the owner's approval. Store money as integer pence and timestamps in UTC (see `typescript.mdc`).
+
+- One database, shared by modules. Every tenant-owned row has `organisationId` (UUID). Never query without that scope.
+- Use Prisma migrations (`migrate dev` locally, `migrate deploy` in production). Do not use `db push` against shared or production data.
+- Declare relations, unique constraints, and foreign keys in the schema. Index `organisationId`, foreign keys, and real search/filter columns.
+- Writes that must succeed together (e.g. tenancy + occupants) use a transaction.
+- Prevent N+1: `include`/`select` what the view needs, or batched queries. Do not loop `findUnique` per row.
+- Soft-delete only where the product needs history; otherwise hard-delete with FK rules. GDPR erasure is a planned process, not a silent overwrite.
+- Application checks are mandatory. PostgreSQL RLS is **proposed** as defence in depth (`docs/DECISIONS.md`), not a substitute for query scoping.
+
+Do not design the entire final schema in one change. Add tables for the current slice only.

@@ -1,0 +1,20 @@
+---
+description: Next.js and React conventions, Pages Router today and App Router after the approved migration
+globs: pages/**/*.ts, pages/**/*.tsx, app/**/*.ts, app/**/*.tsx, components/**/*.tsx
+alwaysApply: false
+---
+
+# Next.js and React
+
+**Today:** Pages Router (`pages/`). The App Router migration is **approved** and scheduled after the Next.js upgrade (`docs/DECISIONS.md` ADR-012). Until it is done, do not start new screens in either router; finish the migration first.
+
+**After migration:** App Router only. Server Components by default. Add `'use client'` only for state, effects, browser APIs, or event handlers, and keep client components small.
+
+- Fetch data on the server. Never call the database from Client Components.
+- Mutations: Server Actions (`'use server'`). Treat every action as an untrusted POST: authenticate, authorise, validate.
+- Route Handlers (`app/**/route.ts`) only for webhooks and non-form APIs.
+- After writes, revalidate affected paths. Never cache personal CRM data as public or static.
+- Use `loading.tsx`, `error.tsx`, and `not-found.tsx` per route segment.
+- Navigate with `next/link` and `next/navigation`, not `window.location`.
+- Mark server-only modules with `import 'server-only'` (ask before adding the package).
+- Next.js 16 request APIs (`params`, `searchParams`, `cookies()`, `headers()`) are async: always `await` them.

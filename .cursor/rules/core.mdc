@@ -1,0 +1,14 @@
+---
+description: Always-on delivery standards for Zayto that are not covered by AGENTS.md
+alwaysApply: true
+---
+
+# Core delivery standards
+
+`AGENTS.md` is the main briefing. This rule adds only what it does not say.
+
+- Install development dependencies needed for agreed work, and say what each is for. Ask before adding a major new technology (database, auth, paid service) or removing packages.
+- Check existing patterns before introducing new ones. If two patterns exist, ask which one is canonical.
+- When a technical choice changes, update `docs/DECISIONS.md` and any affected doc in the same change.
+- Verify work with the checks that exist (typecheck, tests, lint, browser check for UI). If a check is missing or was skipped, say the work is **unverified**.
+- Label proposals as proposals. Do not present an unresolved decision as settled.

@@ -1,0 +1,29 @@
+---
+description: Modular monolith, domain boundaries, and dependency direction
+alwaysApply: true
+---
+
+# Architecture
+
+Zayto is a **modular monolith**: one Next.js app, one PostgreSQL database (when added), modules with clear boundaries. Not microservices.
+
+## Layers (inside a module)
+
+1. **Presentation** — pages, layouts, UI components. No Prisma, no provider SDKs.
+2. **Application** — use-cases (create tenancy, publish listing). Authz checks live here.
+3. **Domain** — types, invariants, IDs. No React, no HTTP.
+4. **Data access** — Prisma repositories only. Always filter by `organisationId`.
+
+Lettings must not import sales internals. Sales (later) may reuse **core** (organisation, people, property, documents, money primitives). Shared code goes in `core`, not copy-paste.
+
+## Direction
+
+`ui → application → domain → data`  
+`lettings | sales → core`  
+Never `core → lettings` or `core → sales`. No circular imports.
+
+## Async work
+
+Slow or unreliable work (portal publish, webhooks, e-sign, reports) belongs on a **job** with retries and an audit row. Do not block an HTTP request on a third party without a timeout. Job runner is **unresolved** (`docs/DECISIONS.md`).
+
+Put business rules in application/domain functions, not in React components or raw SQL scattered across pages.

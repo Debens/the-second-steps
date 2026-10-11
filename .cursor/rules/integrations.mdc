@@ -1,0 +1,17 @@
+---
+description: Provider-independent integrations, webhooks, jobs, and mocks
+globs: **/integrations/**, **/webhooks/**, **/providers/**
+alwaysApply: false
+---
+
+# External integrations
+
+Talk to third parties through a **narrow interface** in our code (`ReferenceProvider`, `PortalPublisher`). Never scatter vendor SDKs across pages.
+
+- Type request and response contracts. Verify webhook signatures; reject stale timestamps.
+- Treat provider calls as unreliable: timeouts, retries with backoff, idempotency keys, no infinite loops.
+- Record an integration audit: organisation, provider, direction, idempotency key, status, HTTP code, correlation id. Never log ID document images or secrets.
+- Locally, use **mocks** behind the same interface. Do not call live AML, portal, or payment APIs unless the owner enables them.
+- Do not invent endpoints or assume what a provider accepts. If the real API is unknown, stop and ask.
+
+Background jobs own provider I/O. HTTP handlers enqueue work and return.

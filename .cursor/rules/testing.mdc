@@ -1,0 +1,19 @@
+---
+description: Unit, integration, e2e, permission tests, and CI quality gates
+globs: **/*.test.ts, **/*.test.tsx, **/*.spec.ts, **/*.spec.tsx, e2e/**
+alwaysApply: false
+---
+
+# Testing and quality
+
+Proposed tooling (not yet installed): ESLint, Prettier, Vitest for unit/integration tests, Playwright for browser tests. Ask before installing.
+
+- **Unit** — domain rules and permission helpers.
+- **Integration** — data access and transactions against a test database, never a shared or production one.
+- **E2E** — critical paths (sign in, create property, record viewing) in a real browser.
+- **Agency isolation** — every new query or mutation has a test proving another organisation is denied.
+- If a test was skipped or tooling is missing, say the feature is **unverified**.
+
+CI (when added) runs typecheck, lint, unit/integration tests, then e2e, plus a scheduled dependency audit.
+
+Until a formatter exists, match the surrounding style and do not reformat unrelated files.

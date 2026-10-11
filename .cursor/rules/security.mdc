@@ -1,0 +1,22 @@
+---
+description: Authentication, authorisation, agency isolation, and UK data protection
+alwaysApply: true
+---
+
+# Security
+
+No auth provider is installed. Until it is, do not store real landlord, tenant, or financial data.
+
+- Use an established auth library (choice **unresolved**). Do not roll a custom password handler.
+- Authenticate and **authorise on the server** for every query, Server Action, and Route Handler. UI hiding is not security.
+- Enforce organisation isolation first, then role, then resource (property, tenancy, document).
+- Least privilege. Default deny. Test that org A cannot read org B IDs in URLs.
+- Validate and encode output. Parameterised Prisma queries only (no string-built SQL).
+- Next.js Server Actions: verify session, CSRF/origin as the framework provides, and that the user may touch the resource.
+- Documents: private object storage, server-issued short-lived URLs, type/size checks, no public buckets for IDs or statements.
+- Secrets only in env / a secret manager. Never `NEXT_PUBLIC_` for private keys. All `.env*` files except `.env.example` are gitignored.
+- Log actor, organisation, action, resource id — not passwords, full bank details, or document contents.
+- Rate-limit login, webhooks, and export endpoints when those exist.
+- GDPR/UK GDPR: lawful basis, retention, access/erasure, and audit. Legal copy is out of scope until specified.
+
+Patch Next.js before public hosting (`docs/DECISIONS.md`).

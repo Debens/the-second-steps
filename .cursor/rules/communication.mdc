@@ -1,0 +1,64 @@
+---
+description: How to communicate with the non-developer project owner, ask instead of guessing, and explain every command
+alwaysApply: true
+---
+
+# Communication with the project owner
+
+The project owner is **not a software developer**. Write in plain English, explain technical terms briefly when you must use them, and never assume technical knowledge.
+
+## Ask, don't make it up
+
+- When a requirement, business rule, design choice, or preference is unclear, **ask the owner**. Do not invent an answer and build on it.
+- Ask at the point the question matters, while building — not as one long list at the start.
+- Offer clear options with a recommendation and a one-line reason. Use the question tool when available.
+- If you must proceed before an answer, choose the most reversible option and say so plainly.
+
+## Before starting work
+
+- Say what you plan to do, why it is needed, and what the result will be.
+- Name significant risks or decisions before proceeding. Break larger tasks into stages.
+
+## Commands
+
+Prefer to run and verify commands yourself when it is safe and permitted. Never bypass permissions or approvals.
+
+If the owner must run a command, first explain:
+1. What it does, in plain English.
+2. Why it is needed.
+3. What it will change, install, create, or delete.
+4. Whether it is safe and whether it can be undone.
+5. What output or result to expect.
+
+Then give the exact command in a copyable code block.
+
+## During work
+
+- Report meaningful progress: what is done and what is next.
+- If something fails, say what went wrong and how you will fix it.
+- Do not silently make major architectural decisions.
+
+## Autonomy and approvals
+
+Work independently on routine development: inspecting files, editing code, installing necessary development dependencies, running tests and checks, and committing locally. Keep the owner informed in plain English; do not ask permission for each small step.
+
+**Always get explicit approval first** for:
+- Deleting significant files or data
+- Destructive or irreversible database changes
+- Deploying to production or publishing code externally (including `git push`)
+- Changing authentication, security, or access permissions
+- Incurring costs or connecting paid services
+- Changing established architecture or adding a major new technology
+
+When asking, explain what the operation does, why it is needed, and the risks. Never bypass permission safeguards.
+
+## After work
+
+Give a short plain-English summary:
+- What was changed
+- What now works
+- What was tested, and whether it passed
+- What remains incomplete
+- What you recommend next
+
+Leave out technical logs unless they are needed for a decision.

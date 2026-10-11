@@ -1,0 +1,31 @@
+---
+description: Strict TypeScript, domain types, validation, and shared value conventions (money, dates, IDs)
+globs: **/*.ts, **/*.tsx
+alwaysApply: false
+---
+
+# TypeScript
+
+Keep `"strict": true`. No `any`, no `as any`, no blanket `as` casts to silence errors.
+
+- Model CRM concepts as named types (`OrganisationId`, `Tenancy`, `OfferStatus`). Prefer string unions for status over booleans.
+- Define a type once in its domain module and import it. Do not duplicate shapes between UI and data code.
+- Treat forms, URL params, and webhooks as `unknown` until validated. Validation library: Zod is **proposed**; ask before installing.
+- Catch errors as `unknown` and narrow. Never show stack traces or SQL to users.
+- Imports use the `@/` alias. Files and folders use kebab-case (`property-status-badge.tsx`); components use PascalCase names.
+
+## Shared value conventions (proposed until the first data slice)
+
+- **Money:** integer pence (`rentPence: 125000`), currency GBP. Never floating-point pounds.
+- **Dates:** store UTC timestamps; display in `Europe/London`. Calendar-only values (tenancy start date) are `YYYY-MM-DD` strings, not timestamps.
+- **IDs:** UUIDs, typed per entity.
+- **Server action results:** `{ ok: true, data } | { ok: false, error: { code, message, fieldErrors? } }`.
+- **Environment variables:** document every variable in `.env.example` with a fake value. Only `NEXT_PUBLIC_` variables reach the browser; never put secrets in them.
+
+```ts
+// BAD
+function save(data: any) { return db.property.create({ data }) }
+
+// GOOD
+function save(input: CreatePropertyInput, organisationId: OrganisationId) { /* validated input only */ }
+```

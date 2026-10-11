@@ -1,0 +1,13 @@
+---
+description: Git commits, branches, secrets, and preserving existing work
+alwaysApply: true
+---
+
+# Git and workflow
+
+- Change only what the task needs. No drive-by refactors or dependency bumps.
+- Commit locally at sensible checkpoints and tell the owner what was committed. **Pushing** to GitHub publishes code externally: ask first.
+- Never commit `.env*` files (except `.env.example`), keys, or exported data.
+- Never rewrite history, force-push, use `--no-verify`, or discard uncommitted work without explicit approval.
+- Commit messages: one or two sentences on **why**, specific (`fix login 404`, not `updates`).
+- Before an upgrade, migration, or large change, make sure current work is committed so it can be undone.

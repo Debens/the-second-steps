@@ -1,0 +1,100 @@
+# Architectural decision log
+
+Newest first. Status: **Accepted** | **Proposed** | **Superseded** | **Unresolved**.
+
+## ADR-014 — Owner communication and ask-first working
+
+- **Status:** Accepted
+- **Context:** The project owner is not a developer and wants to keep control of decisions.
+- **Decision:** AI assistants follow `.cursor/rules/communication.mdc`: explain plans and commands in plain English, report progress, and ask instead of inventing requirements or making major decisions silently. Routine development (editing, dev dependencies, tests, local commits) proceeds without per-step approval; deleting significant data, destructive database changes, publishing/deploying, security or auth changes, and paid services always need explicit approval.
+- **Date:** 2026-10-11
+
+## ADR-013 — Development tooling
+
+- **Status:** Proposed (approved in principle; packages not installed yet)
+- **Decision lean:** ESLint (via the ESLint CLI, since Next.js 16 removes `next lint`), Prettier, Vitest for unit/integration tests, Playwright for browser tests, plus `typecheck`, `test`, and `format` npm scripts.
+- **Date:** 2026-10-11
+
+## ADR-012 — Migrate to the App Router before building CRM screens
+
+- **Status:** Accepted (not yet done). Supersedes ADR-002's "migrate later".
+- **Context:** The app has only two Pages Router files (`_app.tsx`, `login.tsx`). Every new screen built in `pages/` would need moving later.
+- **Decision:** After the Next.js 16 upgrade, move to `app/` (`app/layout.tsx`, `app/login/page.tsx`), set shadcn `rsc: true`, then remove `pages/`. Verify login in the browser at each step.
+- **Date:** 2026-10-11
+
+## ADR-011 — Next.js upgrade path
+
+- **Status:** Accepted (not yet applied)
+- **Context:** Installed Next.js is 15.4.1. `npm audit` reports high and critical advisories. The current release is 16.4.0; 15.5.27 is the 15.x security backport.
+- **Decision:** Commit a checkpoint, upgrade to 15.5.27 and verify, then upgrade to 16 with the official codemod (`npx @next/codemod upgrade latest`) and verify. Node 22 meets Next 16's minimum (20.9). Patch before any public hosting.
+- **Date:** 2026-10-11
+
+## ADR-010 — Do not invent regulated business rules
+
+- **Status:** Accepted
+- **Context:** Referencing, AML, KYC, Right to Rent, insurance, and deposits are legally sensitive.
+- **Decision:** Code may store orders, statuses, and documents. Pass/fail and statutory timelines wait for written specs.
+- **Date:** 2026-10-11
+
+## ADR-009 — Job processing
+
+- **Status:** Unresolved
+- **Options:** In-request (PoC only), Postgres job table + worker, Inngest/Trigger.dev, cloud queues.
+- **Lean:** Job row + worker before any paid queue, unless hosting makes a hosted scheduler easier.
+- **Date:** 2026-10-11
+
+## ADR-008 — File storage
+
+- **Status:** Unresolved
+- **Need:** Private documents (IDs, tenancy PDFs). Not public `/public` files.
+- **Lean:** S3-compatible bucket in the UK/EU, short-lived signed URLs.
+- **Date:** 2026-10-11
+
+## ADR-007 — Authentication provider
+
+- **Status:** Unresolved
+- **Need:** Established library, sessions, eventual MFA, organisation membership.
+- **Options:** Auth.js, Better Auth, Clerk, or similar. Custom password hashing is rejected.
+- **Lean:** A library that can store users in **our** Postgres (easier GDPR story) rather than only an external user store. Final pick when we implement auth.
+- **Date:** 2026-10-11
+
+## ADR-006 — Row Level Security
+
+- **Status:** Proposed
+- **Context:** Application `organisationId` filters can be missed.
+- **Decision lean:** Add PostgreSQL RLS as defence in depth after basic Prisma scoping works. Not required for the first schema spike.
+- **Date:** 2026-10-11
+
+## ADR-005 — Multi-tenant isolation
+
+- **Status:** Accepted (design); not implemented
+- **Decision:** Shared PostgreSQL, `organisationId` on tenant data, shared-schema. Not a database-per-agency for v1.
+- **Why:** Simpler operations for a PoC and early commercial product. Revisit only if a customer contract requires physical isolation.
+- **Date:** 2026-10-11
+
+## ADR-004 — PostgreSQL and Prisma
+
+- **Status:** Proposed (not installed)
+- **Decision lean:** PostgreSQL as the system of record; Prisma as ORM and migration tool.
+- **Why:** Relational data (tenancies, FKs, transactions) fits SQL. Prisma is widely used with Next.js. Confirm versions against current Prisma docs at install time (Prisma 6 vs 7 layout differs).
+- **Date:** 2026-10-11
+
+## ADR-003 — Modular monolith, lettings vs sales
+
+- **Status:** Accepted (design)
+- **Decision:** One app. Shared core. Lettings module now; sales module later without importing lettings internals.
+- **Date:** 2026-10-11
+
+## ADR-002 — App Router as target, Pages Router until migration
+
+- **Status:** Superseded by ADR-012 (timing changed: migrate now, before CRM screens)
+- **Context:** The repo uses Pages Router. Next.js currently recommends the App Router for new apps (Server Components, layouts, Server Actions).
+- **Decision:** Do not migrate until a dedicated, tested task. New screens stay in `pages/` until then. After migration, new features use `app/`. shadcn `rsc: false` should be revisited at migration.
+- **Date:** 2026-10-11
+
+## ADR-001 — shadcn/ui + Tailwind
+
+- **Status:** Accepted
+- **Context:** Installed Nova preset, Base UI, Tailwind v4, components Button/Input/Label/Card.
+- **Decision:** shadcn/ui is the component library. Add primitives via the shadcn CLI rather than one-off CSS.
+- **Date:** 2026-10-11
