@@ -7,7 +7,8 @@ alwaysApply: true
 
 No auth provider is installed. Until it is, do not store real landlord, tenant, or financial data.
 
-- Use an established auth library (choice **unresolved**). Do not roll a custom password handler.
+- Auth is **Better Auth** with users in our PostgreSQL, MFA required for all staff, invite-only agencies (ADR-007, ADR-015). Do not roll a custom password handler.
+- Personal data stays in the **UK** (database, files, providers). Do not pick a non-UK region or provider without owner approval.
 - Authenticate and **authorise on the server** for every query, Server Action, and Route Handler. UI hiding is not security.
 - Enforce organisation isolation first, then role, then resource (property, tenancy, document).
 - Least privilege. Default deny. Test that org A cannot read org B IDs in URLs.

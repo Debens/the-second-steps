@@ -50,12 +50,19 @@ Newest first. Status: **Accepted** | **Proposed** | **Superseded** | **Unresolve
 - **Lean:** S3-compatible bucket in the UK/EU, short-lived signed URLs.
 - **Date:** 2026-10-11
 
+## ADR-015 — Data residency, MFA, and agency onboarding
+
+- **Status:** Accepted (owner decision, 2026-10-11)
+- **Decision:** All agency and personal data is stored in the **UK only** (London region) for the database, file storage, and any provider that holds personal data. Staff **must** use two-step login (MFA). Agencies are **invite-only** for the proof of concept: the owner creates each organisation; there is no public sign-up.
+- **Unresolved:** whether one login may belong to several agencies (owner unsure). Design so membership is a separate table either way; do not block it in the schema.
+- **Date:** 2026-10-11
+
 ## ADR-007 — Authentication provider
 
-- **Status:** Unresolved
-- **Need:** Established library, sessions, eventual MFA, organisation membership.
-- **Options:** Auth.js, Better Auth, Clerk, or similar. Custom password hashing is rejected.
-- **Lean:** A library that can store users in **our** Postgres (easier GDPR story) rather than only an external user store. Final pick when we implement auth.
+- **Status:** Accepted (owner decision, 2026-10-11); not installed
+- **Decision:** **Better Auth**, storing users and sessions in our own PostgreSQL, using its organisation feature for agencies, memberships, roles and invitations, and its two-factor feature (required per ADR-015). Custom password handling is rejected.
+- **Why:** accounts stay in our UK database (simpler UK GDPR position), no per-user fees, and organisations/invitations match invite-only agency onboarding.
+- **Note:** Confirm current Better Auth APIs from its official docs at install time. Changing auth requires owner approval.
 - **Date:** 2026-10-11
 
 ## ADR-006 — Row Level Security

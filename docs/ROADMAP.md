@@ -10,12 +10,12 @@ Dates are not committed. Phases are **sequences**, not promises.
 
 Still outstanding in this phase, in order:
 
-1. ~~Commit a checkpoint of current work~~ (done locally; push awaits owner approval)
+1. ~~Commit a checkpoint of current work~~ (done and pushed)
 2. ~~Upgrade Next.js to 15.5.27, then 16 (ADR-011)~~ (done)
 3. ~~Migrate to the App Router (ADR-012)~~ (done)
 4. ~~Add ESLint, Prettier, Vitest, Playwright, and scripts (ADR-013)~~ (done)
 5. Add `.env.example` without secrets
-6. Decide auth provider, database host and data location (ADR-007)
+6. Decide auth provider, database host and data location (auth: Better Auth; data: UK only; MFA required; invite-only — ADR-007, ADR-015. Database host still open.)
 7. Confirm the Phase 1 scope below
 
 ## Phase 1 — Proof of concept slice (proposed)
