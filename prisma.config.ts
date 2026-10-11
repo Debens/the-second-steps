@@ -7,7 +7,7 @@ loadEnvConfig(process.cwd());
 function migrationUrl() {
   const url = new URL(databaseUrl());
   url.searchParams.set("sslmode", "require");
-  url.searchParams.set("sslrootcert", DATABASE_CA_PATH);
+  url.searchParams.set("sslcert", DATABASE_CA_PATH);
   url.searchParams.set("sslaccept", "strict");
   return url.toString();
 }
