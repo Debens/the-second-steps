@@ -7,26 +7,30 @@ test("the home page redirects to login", async ({ page }) => {
   await expect(page).toHaveTitle("Login | Zayto");
 });
 
-test("login form shows the placeholder message on submit", async ({ page }) => {
+test("login form explains the local magic-link flow", async ({ page }) => {
   await page.goto("/login");
   await expect(page).toHaveTitle("Login | Zayto");
 
-  await page.getByLabel("Email").fill("test@example.com");
-  await page.getByLabel("Password").fill("not-a-real-password");
-  await page.getByRole("button", { name: "Log In" }).click();
-
+  await expect(page.getByLabel("Email")).toBeVisible();
   await expect(
-    page.getByText("Form submitted! (No real authentication yet)"),
-  ).toBeVisible();
+    page.getByRole("button", { name: "Email me a sign-in link" }),
+  ).toBeEnabled();
+  await expect(
+    page.getByRole("button", { name: "Continue with Google (coming next)" }),
+  ).toBeDisabled();
+  await expect(page.getByText(/Sandbox access is invite-only/)).toBeVisible();
 });
 
 test("keyboard users see an indigo focus outline on the email field", async ({
   page,
 }) => {
   await page.goto("/login");
+  await page.waitForLoadState("networkidle");
   const email = page.getByLabel("Email");
+  const submit = page.getByRole("button", { name: "Email me a sign-in link" });
 
-  await page.keyboard.press("Tab");
+  await submit.focus();
+  await page.keyboard.press("Shift+Tab");
   await expect(email).toBeFocused();
   await expect(email).toHaveCSS("border-color", "rgb(98, 88, 232)");
 });

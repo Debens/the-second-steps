@@ -25,11 +25,12 @@ Sanity-check significant decisions before implementing them, including accepted 
 - Light/dark/system themes and responsive conventions: every new screen and component must support both themes and mobile, tablet and desktop from the start (`.cursor/rules/ui-design.mdc`, ADR-018)
 - Checks: `npm run check` (typecheck, ESLint, Prettier, Vitest), `npm run test:e2e` (Playwright), `npm run build`
 
-- Database: PostgreSQL on Supabase (London) via Prisma 7.10 (`prisma/`, `core/db/`). No tables yet. App connects as `zayto_app` over verified TLS (ADR-016).
+- Database: PostgreSQL on Supabase (London) via Prisma 7.10 (`prisma/`, `core/db/`). No CRM tables yet. App connects as `zayto_app` over verified TLS (ADR-016).
+- Authentication: Supabase Auth with server-verified cookie sessions. Local magic links are delivered to Mailpit for allow-listed fictional sandbox users. Organisation membership, required MFA, Google sign-in, rate limiting, and production email delivery are not implemented yet (ADR-019).
 
-Authentication and queues are **not installed**.
+Queues are **not installed**.
 
-The login page (`app/login/`) is visual only. Keep it working.
+The login page (`app/login/`) and protected dashboard shell (`app/dashboard/`) are working sandbox paths. Keep them working.
 
 ## Non‑negotiables
 

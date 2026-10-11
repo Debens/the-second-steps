@@ -10,16 +10,16 @@
 | Light / dark / system themes               | Installed (`components/theme/`, ADR-018)                             |
 | shadcn/ui (Nova, Base UI), `components/ui` | Installed; `rsc: true`                                               |
 | PostgreSQL (Supabase London) / Prisma 7.10 | Installed and connected as `zayto_app`; no tables yet (ADR-004, 016) |
-| Auth library                               | **Not installed**; login is visual only                              |
+| Auth                                       | Supabase Auth installed; local Mailpit magic-link sandbox            |
 | ESLint, Prettier, Vitest, Playwright       | Installed (ADR-013); `npm run check`, `npm run test:e2e`             |
 | Job queue                                  | **Not installed**                                                    |
 
 ## Security posture today
 
-- Login does not authenticate anyone. Do not put real personal or financial data in the database.
+- Supabase Auth now proves identity and maintains server-verified sessions. The current dashboard is a sandbox only: organisation membership, role authorisation, required MFA, rate limiting, and production email delivery are not implemented. Do not put real personal or financial data in the database.
 - The app talks to Postgres from the server as `zayto_app` over verified TLS. The browser Data API is off. Row Level Security is planned (ADR-006) but not on yet, because there are no tables.
 - Secrets stay in `.env.local` (gitignored). The public certificate is `certs/supabase-ca.crt`.
-- "Enforce SSL" in Supabase is **not yet confirmed**. Free-tier backups are not enough for real data (ADR-016).
+- "Enforce SSL" is confirmed on. Free-tier backups are not enough for real data (ADR-016).
 
 ## Style: modular monolith (confirmed)
 

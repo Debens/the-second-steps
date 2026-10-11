@@ -18,14 +18,14 @@ Done in this phase:
 
 Still outstanding in this phase:
 
-1. Confirm **Enforce SSL** is on in the Supabase dashboard (owner could not find the toggle)
-2. Confirm the Phase 1 scope below
+1. Enforce required MFA before any CRM data is accessible
+2. Add organisation membership and role authorisation before the first CRM table
 
 ## Phase 1 — Proof of concept slice (proposed)
 
 A staff user can, in **one organisation**:
 
-1. Sign in for real (Supabase Auth + MFA — owner approved; development email delivery remains unresolved)
+1. Sign in for real (Supabase Auth magic-link sandbox is implemented; Google, MFA enforcement, rate limiting, organisation membership, and production email delivery remain)
 2. Create/view **properties** and **landlords**
 3. Create a **lettings listing** (not live portals)
 4. Record an **enquiry** and a **viewing**

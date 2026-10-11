@@ -5,9 +5,9 @@ alwaysApply: true
 
 # Security
 
-No auth provider is installed. Login is visual only. Until Supabase Auth is configured and the database is on a paid plan with backups, do not store real landlord, tenant, or financial data.
+Supabase Auth is installed with a local Mailpit magic-link sandbox. Organisation membership, required MFA, Google sign-in, rate limiting, and production email delivery are not implemented. Until those controls exist and the database is on a paid plan with backups, do not store real landlord, tenant, or financial data.
 
-**Current posture (2026-10-11):** the app connects as `zayto_app` over verified TLS (ADR-016). Supabase's browser Data API is off. There are no CRM tables yet. The `zayto-theme` cookie is a display preference only — not authentication.
+**Current posture (2026-10-11):** the app connects as `zayto_app` over verified TLS (ADR-016). Supabase's browser Data API is off. There are no CRM tables yet. Supabase Auth sessions use cookies; the separate `zayto-theme` cookie is a display preference only.
 
 - Auth is **Supabase Auth** in the existing London project, with MFA required for all staff and invite-only agencies (ADR-019, ADR-015). Prisma remains the data layer for CRM records; do not expose CRM data through the browser Data API or put the Supabase secret/service-role key in client code.
 - Personal data stays in the **UK** (database, files, providers). Do not pick a non-UK region or provider without owner approval.

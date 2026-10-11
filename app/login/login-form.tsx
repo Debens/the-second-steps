@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -12,59 +12,65 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { requestMagicLink } from "./actions";
+import { initialLoginState } from "./login-state";
 
-export function LoginForm() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [submitted, setSubmitted] = useState(false);
-
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setSubmitted(true);
-  };
+export function LoginForm({ invalidLink = false }: { invalidLink?: boolean }) {
+  const [state, formAction, pending] = useActionState(
+    requestMagicLink,
+    initialLoginState,
+  );
 
   return (
     <Card className="ring-border">
       <CardHeader>
         <CardTitle className="text-xl font-semibold">Welcome back</CardTitle>
-        <CardDescription>Sign in to your Zayto account.</CardDescription>
+        <CardDescription>
+          We’ll email you a secure, one-time sign-in link.
+        </CardDescription>
       </CardHeader>
-      <form onSubmit={handleSubmit}>
+      <form action={formAction}>
         <CardContent className="grid gap-4">
           <div className="grid gap-2">
             <Label htmlFor="email">Email</Label>
             <Input
               id="email"
+              name="email"
               type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
               required
               autoComplete="email"
               className="h-10"
             />
           </div>
-          <div className="grid gap-2">
-            <Label htmlFor="password">Password</Label>
-            <Input
-              id="password"
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              autoComplete="current-password"
-              className="h-10"
-            />
-          </div>
-          {submitted && (
-            <p role="status" className="text-sm text-muted-foreground">
-              Form submitted! (No real authentication yet)
+          {(invalidLink || state.message) && (
+            <p
+              role={
+                state.status === "error" || invalidLink ? "alert" : "status"
+              }
+              className={
+                state.status === "error" || invalidLink
+                  ? "text-sm text-destructive"
+                  : "text-sm text-success"
+              }
+            >
+              {invalidLink
+                ? "That sign-in link is invalid or has expired. Request a new one."
+                : state.message}
             </p>
           )}
         </CardContent>
         <CardFooter className="mt-4 border-t-0 bg-transparent">
-          <Button type="submit" className="h-10 w-full">
-            Log In
-          </Button>
+          <div className="grid w-full gap-3">
+            <Button type="submit" className="h-10 w-full" disabled={pending}>
+              {pending ? "Sending link…" : "Email me a sign-in link"}
+            </Button>
+            <Button type="button" variant="outline" className="h-10" disabled>
+              Continue with Google (coming next)
+            </Button>
+            <p className="text-center text-xs text-muted-foreground">
+              Sandbox access is invite-only. Emails appear in local Mailpit.
+            </p>
+          </div>
         </CardFooter>
       </form>
     </Card>

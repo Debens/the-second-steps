@@ -48,7 +48,7 @@ test.describe("on a touchscreen phone", () => {
     await page.goto("/login");
     for (const control of [
       page.getByLabel("Email"),
-      page.getByRole("button", { name: "Log In" }),
+      page.getByRole("button", { name: "Email me a sign-in link" }),
       page.getByRole("button", { name: "Dark theme" }),
     ]) {
       const box = await control.boundingBox();
