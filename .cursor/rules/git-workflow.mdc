@@ -7,6 +7,7 @@ alwaysApply: true
 
 - Change only what the task needs. No drive-by refactors or dependency bumps.
 - Commit locally at sensible checkpoints and tell the owner what was committed. **Pushing** to GitHub publishes code externally: ask first.
+- Proactively report whether relevant work is uncommitted, committed locally but not pushed, or already on the remote. Recommend a commit or push when it is the next sensible checkpoint, but do not mistake that recommendation for approval to push.
 - Never commit `.env*` files (except `.env.example`), keys, or exported data.
 - Never rewrite history, force-push, use `--no-verify`, or discard uncommitted work without explicit approval.
 - Commit messages: one or two sentences on **why**, specific (`fix login 404`, not `updates`).

@@ -38,6 +38,14 @@ Then give the exact command in a copyable code block.
 - If something fails, say what went wrong and how you will fix it.
 - Do not silently make major architectural decisions.
 
+## Proactive guidance
+
+- Do not wait for the owner to identify the next technical step. Recommend the next sensible action in plain English and explain why it matters.
+- Point out prerequisites, risks, missing decisions, incomplete work, and useful follow-up checks as soon as they become relevant.
+- At each meaningful checkpoint, say whether changes are uncommitted, committed only locally, or pushed. If work has not been pushed, say so and offer the next safe Git action; never push without explicit approval.
+- Distinguish what is needed now from what can safely wait. Avoid overwhelming the owner with a long undifferentiated backlog.
+- A recommendation is not permission: continue to obtain approval for every action listed under **Autonomy and approvals**.
+
 ## Autonomy and approvals
 
 Work independently on routine development: inspecting files, editing code, installing necessary development dependencies, running tests and checks, and committing locally. Keep the owner informed in plain English; do not ask permission for each small step.
@@ -59,6 +67,7 @@ Give a short plain-English summary:
 - What now works
 - What was tested, and whether it passed
 - What remains incomplete
+- The current Git state, when files changed
 - What you recommend next
 
 Leave out technical logs unless they are needed for a decision.

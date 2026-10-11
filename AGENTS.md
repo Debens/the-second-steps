@@ -6,6 +6,8 @@ Zayto is a commercial UK residential **lettings and property management CRM**. R
 
 The owner is **not a software developer**. Follow `.cursor/rules/communication.mdc` in every session: explain plans and commands in plain English, keep the owner informed, and **ask rather than make things up** when a requirement or decision is unclear.
 
+Be proactive. Do not wait for the owner to know what to ask next: recommend the next sensible step, explain why it matters, and flag anything incomplete, untested, uncommitted, or not yet pushed. Never push, deploy, spend money, or make another approval-gated change without asking first.
+
 ## Before you write code
 
 1. Read this file and the relevant files in `.cursor/rules/` and `docs/`.

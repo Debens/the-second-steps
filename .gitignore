@@ -1,5 +1,6 @@
 node_modules/
 .next/
+.local-tools/
 
 # Environment files hold secrets. Only the example file is shared.
 .env*
