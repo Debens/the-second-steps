@@ -50,11 +50,19 @@ Newest first. Status: **Accepted** | **Proposed** | **Superseded** | **Unresolve
 - **Lean:** S3-compatible bucket in the UK/EU, short-lived signed URLs.
 - **Date:** 2026-10-11
 
+## ADR-016 — Database host: Supabase (London)
+
+- **Status:** Accepted (owner decision, 2026-10-11); project being created by the owner
+- **Decision:** Host PostgreSQL on **Supabase** in the London region. Use it as a plain PostgreSQL database accessed by Prisma from our server. Do **not** use Supabase Auth (we use Better Auth, ADR-007) or the browser-facing Supabase client/Data API for CRM data.
+- **Storage lean:** Supabase Storage (same London project, private buckets) for documents, to be confirmed under ADR-008.
+- **Constraints:** Free tier is for the proof of concept only (no real tenant/landlord data). Move to a paid plan with backups before real data; ask the owner before any paid upgrade.
+- **Date:** 2026-10-11
+
 ## ADR-015 — Data residency, MFA, and agency onboarding
 
 - **Status:** Accepted (owner decision, 2026-10-11)
 - **Decision:** All agency and personal data is stored in the **UK only** (London region) for the database, file storage, and any provider that holds personal data. Staff **must** use two-step login (MFA). Agencies are **invite-only** for the proof of concept: the owner creates each organisation; there is no public sign-up.
-- **Unresolved:** whether one login may belong to several agencies (owner unsure). Design so membership is a separate table either way; do not block it in the schema.
+- **Deferred (owner: decide later):** whether one login may belong to several agencies. Design so membership is a separate table either way; do not block it in the schema.
 - **Date:** 2026-10-11
 
 ## ADR-007 — Authentication provider

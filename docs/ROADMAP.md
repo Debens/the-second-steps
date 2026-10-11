@@ -14,8 +14,8 @@ Still outstanding in this phase, in order:
 2. ~~Upgrade Next.js to 15.5.27, then 16 (ADR-011)~~ (done)
 3. ~~Migrate to the App Router (ADR-012)~~ (done)
 4. ~~Add ESLint, Prettier, Vitest, Playwright, and scripts (ADR-013)~~ (done)
-5. Add `.env.example` without secrets
-6. Decide auth provider, database host and data location (auth: Better Auth; data: UK only; MFA required; invite-only — ADR-007, ADR-015. Database host still open.)
+5. ~~Add `.env.example` without secrets~~ (done)
+6. Decide auth provider, database host and data location (auth: Better Auth; data: UK only; MFA required; invite-only — ADR-007, ADR-015. Database: Supabase, London — ADR-016.)
 7. Confirm the Phase 1 scope below
 
 ## Phase 1 — Proof of concept slice (proposed)
