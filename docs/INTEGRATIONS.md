@@ -12,17 +12,17 @@ No third-party SDKs are installed. Do not call live providers unless the user en
 
 ## Capability interfaces (proposed)
 
-| Interface | Examples (not contracted) | Notes |
-| --- | --- | --- |
-| `PortalPublisher` | Rightmove, Zoopla, OnTheMarket | Publish/update/unpublish listing |
-| `ReferenceProvider` | Referencing firms | Create order, poll or webhook status |
-| `IdentityProvider` | AML/KYC/ID vendors | Orders and result artefacts |
-| `RightToRentProvider` | If separate from identity | Placeholder |
-| `InsuranceProvider` | Rent guarantee etc. | Quotes/bind only when specified |
-| `EsignProvider` | DocuSign, Dropbox Sign, etc. | Envelope lifecycle |
-| `PaymentsProvider` | Rent collection | PCI: never store raw card data |
-| `StorageProvider` | S3-compatible / similar | Private documents |
-| `EmailProvider` | Transactional email | Later |
+| Interface             | Examples (not contracted)      | Notes                                |
+| --------------------- | ------------------------------ | ------------------------------------ |
+| `PortalPublisher`     | Rightmove, Zoopla, OnTheMarket | Publish/update/unpublish listing     |
+| `ReferenceProvider`   | Referencing firms              | Create order, poll or webhook status |
+| `IdentityProvider`    | AML/KYC/ID vendors             | Orders and result artefacts          |
+| `RightToRentProvider` | If separate from identity      | Placeholder                          |
+| `InsuranceProvider`   | Rent guarantee etc.            | Quotes/bind only when specified      |
+| `EsignProvider`       | DocuSign, Dropbox Sign, etc.   | Envelope lifecycle                   |
+| `PaymentsProvider`    | Rent collection                | PCI: never store raw card data       |
+| `StorageProvider`     | S3-compatible / similar        | Private documents                    |
+| `EmailProvider`       | Transactional email            | Later                                |
 
 Vendor names above are **illustrative**, not selected.
 

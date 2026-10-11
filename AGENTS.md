@@ -18,9 +18,9 @@ The owner is **not a software developer**. Follow `.cursor/rules/communication.m
 
 - Next.js 16.4, **App Router** (`app/`). The Pages Router has been removed; do not add `pages/`.
 - React 19.3, TypeScript (strict), Tailwind CSS 4, shadcn/ui (Nova, Base UI, `rsc: true`)
-- Checks: `npm run typecheck`, `npm run build`
+- Checks: `npm run check` (typecheck, ESLint, Prettier, Vitest), `npm run test:e2e` (Playwright), `npm run build`
 
-PostgreSQL, Prisma, authentication, ESLint, Prettier, tests, and queues are **not installed**.
+PostgreSQL, Prisma, authentication, and queues are **not installed**.
 
 The login page (`app/login/`) is visual only. Keep it working.
 

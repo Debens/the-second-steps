@@ -13,7 +13,7 @@ Still outstanding in this phase, in order:
 1. ~~Commit a checkpoint of current work~~ (done locally; push awaits owner approval)
 2. ~~Upgrade Next.js to 15.5.27, then 16 (ADR-011)~~ (done)
 3. ~~Migrate to the App Router (ADR-012)~~ (done)
-4. Add ESLint, Prettier, Vitest, Playwright, and scripts (ADR-013)
+4. ~~Add ESLint, Prettier, Vitest, Playwright, and scripts (ADR-013)~~ (done)
 5. Add `.env.example` without secrets
 6. Decide auth provider, database host and data location (ADR-007)
 7. Confirm the Phase 1 scope below

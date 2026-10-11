@@ -14,15 +14,15 @@ IDOR (changing a UUID in the URL) must fail for the other organisation. We will 
 
 Names can change. Do not add dozens of roles in the PoC.
 
-| Role | Intent |
-| --- | --- |
-| `platform_admin` | Zayto operator. Not an agency user. Break-glass only. |
-| `org_admin` | Agency owner/manager. Users, branches, billing, all records in the org. |
-| `branch_manager` | Same as negotiator + property manager for one branch, plus local user invites **unresolved**. |
-| `negotiator` | Listings, enquiries, viewings, offers, applications (lettings pipeline). |
-| `property_manager` | Tenancies, inspections, maintenance, compliance. |
-| `accounts` | Rent, invoices, receipts, deposits (when finance exists). |
-| `read_only` | Reporting / training. |
+| Role               | Intent                                                                                        |
+| ------------------ | --------------------------------------------------------------------------------------------- |
+| `platform_admin`   | Zayto operator. Not an agency user. Break-glass only.                                         |
+| `org_admin`        | Agency owner/manager. Users, branches, billing, all records in the org.                       |
+| `branch_manager`   | Same as negotiator + property manager for one branch, plus local user invites **unresolved**. |
+| `negotiator`       | Listings, enquiries, viewings, offers, applications (lettings pipeline).                      |
+| `property_manager` | Tenancies, inspections, maintenance, compliance.                                              |
+| `accounts`         | Rent, invoices, receipts, deposits (when finance exists).                                     |
+| `read_only`        | Reporting / training.                                                                         |
 
 Landlord and tenant **portal** roles are **proposed for later** and must be separate from staff roles (much narrower: their properties/tenancies only).
 

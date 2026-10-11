@@ -12,6 +12,7 @@ Keep `"strict": true`. No `any`, no `as any`, no blanket `as` casts to silence e
 - Define a type once in its domain module and import it. Do not duplicate shapes between UI and data code.
 - Treat forms, URL params, and webhooks as `unknown` until validated. Validation library: Zod is **proposed**; ask before installing.
 - Catch errors as `unknown` and narrow. Never show stack traces or SQL to users.
+- ESLint (`eslint-config-next`) and Prettier are the source of truth for style; fix lint errors rather than disabling rules.
 - Imports use the `@/` alias. Files and folders use kebab-case (`property-status-badge.tsx`); components use PascalCase names.
 
 ## Shared value conventions (proposed until the first data slice)

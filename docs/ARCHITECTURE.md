@@ -2,16 +2,16 @@
 
 ## What we have today (confirmed, inspected)
 
-| Piece | Status |
-| --- | --- |
-| Next.js 16.4 + React 19.3 | Installed; **App Router** (`app/layout.tsx`, `app/login/`) |
-| TypeScript, `strict: true`, `@/` imports | Installed; `npm run typecheck` |
-| Tailwind CSS 4 + `styles/globals.css` | Installed |
-| shadcn/ui (Nova, Base UI), `components/ui` | Installed; `rsc: true` |
-| PostgreSQL / Prisma | **Not installed** |
-| Auth library | **Not installed**; login is visual only |
-| ESLint, Prettier, tests | **Not installed** (ADR-013) |
-| Job queue | **Not installed** |
+| Piece                                      | Status                                                     |
+| ------------------------------------------ | ---------------------------------------------------------- |
+| Next.js 16.4 + React 19.3                  | Installed; **App Router** (`app/layout.tsx`, `app/login/`) |
+| TypeScript, `strict: true`, `@/` imports   | Installed; `npm run typecheck`                             |
+| Tailwind CSS 4 + `styles/globals.css`      | Installed                                                  |
+| shadcn/ui (Nova, Base UI), `components/ui` | Installed; `rsc: true`                                     |
+| PostgreSQL / Prisma                        | **Not installed**                                          |
+| Auth library                               | **Not installed**; login is visual only                    |
+| ESLint, Prettier, Vitest, Playwright       | Installed (ADR-013); `npm run check`, `npm run test:e2e`   |
+| Job queue                                  | **Not installed**                                          |
 
 ## Style: modular monolith (confirmed)
 
