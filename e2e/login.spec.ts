@@ -1,5 +1,12 @@
 import { expect, test } from "@playwright/test";
 
+test("the home page redirects to login", async ({ page }) => {
+  await page.goto("/");
+
+  await expect(page).toHaveURL(/\/login$/);
+  await expect(page).toHaveTitle("Login | Zayto");
+});
+
 test("login form shows the placeholder message on submit", async ({ page }) => {
   await page.goto("/login");
   await expect(page).toHaveTitle("Login | Zayto");
