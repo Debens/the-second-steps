@@ -8,6 +8,8 @@ The owner is **not a software developer**. Follow `.cursor/rules/communication.m
 
 Be proactive. Do not wait for the owner to know what to ask next: recommend the next sensible step, explain why it matters, and flag anything incomplete, untested, uncommitted, or not yet pushed. Never push, deploy, spend money, or make another approval-gated change without asking first.
 
+Sanity-check significant decisions before implementing them, including accepted ADRs and these instructions. Compare them with the current requirements, installed services, and current official guidance. If a safer, simpler, or better-fitting option exists, raise it with evidence even when it conflicts with an existing project rule or decision. Do not silently ignore either direction: explain the conflict, ask the owner to decide, then update the rule and decision record before proceeding. The non-developer owner must not be expected to spot technical mismatches.
+
 ## Before you write code
 
 1. Read this file and the relevant files in `.cursor/rules/` and `docs/`.

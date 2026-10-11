@@ -2,11 +2,22 @@
 
 Newest first. Status: **Accepted** | **Proposed** | **Superseded** | **Unresolved**.
 
+## ADR-019 — Authentication provider: Supabase Auth
+
+- **Status:** Accepted (owner decision, 2026-10-11). Supersedes ADR-007.
+- **Decision:** Use **Supabase Auth** in the existing London project for identities, sessions, passwordless email sign-in, Google sign-in, invitations, and MFA. Staff remain invite-only and must reach the required MFA assurance level before accessing CRM data (ADR-015).
+- **Application tenancy:** Supabase Auth identifies the person but does not model Zayto's customer agencies. Zayto will own its `Organisation`, `Membership`, `Branch`, and role/permission records in Prisma. Every CRM query still derives the organisation from the authenticated membership and scopes by `organisationId`.
+- **Data access:** Prisma remains the server-side data layer for CRM records. The browser-facing Supabase Data API stays off for CRM data. Supabase browser credentials may be used only as documented for Auth; secret/service-role credentials remain server-only.
+- **Why changed:** Supabase Auth already provides managed magic links, Google OAuth, invitations, sessions, and MFA assurance levels in the service we have selected. This removes duplicated authentication infrastructure and avoids custom MFA gating required by Better Auth for magic-link and social sign-ins.
+- **Development email:** Hosted Supabase Auth cannot deliver into Mailpit running on localhost. The restricted Supabase development email service, a local Supabase stack, or a future SMTP provider must be chosen before implementing the email flow. Mailpit remains useful for Zayto-generated application emails. **Unresolved.**
+- **SMS:** Real phone MFA still needs an approved messaging provider and may incur cost. Do not select or connect one without owner approval. **Unresolved.**
+- **Date:** 2026-10-11
+
 ## ADR-018 — Light and dark themes, responsive conventions
 
 - **Status:** Accepted (owner decision, 2026-10-11)
 - **Decision:** Light is the default; users can choose Light, Dark, or System (follows the device). Built in-house following Next.js's "preventing flash before hydration" guide (a small `<head>` script plus a cookie), not the `next-themes` package, to avoid a dependency for ~100 lines of code. The `.dark` class matches shadcn's convention so its components switch automatically.
-- **Persistence:** the `zayto-theme` cookie (one year, this device) for now. Once accounts exist (Better Auth), also save it to the user's profile so it follows them between devices; the cookie stays as the fast first-paint source.
+- **Persistence:** the `zayto-theme` cookie (one year, this device) for now. Once accounts exist, also save it to the user's Zayto profile so it follows them between devices; the cookie stays as the fast first-paint source.
 - **Tokens:** every semantic token has a light and dark value in `styles/globals.css`, including new status colours (success, warning, danger, info, each with solid and soft forms). `styles/theme-contrast.test.ts` checks 33 text/background and control pairs in both themes against WCAG 2.2 AA on every `npm run test`. Dark mode uses a lighter indigo (`#8B84F2`) with navy text on buttons, because brand indigo is unreadable on navy.
 - **Responsive and touch:** Tailwind's default breakpoints; slide-out navigation below 1024px, collapsible sidebar above; rules for tables, forms, modals, and dashboards in `.cursor/rules/ui-design.mdc`. On touch screens, controls are at least 44px (global CSS rule keyed on `pointer: coarse`, so desktop stays compact).
 - **Date:** 2026-10-11
@@ -22,9 +33,9 @@ Newest first. Status: **Accepted** | **Proposed** | **Superseded** | **Unresolve
 ## ADR-016 — Database host: Supabase (London)
 
 - **Status:** Accepted (owner decision, 2026-10-11); project created and connected (London, PostgreSQL 17)
-- **Decision:** Host PostgreSQL on **Supabase** in the London region. Use it as a plain PostgreSQL database accessed by Prisma from our server. Do **not** use Supabase Auth (we use Better Auth, ADR-007) or the browser-facing Supabase client/Data API for CRM data.
+- **Decision:** Host PostgreSQL on **Supabase** in the London region. Use Prisma from our server for CRM data and Supabase Auth for identity and sessions (ADR-019). Do **not** expose CRM data through the browser-facing Supabase Data API.
 - **App database user (owner-approved):** the app connects as `zayto_app`, not the `postgres` admin. It can create and use tables in the `public` schema and create the temporary database Prisma uses to check migrations, but it is not an admin and cannot bypass Row Level Security. Connection is via the Session pooler (port 5432).
-- **Encryption:** connections must use TLS and verify Supabase's certificate authority, stored at `certs/supabase-ca.crt` (public, safe to commit). The file is Supabase's published "Supabase Root 2021 CA" (valid to April 2031), checked against the root the database actually presents (SHA-256 fingerprints match). The app passes it to `pg`; Prisma's CLI receives it as the `sslcert` URL parameter (Prisma's name for the root certificate, not libpq's `sslrootcert`). "Enforce SSL" should be on in Supabase so unencrypted connections are refused; **not yet confirmed** (owner could not find the setting). Data API: turned off by the owner.
+- **Encryption:** connections must use TLS and verify Supabase's certificate authority, stored at `certs/supabase-ca.crt` (public, safe to commit). The file is Supabase's published "Supabase Root 2021 CA" (valid to April 2031), checked against the root the database actually presents (SHA-256 fingerprints match). The app passes it to `pg`; Prisma's CLI receives it as the `sslcert` URL parameter (Prisma's name for the root certificate, not libpq's `sslrootcert`). "Enforce SSL" is on and the app connection was retested successfully on 2026-10-11. Data API: turned off by the owner.
 - **Storage lean:** Supabase Storage (same London project, private buckets) for documents, to be confirmed under ADR-008.
 - **Constraints:** Free tier is for the proof of concept only (no real tenant/landlord data). Move to a paid plan with backups before real data; ask the owner before any paid upgrade.
 - **Date:** 2026-10-11
@@ -86,7 +97,7 @@ Newest first. Status: **Accepted** | **Proposed** | **Superseded** | **Unresolve
 
 ## ADR-007 — Authentication provider
 
-- **Status:** Accepted (owner decision, 2026-10-11); not installed
+- **Status:** Superseded by ADR-019 before installation.
 - **Decision:** **Better Auth**, storing users and sessions in our own PostgreSQL, using its organisation feature for agencies, memberships, roles and invitations, and its two-factor feature (required per ADR-015). Custom password handling is rejected.
 - **Why:** accounts stay in our UK database (simpler UK GDPR position), no per-user fees, and organisations/invitations match invite-only agency onboarding.
 - **Note:** Confirm current Better Auth APIs from its official docs at install time. Changing auth requires owner approval.

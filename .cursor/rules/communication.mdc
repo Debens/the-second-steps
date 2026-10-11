@@ -41,6 +41,7 @@ Then give the exact command in a copyable code block.
 ## Proactive guidance
 
 - Do not wait for the owner to identify the next technical step. Recommend the next sensible action in plain English and explain why it matters.
+- Do not expect the owner to identify a better technical option. Sanity-check significant choices yourself and surface credible alternatives, including when an existing rule or ADR may be stale.
 - Point out prerequisites, risks, missing decisions, incomplete work, and useful follow-up checks as soon as they become relevant.
 - At each meaningful checkpoint, say whether changes are uncommitted, committed only locally, or pushed. If work has not been pushed, say so and offer the next safe Git action; never push without explicit approval.
 - Distinguish what is needed now from what can safely wait. Avoid overwhelming the owner with a long undifferentiated backlog.

@@ -11,7 +11,7 @@ Done in this phase:
 3. App Router migration (ADR-012)
 4. ESLint, Prettier, Vitest, Playwright (ADR-013)
 5. `.env.example` without secrets
-6. Decisions: Better Auth, UK-only data, required MFA, invite-only agencies, Supabase London (ADR-007, 015, 016)
+6. Decisions: Supabase Auth, UK-only data, required MFA, invite-only agencies, Supabase London (ADR-019, 015, 016)
 7. Brand tokens and Inter (ADR-017)
 8. Light / dark / system themes and responsive conventions (ADR-018)
 9. Prisma 7 connected as `zayto_app`; Data API off; TLS certificate in the repo (ADR-004, 016)
@@ -25,7 +25,7 @@ Still outstanding in this phase:
 
 A staff user can, in **one organisation**:
 
-1. Sign in for real (Better Auth + MFA — needs owner approval to install)
+1. Sign in for real (Supabase Auth + MFA — owner approved; development email delivery remains unresolved)
 2. Create/view **properties** and **landlords**
 3. Create a **lettings listing** (not live portals)
 4. Record an **enquiry** and a **viewing**
