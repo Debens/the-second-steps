@@ -1,4 +1,6 @@
-import React, { useState } from "react";
+"use client";
+
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -11,12 +13,12 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-export default function Login() {
+export function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitted, setSubmitted] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setSubmitted(true);
   };

@@ -1,14 +1,14 @@
 ---
-description: Next.js and React conventions, Pages Router today and App Router after the approved migration
-globs: pages/**/*.ts, pages/**/*.tsx, app/**/*.ts, app/**/*.tsx, components/**/*.tsx
+description: Next.js 16 App Router and React conventions
+globs: app/**/*.ts, app/**/*.tsx, components/**/*.tsx
 alwaysApply: false
 ---
 
 # Next.js and React
 
-**Today:** Pages Router (`pages/`). The App Router migration is **approved** and scheduled after the Next.js upgrade (`docs/DECISIONS.md` ADR-012). Until it is done, do not start new screens in either router; finish the migration first.
+Next.js 16, **App Router only** (`app/`). Do not create `pages/`. Bundled docs for this exact version are in `node_modules/next/dist/docs/`; check them when unsure.
 
-**After migration:** App Router only. Server Components by default. Add `'use client'` only for state, effects, browser APIs, or event handlers, and keep client components small.
+Server Components by default. Add `'use client'` only for state, effects, browser APIs, or event handlers, and keep client components small (see `app/login/login-form.tsx` inside the server `page.tsx`).
 
 - Fetch data on the server. Never call the database from Client Components.
 - Mutations: Server Actions (`'use server'`). Treat every action as an untrusted POST: authenticate, authorise, validate.

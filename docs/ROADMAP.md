@@ -10,9 +10,9 @@ Dates are not committed. Phases are **sequences**, not promises.
 
 Still outstanding in this phase, in order:
 
-1. Commit and push a checkpoint of current work
-2. Upgrade Next.js to 15.5.27, then 16 (ADR-011)
-3. Migrate to the App Router (ADR-012)
+1. ~~Commit a checkpoint of current work~~ (done locally; push awaits owner approval)
+2. ~~Upgrade Next.js to 15.5.27, then 16 (ADR-011)~~ (done)
+3. ~~Migrate to the App Router (ADR-012)~~ (done)
 4. Add ESLint, Prettier, Vitest, Playwright, and scripts (ADR-013)
 5. Add `.env.example` without secrets
 6. Decide auth provider, database host and data location (ADR-007)

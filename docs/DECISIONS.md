@@ -17,14 +17,14 @@ Newest first. Status: **Accepted** | **Proposed** | **Superseded** | **Unresolve
 
 ## ADR-012 — Migrate to the App Router before building CRM screens
 
-- **Status:** Accepted (not yet done). Supersedes ADR-002's "migrate later".
+- **Status:** Accepted and done (2026-10-11). Supersedes ADR-002's "migrate later". Login is now `app/login/page.tsx` (server) rendering `login-form.tsx` (client); `pages/` removed.
 - **Context:** The app has only two Pages Router files (`_app.tsx`, `login.tsx`). Every new screen built in `pages/` would need moving later.
 - **Decision:** After the Next.js 16 upgrade, move to `app/` (`app/layout.tsx`, `app/login/page.tsx`), set shadcn `rsc: true`, then remove `pages/`. Verify login in the browser at each step.
 - **Date:** 2026-10-11
 
 ## ADR-011 — Next.js upgrade path
 
-- **Status:** Accepted (not yet applied)
+- **Status:** Accepted and done (2026-10-11): now Next.js 16.4.0, React 19.3.0. Next.js advisories cleared. Remaining `npm audit` items are in the shadcn CLI's file-matching dependency (`braces`), development-time only, with no non-breaking fix yet.
 - **Context:** Installed Next.js is 15.4.1. `npm audit` reports high and critical advisories. The current release is 16.4.0; 15.5.27 is the 15.x security backport.
 - **Decision:** Commit a checkpoint, upgrade to 15.5.27 and verify, then upgrade to 16 with the official codemod (`npx @next/codemod upgrade latest`) and verify. Node 22 meets Next 16's minimum (20.9). Patch before any public hosting.
 - **Date:** 2026-10-11

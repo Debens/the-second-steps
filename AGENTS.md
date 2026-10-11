@@ -16,17 +16,13 @@ The owner is **not a software developer**. Follow `.cursor/rules/communication.m
 
 ## Current stack (installed)
 
-- Next.js 15.4.1, Pages Router (`pages/`)
-- React 19.1.0, TypeScript (strict), Tailwind CSS 4, shadcn/ui (Nova, Base UI)
+- Next.js 16.4, **App Router** (`app/`). The Pages Router has been removed; do not add `pages/`.
+- React 19.3, TypeScript (strict), Tailwind CSS 4, shadcn/ui (Nova, Base UI, `rsc: true`)
+- Checks: `npm run typecheck`, `npm run build`
 
 PostgreSQL, Prisma, authentication, ESLint, Prettier, tests, and queues are **not installed**.
 
-## Approved next steps (ADR-011, ADR-012)
-
-1. Upgrade Next.js to 15.5.27 (security patch), then to Next.js 16.
-2. Migrate to the App Router. After that, all new work uses `app/`.
-
-Until both are done, do not build new screens. Keep `pages/login.tsx` working throughout.
+The login page (`app/login/`) is visual only. Keep it working.
 
 ## Non‑negotiables
 
@@ -50,3 +46,13 @@ Until both are done, do not build new screens. Keep `pages/login.tsx` working th
 | Integrations | `docs/INTEGRATIONS.md` |
 | Decision log | `docs/DECISIONS.md` |
 | Phases | `docs/ROADMAP.md` |
+
+<!-- BEGIN:nextjs-agent-rules -->
+
+## This is NOT the Next.js you know
+
+This version has breaking changes — APIs, conventions, and file structure may all differ from your training data. Read the relevant guide in `node_modules/next/dist/docs/` (resolved from this file's directory; in monorepos the `next` package may not be visible from the repo root) before writing any code. Heed deprecation notices.
+
+This block is written and re-added by `next dev` — verify at `node_modules/next/dist/server/lib/generate-agent-files.js`. Removing it from a diff only re-creates the uncommitted change; committing it with your work keeps the tree clean.
+
+<!-- END:nextjs-agent-rules -->

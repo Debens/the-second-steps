@@ -4,16 +4,14 @@
 
 | Piece | Status |
 | --- | --- |
-| Next.js 15.4.1 + React 19.1.0 | Installed; **Pages Router** (`pages/login.tsx`, `pages/_app.tsx`) |
-| TypeScript, `strict: true`, `@/` imports | Installed |
+| Next.js 16.4 + React 19.3 | Installed; **App Router** (`app/layout.tsx`, `app/login/`) |
+| TypeScript, `strict: true`, `@/` imports | Installed; `npm run typecheck` |
 | Tailwind CSS 4 + `styles/globals.css` | Installed |
-| shadcn/ui (Nova, Base UI), `components/ui` | Installed; `rsc: false` |
+| shadcn/ui (Nova, Base UI), `components/ui` | Installed; `rsc: true` |
 | PostgreSQL / Prisma | **Not installed** |
 | Auth library | **Not installed**; login is visual only |
-| Tests / ESLint project config | **Not installed** (`npm run lint` is a stub relative to missing ESLint) |
+| ESLint, Prettier, tests | **Not installed** (ADR-013) |
 | Job queue | **Not installed** |
-
-Uncommitted work includes shadcn setup and the restyled login page. Do not discard it.
 
 ## Style: modular monolith (confirmed)
 
@@ -48,8 +46,7 @@ Not created yet. When we start feature work (after the user asks):
 - `modules/lettings/` — applications, tenancies, rent, maintenance, compliance
 - `modules/sales/` — empty until needed
 - `components/ui/` — shadcn (exists)
-- `pages/` — current routes (exists)
-- `app/` — **only after** an explicit App Router migration
+- `app/` — routes, layouts, and Server Actions (exists)
 
 Exact paths may sit under `src/` later. **Unresolved** whether to introduce `src/`.
 

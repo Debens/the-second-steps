@@ -1,6 +1,6 @@
 ---
 description: shadcn/ui, Tailwind, accessibility, and CRM UI patterns
-globs: components/**/*.tsx, pages/**/*.tsx, app/**/*.tsx, styles/**/*.css
+globs: components/**/*.tsx, app/**/*.tsx, styles/**/*.css
 alwaysApply: false
 ---
 
@@ -17,4 +17,4 @@ Use **shadcn/ui** first (`components/ui`). Add components with `npx shadcn@lates
 - UI wording is for UK letting agents: British spelling, `£`, `DD/MM/YYYY` dates.
 - When a design choice is not covered here (layout, wording, which fields to show), ask the owner.
 
-shadcn is configured as Nova / Base UI with `rsc: false`. Set `rsc: true` in `components.json` as part of the App Router migration.
+shadcn is configured as Nova / Base UI with `rsc: true`. Global styles load from `app/layout.tsx`.
