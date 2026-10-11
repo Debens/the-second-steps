@@ -12,3 +12,14 @@ test("login form shows the placeholder message on submit", async ({ page }) => {
     page.getByText("Form submitted! (No real authentication yet)"),
   ).toBeVisible();
 });
+
+test("keyboard users see an indigo focus outline on the email field", async ({
+  page,
+}) => {
+  await page.goto("/login");
+  const email = page.getByLabel("Email");
+
+  await page.keyboard.press("Tab");
+  await expect(email).toBeFocused();
+  await expect(email).toHaveCSS("border-color", "rgb(98, 88, 232)");
+});

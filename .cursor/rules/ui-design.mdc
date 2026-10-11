@@ -15,6 +15,16 @@ Use **shadcn/ui** first (`components/ui`). Add components with `npx shadcn@lates
 - Every control is keyboard-reachable with a visible focus ring. Dialogs trap focus and close on Escape.
 - Every list or detail view has **loading**, **empty**, and **error** states. Toasts confirm completed actions; field problems show inline.
 - UI wording is for UK letting agents: British spelling, `£`, `DD/MM/YYYY` dates.
+
+## Brand (ADR-017)
+
+- Colours are defined once as `--brand-*` variables in `styles/globals.css` and mapped to semantic tokens. In components use semantic classes only (`bg-primary`, `text-muted-foreground`, `bg-sidebar`, `bg-highlight`); never hex, `--brand-*`, or arbitrary `[var(...)]` values. Need a new colour role? Add a semantic token there.
+- Direction: modern, premium SaaS. Midnight sidebar, light content areas, white cards, indigo for primary buttons, active states and focus. Amber is a restrained accent.
+- Amber (`highlight`) is a fill only, with `text-highlight-foreground` (midnight) on it. Never use amber as text or icon colour on light backgrounds.
+- No pink, teal, gradients, or traditional estate-agency styling.
+- Text needs 4.5:1 contrast (3:1 for large text); control borders and focus outlines need 3:1. Use `border-input` on form controls, `border-border` for dividers.
+- Font is Inter (`font-sans`); do not add other typefaces.
+
 - When a design choice is not covered here (layout, wording, which fields to show), ask the owner.
 
 shadcn is configured as Nova / Base UI with `rsc: true`. Global styles load from `app/layout.tsx`.

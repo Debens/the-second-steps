@@ -2,6 +2,29 @@
 
 Newest first. Status: **Accepted** | **Proposed** | **Superseded** | **Unresolved**.
 
+## ADR-017 — Brand colours and typography as design tokens
+
+- **Status:** Accepted (owner decision, 2026-10-11); colours are temporary and expected to change
+- **Decision:** All brand colours live once in `styles/globals.css` as `--brand-*` variables, mapped to shadcn's semantic tokens (`primary`, `background`, `sidebar`, `highlight`, and so on). Components use only the semantic Tailwind classes (`bg-primary`, `bg-sidebar`), never hex values, so a rebrand is a change to one file. Typeface is Inter via `next/font`. Light theme only for now (the unused dark theme was removed).
+- **Palette:** midnight navy `#161D35` (sidebar, text), indigo `#6258E8` (buttons, active states, focus), amber `#F2AD54` (restrained accents), background `#F7F8FC`, borders `#DCE1EB`, cards `#FFFFFF`. No pink, teal, gradients or traditional estate-agency styling.
+- **Accessibility adjustments:** amber is too light to be text on light backgrounds (1.9:1), so it is used only as a fill, with midnight text on it (8.6:1). `#DCE1EB` is kept for dividers and card edges, but input borders use a darker `#7F889E` (3.55:1 on white) so form fields meet the 3:1 rule for controls. Muted text is `#586079` (5.9:1).
+- **Date:** 2026-10-11
+
+## ADR-016 — Database host: Supabase (London)
+
+- **Status:** Accepted (owner decision, 2026-10-11); project being created by the owner
+- **Decision:** Host PostgreSQL on **Supabase** in the London region. Use it as a plain PostgreSQL database accessed by Prisma from our server. Do **not** use Supabase Auth (we use Better Auth, ADR-007) or the browser-facing Supabase client/Data API for CRM data.
+- **Storage lean:** Supabase Storage (same London project, private buckets) for documents, to be confirmed under ADR-008.
+- **Constraints:** Free tier is for the proof of concept only (no real tenant/landlord data). Move to a paid plan with backups before real data; ask the owner before any paid upgrade.
+- **Date:** 2026-10-11
+
+## ADR-015 — Data residency, MFA, and agency onboarding
+
+- **Status:** Accepted (owner decision, 2026-10-11)
+- **Decision:** All agency and personal data is stored in the **UK only** (London region) for the database, file storage, and any provider that holds personal data. Staff **must** use two-step login (MFA). Agencies are **invite-only** for the proof of concept: the owner creates each organisation; there is no public sign-up.
+- **Deferred (owner: decide later):** whether one login may belong to several agencies. Design so membership is a separate table either way; do not block it in the schema.
+- **Date:** 2026-10-11
+
 ## ADR-014 — Owner communication and ask-first working
 
 - **Status:** Accepted
@@ -48,21 +71,6 @@ Newest first. Status: **Accepted** | **Proposed** | **Superseded** | **Unresolve
 - **Status:** Unresolved
 - **Need:** Private documents (IDs, tenancy PDFs). Not public `/public` files.
 - **Lean:** S3-compatible bucket in the UK/EU, short-lived signed URLs.
-- **Date:** 2026-10-11
-
-## ADR-016 — Database host: Supabase (London)
-
-- **Status:** Accepted (owner decision, 2026-10-11); project being created by the owner
-- **Decision:** Host PostgreSQL on **Supabase** in the London region. Use it as a plain PostgreSQL database accessed by Prisma from our server. Do **not** use Supabase Auth (we use Better Auth, ADR-007) or the browser-facing Supabase client/Data API for CRM data.
-- **Storage lean:** Supabase Storage (same London project, private buckets) for documents, to be confirmed under ADR-008.
-- **Constraints:** Free tier is for the proof of concept only (no real tenant/landlord data). Move to a paid plan with backups before real data; ask the owner before any paid upgrade.
-- **Date:** 2026-10-11
-
-## ADR-015 — Data residency, MFA, and agency onboarding
-
-- **Status:** Accepted (owner decision, 2026-10-11)
-- **Decision:** All agency and personal data is stored in the **UK only** (London region) for the database, file storage, and any provider that holds personal data. Staff **must** use two-step login (MFA). Agencies are **invite-only** for the proof of concept: the owner creates each organisation; there is no public sign-up.
-- **Deferred (owner: decide later):** whether one login may belong to several agencies. Design so membership is a separate table either way; do not block it in the schema.
 - **Date:** 2026-10-11
 
 ## ADR-007 — Authentication provider

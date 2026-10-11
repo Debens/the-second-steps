@@ -24,51 +24,49 @@ export function LoginForm() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
-      <Card className="w-full max-w-sm">
-        <CardHeader>
-          <CardTitle>Login</CardTitle>
-          <CardDescription>
-            Sign in to continue to Zayto. Authentication is not wired up yet.
-          </CardDescription>
-        </CardHeader>
-        <form onSubmit={handleSubmit}>
-          <CardContent className="grid gap-4">
-            <div className="grid gap-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                autoComplete="email"
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                autoComplete="current-password"
-              />
-            </div>
-            {submitted && (
-              <p className="text-sm text-muted-foreground">
-                Form submitted! (No real authentication yet)
-              </p>
-            )}
-          </CardContent>
-          <CardFooter className="mt-4">
-            <Button type="submit" className="w-full" size="lg">
-              Log In
-            </Button>
-          </CardFooter>
-        </form>
-      </Card>
-    </div>
+    <Card className="ring-border">
+      <CardHeader>
+        <CardTitle className="text-xl font-semibold">Welcome back</CardTitle>
+        <CardDescription>Sign in to your Zayto account.</CardDescription>
+      </CardHeader>
+      <form onSubmit={handleSubmit}>
+        <CardContent className="grid gap-4">
+          <div className="grid gap-2">
+            <Label htmlFor="email">Email</Label>
+            <Input
+              id="email"
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              autoComplete="email"
+              className="h-10"
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label htmlFor="password">Password</Label>
+            <Input
+              id="password"
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              autoComplete="current-password"
+              className="h-10"
+            />
+          </div>
+          {submitted && (
+            <p role="status" className="text-sm text-muted-foreground">
+              Form submitted! (No real authentication yet)
+            </p>
+          )}
+        </CardContent>
+        <CardFooter className="mt-4 border-t-0 bg-transparent">
+          <Button type="submit" className="h-10 w-full">
+            Log In
+          </Button>
+        </CardFooter>
+      </form>
+    </Card>
   );
 }
