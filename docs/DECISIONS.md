@@ -12,8 +12,10 @@ Newest first. Status: **Accepted** | **Proposed** | **Superseded** | **Unresolve
 
 ## ADR-016 — Database host: Supabase (London)
 
-- **Status:** Accepted (owner decision, 2026-10-11); project being created by the owner
+- **Status:** Accepted (owner decision, 2026-10-11); project created and connected (London, PostgreSQL 17)
 - **Decision:** Host PostgreSQL on **Supabase** in the London region. Use it as a plain PostgreSQL database accessed by Prisma from our server. Do **not** use Supabase Auth (we use Better Auth, ADR-007) or the browser-facing Supabase client/Data API for CRM data.
+- **App database user (owner-approved):** the app connects as `zayto_app`, not the `postgres` admin. It can create and use tables in the `public` schema and create the temporary database Prisma uses to check migrations, but it is not an admin and cannot bypass Row Level Security. Connection is via the Session pooler (port 5432).
+- **Encryption:** connections must use TLS and verify Supabase's certificate authority, stored at `certs/supabase-ca.crt` (public, safe to commit). "Enforce SSL" should be on in Supabase so unencrypted connections are refused.
 - **Storage lean:** Supabase Storage (same London project, private buckets) for documents, to be confirmed under ADR-008.
 - **Constraints:** Free tier is for the proof of concept only (no real tenant/landlord data). Move to a paid plan with backups before real data; ask the owner before any paid upgrade.
 - **Date:** 2026-10-11
@@ -97,9 +99,11 @@ Newest first. Status: **Accepted** | **Proposed** | **Superseded** | **Unresolve
 
 ## ADR-004 — PostgreSQL and Prisma
 
-- **Status:** Proposed (not installed)
-- **Decision lean:** PostgreSQL as the system of record; Prisma as ORM and migration tool.
-- **Why:** Relational data (tenancies, FKs, transactions) fits SQL. Prisma is widely used with Next.js. Confirm versions against current Prisma docs at install time (Prisma 6 vs 7 layout differs).
+- **Status:** Accepted (owner approved install, 2026-10-11)
+- **Decision:** PostgreSQL as the system of record; Prisma as ORM and migration tool.
+- **Why:** Relational data (tenancies, FKs, transactions) fits SQL. Prisma is widely used with Next.js.
+- **Installed:** Prisma 7.10.0 (latest stable; the npm `latest` tag pointed at an 8.0 release candidate needing a newer Node.js), with the `@prisma/adapter-pg` driver. Schema in `prisma/schema.prisma`, settings in `prisma.config.ts`, client in `core/db/client.ts`, generated code in `core/db/generated/` (not committed). Commands: `npm run db:migrate` (create/apply a migration locally), `npm run db:deploy` (apply in production).
+- **Audit note:** Prisma's command-line tool brings in `mysql2` and `deepmerge-ts` with high-severity advisories. Both run only on developer machines during Prisma commands (we use PostgreSQL, not MySQL) and are not in the deployed app. The only automatic fix is downgrading to Prisma 6; revisit when Prisma ships updates.
 - **Date:** 2026-10-11
 
 ## ADR-003 — Modular monolith, lettings vs sales

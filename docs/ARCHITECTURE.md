@@ -8,7 +8,7 @@
 | TypeScript, `strict: true`, `@/` imports   | Installed; `npm run typecheck`                             |
 | Tailwind CSS 4 + `styles/globals.css`      | Installed                                                  |
 | shadcn/ui (Nova, Base UI), `components/ui` | Installed; `rsc: true`                                     |
-| PostgreSQL / Prisma                        | **Not installed**                                          |
+| PostgreSQL (Supabase London) / Prisma 7.10 | Installed and connected; no tables yet (ADR-004, ADR-016)  |
 | Auth library                               | **Not installed**; login is visual only                    |
 | ESLint, Prettier, Vitest, Playwright       | Installed (ADR-013); `npm run check`, `npm run test:e2e`   |
 | Job queue                                  | **Not installed**                                          |

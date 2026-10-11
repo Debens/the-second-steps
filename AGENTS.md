@@ -20,7 +20,9 @@ The owner is **not a software developer**. Follow `.cursor/rules/communication.m
 - React 19.3, TypeScript (strict), Tailwind CSS 4, shadcn/ui (Nova, Base UI, `rsc: true`)
 - Checks: `npm run check` (typecheck, ESLint, Prettier, Vitest), `npm run test:e2e` (Playwright), `npm run build`
 
-PostgreSQL, Prisma, authentication, and queues are **not installed**.
+- Database: PostgreSQL on Supabase (London) via Prisma 7.10 (`prisma/`, `core/db/`). No tables yet. App connects as `zayto_app` over verified TLS (ADR-016).
+
+Authentication and queues are **not installed**.
 
 The login page (`app/login/`) is visual only. Keep it working.
 

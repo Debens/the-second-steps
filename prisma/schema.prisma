@@ -1,0 +1,11 @@
+// Database structure. Add tables only for the slice being built (database.mdc).
+// The connection address lives in prisma.config.ts, not here (Prisma 7).
+
+generator client {
+  provider = "prisma-client"
+  output   = "../core/db/generated"
+}
+
+datasource db {
+  provider = "postgresql"
+}
