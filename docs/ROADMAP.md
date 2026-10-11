@@ -4,25 +4,28 @@ Dates are not committed. Phases are **sequences**, not promises.
 
 ## Phase 0 — Foundations (current)
 
-- Inspected Next.js + shadcn login (visual only)
-- Development rules and `docs/` (this work)
-- **Next:** keep uncommitted UI work; do not rewrite it for its own sake
+Done in this phase:
 
-Still outstanding in this phase, in order:
+1. Checkpoint of the visual login, rules and `docs/`
+2. Next.js 16 and React 19.3 (ADR-011)
+3. App Router migration (ADR-012)
+4. ESLint, Prettier, Vitest, Playwright (ADR-013)
+5. `.env.example` without secrets
+6. Decisions: Better Auth, UK-only data, required MFA, invite-only agencies, Supabase London (ADR-007, 015, 016)
+7. Brand tokens and Inter (ADR-017)
+8. Light / dark / system themes and responsive conventions (ADR-018)
+9. Prisma 7 connected as `zayto_app`; Data API off; TLS certificate in the repo (ADR-004, 016)
 
-1. ~~Commit a checkpoint of current work~~ (done and pushed)
-2. ~~Upgrade Next.js to 15.5.27, then 16 (ADR-011)~~ (done)
-3. ~~Migrate to the App Router (ADR-012)~~ (done)
-4. ~~Add ESLint, Prettier, Vitest, Playwright, and scripts (ADR-013)~~ (done)
-5. ~~Add `.env.example` without secrets~~ (done)
-6. Decide auth provider, database host and data location (auth: Better Auth; data: UK only; MFA required; invite-only — ADR-007, ADR-015. Database: Supabase, London — ADR-016.)
-7. Confirm the Phase 1 scope below
+Still outstanding in this phase:
+
+1. Confirm **Enforce SSL** is on in the Supabase dashboard (owner could not find the toggle)
+2. Confirm the Phase 1 scope below
 
 ## Phase 1 — Proof of concept slice (proposed)
 
 A staff user can, in **one organisation**:
 
-1. Sign in for real
+1. Sign in for real (Better Auth + MFA — needs owner approval to install)
 2. Create/view **properties** and **landlords**
 3. Create a **lettings listing** (not live portals)
 4. Record an **enquiry** and a **viewing**
@@ -58,4 +61,4 @@ Landlord/tenant logins, richer finance, RLS, dedicated workers, UK hosting revie
 
 - Rewriting the stack for fashion
 - Microservices
-- Building all screens before auth and a database
+- Building all screens before auth and a first table

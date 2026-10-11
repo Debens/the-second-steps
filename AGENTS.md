@@ -18,6 +18,7 @@ The owner is **not a software developer**. Follow `.cursor/rules/communication.m
 
 - Next.js 16.4, **App Router** (`app/`). The Pages Router has been removed; do not add `pages/`.
 - React 19.3, TypeScript (strict), Tailwind CSS 4, shadcn/ui (Nova, Base UI, `rsc: true`)
+- Light/dark/system themes and responsive conventions: every new screen and component must support both themes and mobile, tablet and desktop from the start (`.cursor/rules/ui-design.mdc`, ADR-018)
 - Checks: `npm run check` (typecheck, ESLint, Prettier, Vitest), `npm run test:e2e` (Playwright), `npm run build`
 
 - Database: PostgreSQL on Supabase (London) via Prisma 7.10 (`prisma/`, `core/db/`). No tables yet. App connects as `zayto_app` over verified TLS (ADR-016).

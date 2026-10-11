@@ -5,7 +5,7 @@ alwaysApply: true
 
 # Architecture
 
-Zayto is a **modular monolith**: one Next.js app, one PostgreSQL database (when added), modules with clear boundaries. Not microservices.
+Zayto is a **modular monolith**: one Next.js app, one PostgreSQL database (Supabase London, Prisma), modules with clear boundaries. Not microservices.
 
 ## Layers (inside a module)
 

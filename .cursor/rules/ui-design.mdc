@@ -1,5 +1,5 @@
 ---
-description: shadcn/ui, Tailwind, accessibility, and CRM UI patterns
+description: shadcn/ui, Tailwind, themes, responsive layout, accessibility, and CRM UI patterns
 globs: components/**/*.tsx, app/**/*.tsx, styles/**/*.css
 alwaysApply: false
 ---
@@ -10,20 +10,55 @@ Use **shadcn/ui** first (`components/ui`). Add components with `npx shadcn@lates
 
 - Style with Tailwind classes and the theme tokens in `styles/globals.css`. Do not use inline `style={{}}` or hard-coded colours.
 - Build pages from shadcn primitives plus thin domain components (`PropertyStatusBadge`), not a new design system.
-- Layouts must work on mobile and desktop. Wide CRM tables may scroll horizontally; filters must stay usable on small screens.
 - Forms: every input has a `Label`, errors appear next to the field, `autoComplete` is set where relevant, and forms submit with the keyboard.
-- Every control is keyboard-reachable with a visible focus ring. Dialogs trap focus and close on Escape.
+- Every control is keyboard-reachable with a visible focus ring, in a logical tab order. Dialogs trap focus, close on Escape, and return focus to what opened them.
 - Every list or detail view has **loading**, **empty**, and **error** states. Toasts confirm completed actions; field problems show inline.
 - UI wording is for UK letting agents: British spelling, `£`, `DD/MM/YYYY` dates.
 
 ## Brand (ADR-017)
 
-- Colours are defined once as `--brand-*` variables in `styles/globals.css` and mapped to semantic tokens. In components use semantic classes only (`bg-primary`, `text-muted-foreground`, `bg-sidebar`, `bg-highlight`); never hex, `--brand-*`, or arbitrary `[var(...)]` values. Need a new colour role? Add a semantic token there.
+- Colours are defined once as `--brand-*` variables in `styles/globals.css` and mapped to semantic tokens. In components use semantic classes only (`bg-primary`, `text-muted-foreground`, `bg-sidebar`, `bg-highlight`); never hex, `--brand-*`, or arbitrary `[var(...)]` values. Need a new colour role? Add a semantic token in **both** theme blocks and a contrast pair in `styles/theme-contrast.test.ts`.
 - Direction: modern, premium SaaS. Midnight sidebar, light content areas, white cards, indigo for primary buttons, active states and focus. Amber is a restrained accent.
 - Amber (`highlight`) is a fill only, with `text-highlight-foreground` (midnight) on it. Never use amber as text or icon colour on light backgrounds.
 - No pink, teal, gradients, or traditional estate-agency styling.
 - Text needs 4.5:1 contrast (3:1 for large text); control borders and focus outlines need 3:1. Use `border-input` on form controls, `border-border` for dividers.
 - Font is Inter (`font-sans`); do not add other typefaces.
+
+## Themes (ADR-018)
+
+- Light is the default. Users choose **Light**, **Dark**, or **System** (follows the device) with `ThemeToggle` (`components/theme/`). The choice is saved in the `zayto-theme` cookie; once accounts exist it will also be saved to the user's profile.
+- `:root` holds light tokens, `.dark` holds dark tokens. Every semantic token must exist in both; `npm run test` fails if a pair drops below contrast minimums.
+- Status colours: `success`, `warning`, `destructive` (danger), `info`. Solid: `bg-success text-success-foreground`. Subtle: `bg-success-soft text-success`. Never signal status by colour alone; add an icon or text.
+- Build every new component for both themes from the start. Prefer tokens that already switch over `dark:` overrides; use `dark:` only when a token can't express it.
+- A component is not done until it has been checked in light and dark (browser or screenshot).
+- Do not read the theme on the server (`cookies()` in a layout makes every page dynamic). The `<head>` script in `app/layout.tsx` applies it before first paint.
+
+## Responsive layout
+
+Desktop is the main working environment; mobile and tablet must be properly supported, not just shrunk. Design small-screen first, then add `md:` / `lg:` layers.
+
+| Band | Tailwind | Navigation |
+| --- | --- | --- |
+| Mobile | default (< 768px) | Top bar with menu button; navigation opens in a slide-out panel (shadcn `Sheet`) |
+| Tablet | `md:` (768–1023px) | Same slide-out panel; content may use two columns |
+| Desktop | `lg:` (≥ 1024px) | Fixed midnight sidebar, collapsible to an icon rail |
+| Wide | `xl:` / `2xl:` | Wider content and extra columns; cap reading width with `max-w-*` |
+
+Use Tailwind's default breakpoints only; do not add custom ones. Use container queries (`@container`) when a component's layout depends on its own width rather than the screen's.
+
+- **Tables:** below `md`, show each row as a stacked card with the key fields and a link to the detail page. From `md`, show the table; wide tables scroll horizontally inside their card with the first column pinned. Never let the page itself scroll sideways.
+- **Forms:** one column on mobile; two columns from `lg` only where fields belong together (e.g. first and last name). On mobile, keep the main action reachable (sticky footer bar) for long forms.
+- **Modals:** centred `Dialog` from `md`; full-height `Sheet` from the bottom on mobile. Long content scrolls inside the modal.
+- **Dashboards:** card grids `grid-cols-1 md:grid-cols-2 xl:grid-cols-4`. Charts resize with their container and have a text or table alternative.
+- **Filters and toolbars:** collapse into a "Filters" button that opens a sheet on mobile.
+
+## Touch and spacing
+
+- On touch screens (`pointer: coarse`), buttons, inputs, and toggles are at least 44px tall and wide (global rule in `styles/globals.css`). Do not override it. Leave at least 8px between adjacent tap targets.
+- Inputs use 16px text on mobile (`text-base md:text-sm`, already in shadcn's `Input`) so iOS does not zoom.
+- Never rely on hover alone: anything shown on hover must also be reachable by tap and keyboard.
+- Spacing uses Tailwind's 4px scale. Page padding `px-4 md:px-6 lg:px-8`; gaps between sections `gap-6`; inside cards `gap-4`.
+- Type scale: page title `text-2xl font-semibold tracking-tight`, section title `text-lg font-semibold`, body `text-sm`, captions and meta `text-xs text-muted-foreground`. One page title (`h1`) per page.
 
 - When a design choice is not covered here (layout, wording, which fields to show), ask the owner.
 

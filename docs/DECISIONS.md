@@ -2,10 +2,19 @@
 
 Newest first. Status: **Accepted** | **Proposed** | **Superseded** | **Unresolved**.
 
+## ADR-018 — Light and dark themes, responsive conventions
+
+- **Status:** Accepted (owner decision, 2026-10-11)
+- **Decision:** Light is the default; users can choose Light, Dark, or System (follows the device). Built in-house following Next.js's "preventing flash before hydration" guide (a small `<head>` script plus a cookie), not the `next-themes` package, to avoid a dependency for ~100 lines of code. The `.dark` class matches shadcn's convention so its components switch automatically.
+- **Persistence:** the `zayto-theme` cookie (one year, this device) for now. Once accounts exist (Better Auth), also save it to the user's profile so it follows them between devices; the cookie stays as the fast first-paint source.
+- **Tokens:** every semantic token has a light and dark value in `styles/globals.css`, including new status colours (success, warning, danger, info, each with solid and soft forms). `styles/theme-contrast.test.ts` checks 33 text/background and control pairs in both themes against WCAG 2.2 AA on every `npm run test`. Dark mode uses a lighter indigo (`#8B84F2`) with navy text on buttons, because brand indigo is unreadable on navy.
+- **Responsive and touch:** Tailwind's default breakpoints; slide-out navigation below 1024px, collapsible sidebar above; rules for tables, forms, modals, and dashboards in `.cursor/rules/ui-design.mdc`. On touch screens, controls are at least 44px (global CSS rule keyed on `pointer: coarse`, so desktop stays compact).
+- **Date:** 2026-10-11
+
 ## ADR-017 — Brand colours and typography as design tokens
 
 - **Status:** Accepted (owner decision, 2026-10-11); colours are temporary and expected to change
-- **Decision:** All brand colours live once in `styles/globals.css` as `--brand-*` variables, mapped to shadcn's semantic tokens (`primary`, `background`, `sidebar`, `highlight`, and so on). Components use only the semantic Tailwind classes (`bg-primary`, `bg-sidebar`), never hex values, so a rebrand is a change to one file. Typeface is Inter via `next/font`. Light theme only for now (the unused dark theme was removed).
+- **Decision:** All brand colours live once in `styles/globals.css` as `--brand-*` variables, mapped to shadcn's semantic tokens (`primary`, `background`, `sidebar`, `highlight`, and so on). Components use only the semantic Tailwind classes (`bg-primary`, `bg-sidebar`), never hex values, so a rebrand is a change to one file. Typeface is Inter via `next/font`. Light and dark values for every token are in ADR-018.
 - **Palette:** midnight navy `#161D35` (sidebar, text), indigo `#6258E8` (buttons, active states, focus), amber `#F2AD54` (restrained accents), background `#F7F8FC`, borders `#DCE1EB`, cards `#FFFFFF`. No pink, teal, gradients or traditional estate-agency styling.
 - **Accessibility adjustments:** amber is too light to be text on light backgrounds (1.9:1), so it is used only as a fill, with midnight text on it (8.6:1). `#DCE1EB` is kept for dividers and card edges, but input borders use a darker `#7F889E` (3.55:1 on white) so form fields meet the 3:1 rule for controls. Muted text is `#586079` (5.9:1).
 - **Date:** 2026-10-11
@@ -49,7 +58,7 @@ Newest first. Status: **Accepted** | **Proposed** | **Superseded** | **Unresolve
 
 ## ADR-011 — Next.js upgrade path
 
-- **Status:** Accepted and done (2026-10-11): now Next.js 16.4.0, React 19.3.0. Next.js advisories cleared. Remaining `npm audit` items are in the shadcn CLI's file-matching dependency (`braces`), development-time only, with no non-breaking fix yet.
+- **Status:** Accepted and done (2026-10-11): now Next.js 16.4.0, React 19.3.0. Next.js advisories cleared. Remaining `npm audit` items are development-time only: `braces` (shadcn CLI) and `mysql2` / `deepmerge-ts` (Prisma CLI). None of these ship in the deployed app. Revisit when those tools ship updates.
 - **Context:** Installed Next.js is 15.4.1. `npm audit` reports high and critical advisories. The current release is 16.4.0; 15.5.27 is the 15.x security backport.
 - **Decision:** Commit a checkpoint, upgrade to 15.5.27 and verify, then upgrade to 16 with the official codemod (`npx @next/codemod upgrade latest`) and verify. Node 22 meets Next 16's minimum (20.9). Patch before any public hosting.
 - **Date:** 2026-10-11
@@ -72,7 +81,7 @@ Newest first. Status: **Accepted** | **Proposed** | **Superseded** | **Unresolve
 
 - **Status:** Unresolved
 - **Need:** Private documents (IDs, tenancy PDFs). Not public `/public` files.
-- **Lean:** S3-compatible bucket in the UK/EU, short-lived signed URLs.
+- **Lean:** Supabase Storage in the same London project, private buckets, short-lived signed URLs (see ADR-016). Confirm before the first document upload.
 - **Date:** 2026-10-11
 
 ## ADR-007 — Authentication provider
@@ -87,7 +96,7 @@ Newest first. Status: **Accepted** | **Proposed** | **Superseded** | **Unresolve
 
 - **Status:** Proposed
 - **Context:** Application `organisationId` filters can be missed.
-- **Decision lean:** Add PostgreSQL RLS as defence in depth after basic Prisma scoping works. Not required for the first schema spike.
+- **Decision lean:** Add PostgreSQL RLS as defence in depth after basic Prisma scoping works. Not required for the first schema spike. The app already connects as `zayto_app` (cannot bypass RLS), so policies will apply when added.
 - **Date:** 2026-10-11
 
 ## ADR-005 — Multi-tenant isolation

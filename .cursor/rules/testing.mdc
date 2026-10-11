@@ -6,7 +6,7 @@ alwaysApply: false
 
 # Testing and quality
 
-Installed: ESLint (`npm run lint`), Prettier (`npm run format`), Vitest for unit/integration tests (`npm run test`, files `*.test.ts`), Playwright for browser tests (`npm run test:e2e`, files in `e2e/`). Run `npm run check` before saying work is done, plus `test:e2e` for UI changes.
+Installed: ESLint (`npm run lint`), Prettier (`npm run format`), Vitest for unit/integration tests (`npm run test`, files `*.test.ts`), Playwright for browser tests (`npm run test:e2e`, files in `e2e/`). Run `npm run check` before saying work is done, plus `test:e2e` for UI changes. Theme contrast pairs are checked in `styles/theme-contrast.test.ts` on every `npm run test`; theme switching is covered in `e2e/theme.spec.ts`.
 
 - **Unit** — domain rules and permission helpers.
 - **Integration** — data access and transactions against a test database, never a shared or production one.

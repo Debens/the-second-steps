@@ -9,6 +9,17 @@
   --font-sans: var(--font-inter);
   --color-highlight: var(--highlight);
   --color-highlight-foreground: var(--highlight-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-warning-soft: var(--warning-soft);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-destructive-soft: var(--destructive-soft);
+  --color-info: var(--info);
+  --color-info-foreground: var(--info-foreground);
+  --color-info-soft: var(--info-soft);
   --color-sidebar-muted-foreground: var(--sidebar-muted-foreground);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
@@ -52,32 +63,48 @@
 
 /*
  * Zayto brand palette (temporary). Change brand colours here only;
- * everything below maps these onto shadcn's semantic tokens.
- * Contrast notes (WCAG 2.2):
- *   indigo on white 5.2:1, midnight on canvas 15.7:1, amber behind midnight 8.6:1.
- *   Amber fails as text on light backgrounds (1.9:1): use it only as a fill.
- *   --brand-border fails 3:1 against white, so form controls use --brand-control-border.
+ * the light (:root) and dark (.dark) blocks below map them onto semantic tokens.
+ * Contrast pairs are enforced by styles/theme-contrast.test.ts (npm run test).
+ * Amber fails as text on light backgrounds: use it only as a fill.
+ * Indigo #6258e8 is too dark to read on navy, so dark mode uses --brand-indigo-light.
  */
 :root {
   --brand-midnight: #161d35;
   --brand-midnight-raised: #222a47;
   --brand-midnight-line: #2d3556;
+  --brand-night: #0e1324;
+  --brand-night-deep: #0a0e1b;
   --brand-indigo: #6258e8;
-  --brand-indigo-soft: #efeefd;
+  --brand-indigo-light: #8b84f2;
+  --brand-indigo-soft: #f5f4fe;
+  --brand-indigo-night: #1f2348;
   --brand-amber: #f2ad54;
   --brand-canvas: #f7f8fc;
   --brand-border: #dce1eb;
   --brand-control-border: #7f889e;
+  --brand-control-border-dark: #6b7491;
   --brand-surface: #ffffff;
   --brand-subtle: #eef1f7;
   --brand-text: #161d35;
   --brand-text-muted: #586079;
   --brand-text-on-dark: #f7f8fc;
   --brand-text-on-dark-muted: #a7aec4;
-  --brand-danger: #d92d20;
+  --brand-success: #067647;
+  --brand-success-light: #47cd89;
+  --brand-success-soft: #ecfdf3;
+  --brand-success-night: #0f2a20;
+  --brand-warning: #b54708;
+  --brand-warning-light: #fdb022;
+  --brand-warning-soft: #fffaeb;
+  --brand-warning-night: #2e2410;
+  --brand-danger: #b42318;
+  --brand-danger-light: #f97066;
+  --brand-danger-soft: #fef3f2;
+  --brand-danger-night: #3a1a1e;
 }
 
 :root {
+  color-scheme: light;
   --background: var(--brand-canvas);
   --foreground: var(--brand-text);
   --card: var(--brand-surface);
@@ -94,14 +121,25 @@
   --accent-foreground: var(--brand-text);
   --highlight: var(--brand-amber);
   --highlight-foreground: var(--brand-midnight);
+  --success: var(--brand-success);
+  --success-foreground: #ffffff;
+  --success-soft: var(--brand-success-soft);
+  --warning: var(--brand-warning);
+  --warning-foreground: #ffffff;
+  --warning-soft: var(--brand-warning-soft);
   --destructive: var(--brand-danger);
+  --destructive-foreground: #ffffff;
+  --destructive-soft: var(--brand-danger-soft);
+  --info: var(--brand-indigo);
+  --info-foreground: #ffffff;
+  --info-soft: var(--brand-indigo-soft);
   --border: var(--brand-border);
   --input: var(--brand-control-border);
   --ring: var(--brand-indigo);
   --chart-1: var(--brand-indigo);
   --chart-2: var(--brand-amber);
   --chart-3: var(--brand-midnight);
-  --chart-4: #9a94f1;
+  --chart-4: var(--brand-indigo-light);
   --chart-5: var(--brand-control-border);
   --radius: 0.625rem;
   --sidebar: var(--brand-midnight);
@@ -112,7 +150,56 @@
   --sidebar-accent: var(--brand-midnight-raised);
   --sidebar-accent-foreground: var(--brand-text-on-dark);
   --sidebar-border: var(--brand-midnight-line);
-  --sidebar-ring: var(--brand-indigo);
+  --sidebar-ring: var(--brand-indigo-light);
+}
+
+.dark {
+  color-scheme: dark;
+  --background: var(--brand-night);
+  --foreground: var(--brand-text-on-dark);
+  --card: var(--brand-midnight);
+  --card-foreground: var(--brand-text-on-dark);
+  --popover: var(--brand-midnight);
+  --popover-foreground: var(--brand-text-on-dark);
+  --primary: var(--brand-indigo-light);
+  --primary-foreground: var(--brand-midnight);
+  --secondary: var(--brand-midnight-raised);
+  --secondary-foreground: var(--brand-text-on-dark);
+  --muted: var(--brand-midnight-raised);
+  --muted-foreground: var(--brand-text-on-dark-muted);
+  --accent: var(--brand-indigo-night);
+  --accent-foreground: var(--brand-text-on-dark);
+  --highlight: var(--brand-amber);
+  --highlight-foreground: var(--brand-midnight);
+  --success: var(--brand-success-light);
+  --success-foreground: var(--brand-midnight);
+  --success-soft: var(--brand-success-night);
+  --warning: var(--brand-warning-light);
+  --warning-foreground: var(--brand-midnight);
+  --warning-soft: var(--brand-warning-night);
+  --destructive: var(--brand-danger-light);
+  --destructive-foreground: var(--brand-midnight);
+  --destructive-soft: var(--brand-danger-night);
+  --info: var(--brand-indigo-light);
+  --info-foreground: var(--brand-midnight);
+  --info-soft: var(--brand-indigo-night);
+  --border: var(--brand-midnight-line);
+  --input: var(--brand-control-border-dark);
+  --ring: var(--brand-indigo-light);
+  --chart-1: var(--brand-indigo-light);
+  --chart-2: var(--brand-amber);
+  --chart-3: var(--brand-text-on-dark);
+  --chart-4: var(--brand-indigo);
+  --chart-5: var(--brand-control-border-dark);
+  --sidebar: var(--brand-night-deep);
+  --sidebar-foreground: var(--brand-text-on-dark);
+  --sidebar-muted-foreground: var(--brand-text-on-dark-muted);
+  --sidebar-primary: var(--brand-indigo-light);
+  --sidebar-primary-foreground: var(--brand-midnight);
+  --sidebar-accent: var(--brand-midnight);
+  --sidebar-accent-foreground: var(--brand-text-on-dark);
+  --sidebar-border: var(--brand-midnight-raised);
+  --sidebar-ring: var(--brand-indigo-light);
 }
 
 @layer base {
@@ -124,5 +211,21 @@
   }
   html {
     @apply font-sans;
+  }
+}
+
+/* Touch screens: controls grow to at least 44px so they are easy to tap. Desktop stays compact. */
+@media (pointer: coarse) {
+  :where(
+    [data-slot="button"],
+    [data-slot="input"],
+    [data-slot="toggle-group-item"],
+    select,
+    textarea
+  ) {
+    min-height: 2.75rem;
+  }
+  :where([data-slot="button"], [data-slot="toggle-group-item"]) {
+    min-width: 2.75rem;
   }
 }

@@ -5,7 +5,9 @@ alwaysApply: true
 
 # Security
 
-No auth provider is installed. Until it is, do not store real landlord, tenant, or financial data.
+No auth provider is installed. Login is visual only. Until Better Auth is in and the database is on a paid plan with backups, do not store real landlord, tenant, or financial data.
+
+**Current posture (2026-10-11):** the app connects as `zayto_app` over verified TLS (ADR-016). Supabase's browser Data API is off. There are no CRM tables yet. The `zayto-theme` cookie is a display preference only — not authentication.
 
 - Auth is **Better Auth** with users in our PostgreSQL, MFA required for all staff, invite-only agencies (ADR-007, ADR-015). Do not roll a custom password handler.
 - Personal data stays in the **UK** (database, files, providers). Do not pick a non-UK region or provider without owner approval.

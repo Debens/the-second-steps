@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { ZaytoWordmark } from "@/components/brand/zayto-wordmark";
+import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { LoginForm } from "./login-form";
 
 export const metadata: Metadata = {
@@ -24,7 +25,8 @@ export default function LoginPage() {
         </p>
       </aside>
 
-      <main className="flex items-center justify-center bg-background p-6">
+      <main className="relative flex items-center justify-center bg-background px-4 pt-20 pb-10 sm:px-6">
+        <ThemeToggle className="absolute top-4 right-4" />
         <div className="w-full max-w-sm space-y-8">
           <ZaytoWordmark className="lg:hidden" />
           <LoginForm />
