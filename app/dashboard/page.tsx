@@ -25,7 +25,7 @@ export default async function DashboardPage() {
         <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
       </div>
 
-      <div className="flex gap-3 rounded-lg bg-warning-soft p-4 text-sm text-warning">
+      <div className="flex gap-3 rounded-lg bg-info-soft p-4 text-sm text-info">
         <ShieldCheck aria-hidden="true" className="mt-0.5 size-5 shrink-0" />
         <div>
           <p className="font-medium">Safe sandbox mode</p>

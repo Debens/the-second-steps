@@ -64,7 +64,12 @@ export function LoginForm({ invalidLink = false }: { invalidLink?: boolean }) {
             <Button type="submit" className="h-10 w-full" disabled={pending}>
               {pending ? "Sending link…" : "Email me a sign-in link"}
             </Button>
-            <Button type="button" variant="outline" className="h-10" disabled>
+            <Button
+              type="button"
+              variant="outline"
+              className="h-10 disabled:bg-muted disabled:text-muted-foreground disabled:opacity-100"
+              disabled
+            >
               Continue with Google (coming next)
             </Button>
             <p className="text-center text-xs text-muted-foreground">

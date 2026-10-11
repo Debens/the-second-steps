@@ -21,7 +21,7 @@ test("login form explains the local magic-link flow", async ({ page }) => {
   await expect(page.getByText(/Sandbox access is invite-only/)).toBeVisible();
 });
 
-test("keyboard users see an indigo focus outline on the email field", async ({
+test("keyboard users see a blue focus outline on the email field", async ({
   page,
 }) => {
   await page.goto("/login");
@@ -32,5 +32,5 @@ test("keyboard users see an indigo focus outline on the email field", async ({
   await submit.focus();
   await page.keyboard.press("Shift+Tab");
   await expect(email).toBeFocused();
-  await expect(email).toHaveCSS("border-color", "rgb(98, 88, 232)");
+  await expect(email).toHaveCSS("border-color", "rgb(29, 78, 216)");
 });

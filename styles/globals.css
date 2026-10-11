@@ -62,45 +62,41 @@
 }
 
 /*
- * Zayto brand palette (temporary). Change brand colours here only;
- * the light (:root) and dark (.dark) blocks below map them onto semantic tokens.
- * Contrast pairs are enforced by styles/theme-contrast.test.ts (npm run test).
- * Amber fails as text on light backgrounds: use it only as a fill.
- * Indigo #6258e8 is too dark to read on navy, so dark mode uses --brand-indigo-light.
+ * Zayto brand palette. Change brand colours here only; the light (:root) and
+ * dark (.dark) blocks below map them onto semantic tokens. Contrast pairs are
+ * enforced by styles/theme-contrast.test.ts (npm run test).
  */
 :root {
-  --brand-midnight: #161d35;
-  --brand-midnight-raised: #222a47;
-  --brand-midnight-line: #2d3556;
-  --brand-night: #0e1324;
-  --brand-night-deep: #0a0e1b;
-  --brand-indigo: #6258e8;
-  --brand-indigo-light: #8b84f2;
-  --brand-indigo-soft: #f5f4fe;
-  --brand-indigo-night: #1f2348;
-  --brand-amber: #f2ad54;
-  --brand-canvas: #f7f8fc;
-  --brand-border: #dce1eb;
-  --brand-control-border: #7f889e;
-  --brand-control-border-dark: #6b7491;
+  --brand-black: #0b0d10;
+  --brand-charcoal: #15181d;
+  --brand-charcoal-raised: #20242b;
+  --brand-charcoal-line: #343a44;
+  --brand-blue: #1d4ed8;
+  --brand-blue-light: #60a5fa;
+  --brand-blue-soft: #eaf1ff;
+  --brand-blue-night: #12233f;
+  --brand-canvas: #f4f5f7;
+  --brand-border: #d7dbe2;
+  --brand-control-border: #737b89;
+  --brand-control-border-dark: #6b7280;
   --brand-surface: #ffffff;
-  --brand-subtle: #eef1f7;
-  --brand-text: #161d35;
-  --brand-text-muted: #586079;
-  --brand-text-on-dark: #f7f8fc;
-  --brand-text-on-dark-muted: #a7aec4;
+  --brand-subtle: #e9ebef;
+  --brand-text: #17191d;
+  --brand-text-muted: #59616d;
+  --brand-text-on-dark: #f5f7fa;
+  --brand-text-on-dark-muted: #aeb5c0;
   --brand-success: #067647;
-  --brand-success-light: #47cd89;
+  --brand-success-light: #4ade80;
   --brand-success-soft: #ecfdf3;
-  --brand-success-night: #0f2a20;
+  --brand-success-night: #10251a;
   --brand-warning: #b54708;
-  --brand-warning-light: #fdb022;
+  --brand-warning-light: #fbbf24;
   --brand-warning-soft: #fffaeb;
-  --brand-warning-night: #2e2410;
+  --brand-warning-night: #2a210f;
   --brand-danger: #b42318;
-  --brand-danger-light: #f97066;
+  --brand-danger-light: #fb7185;
   --brand-danger-soft: #fef3f2;
-  --brand-danger-night: #3a1a1e;
+  --brand-danger-night: #31151b;
 }
 
 :root {
@@ -111,16 +107,16 @@
   --card-foreground: var(--brand-text);
   --popover: var(--brand-surface);
   --popover-foreground: var(--brand-text);
-  --primary: var(--brand-indigo);
+  --primary: var(--brand-blue);
   --primary-foreground: #ffffff;
   --secondary: var(--brand-subtle);
   --secondary-foreground: var(--brand-text);
   --muted: var(--brand-subtle);
   --muted-foreground: var(--brand-text-muted);
-  --accent: var(--brand-indigo-soft);
+  --accent: var(--brand-blue-soft);
   --accent-foreground: var(--brand-text);
-  --highlight: var(--brand-amber);
-  --highlight-foreground: var(--brand-midnight);
+  --highlight: var(--brand-blue);
+  --highlight-foreground: #ffffff;
   --success: var(--brand-success);
   --success-foreground: #ffffff;
   --success-soft: var(--brand-success-soft);
@@ -130,76 +126,76 @@
   --destructive: var(--brand-danger);
   --destructive-foreground: #ffffff;
   --destructive-soft: var(--brand-danger-soft);
-  --info: var(--brand-indigo);
+  --info: var(--brand-blue);
   --info-foreground: #ffffff;
-  --info-soft: var(--brand-indigo-soft);
+  --info-soft: var(--brand-blue-soft);
   --border: var(--brand-border);
   --input: var(--brand-control-border);
-  --ring: var(--brand-indigo);
-  --chart-1: var(--brand-indigo);
-  --chart-2: var(--brand-amber);
-  --chart-3: var(--brand-midnight);
-  --chart-4: var(--brand-indigo-light);
+  --ring: var(--brand-blue);
+  --chart-1: var(--brand-blue);
+  --chart-2: var(--brand-success);
+  --chart-3: var(--brand-warning);
+  --chart-4: var(--brand-danger);
   --chart-5: var(--brand-control-border);
   --radius: 0.625rem;
-  --sidebar: var(--brand-midnight);
+  --sidebar: var(--brand-charcoal);
   --sidebar-foreground: var(--brand-text-on-dark);
   --sidebar-muted-foreground: var(--brand-text-on-dark-muted);
-  --sidebar-primary: var(--brand-indigo);
+  --sidebar-primary: var(--brand-blue);
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: var(--brand-midnight-raised);
+  --sidebar-accent: var(--brand-charcoal-raised);
   --sidebar-accent-foreground: var(--brand-text-on-dark);
-  --sidebar-border: var(--brand-midnight-line);
-  --sidebar-ring: var(--brand-indigo-light);
+  --sidebar-border: var(--brand-charcoal-line);
+  --sidebar-ring: var(--brand-blue-light);
 }
 
 .dark {
   color-scheme: dark;
-  --background: var(--brand-night);
+  --background: var(--brand-black);
   --foreground: var(--brand-text-on-dark);
-  --card: var(--brand-midnight);
+  --card: var(--brand-charcoal);
   --card-foreground: var(--brand-text-on-dark);
-  --popover: var(--brand-midnight);
+  --popover: var(--brand-charcoal-raised);
   --popover-foreground: var(--brand-text-on-dark);
-  --primary: var(--brand-indigo-light);
-  --primary-foreground: var(--brand-midnight);
-  --secondary: var(--brand-midnight-raised);
+  --primary: var(--brand-blue-light);
+  --primary-foreground: var(--brand-black);
+  --secondary: var(--brand-charcoal-raised);
   --secondary-foreground: var(--brand-text-on-dark);
-  --muted: var(--brand-midnight-raised);
+  --muted: var(--brand-charcoal-raised);
   --muted-foreground: var(--brand-text-on-dark-muted);
-  --accent: var(--brand-indigo-night);
+  --accent: var(--brand-blue-night);
   --accent-foreground: var(--brand-text-on-dark);
-  --highlight: var(--brand-amber);
-  --highlight-foreground: var(--brand-midnight);
+  --highlight: var(--brand-blue-light);
+  --highlight-foreground: var(--brand-black);
   --success: var(--brand-success-light);
-  --success-foreground: var(--brand-midnight);
+  --success-foreground: var(--brand-black);
   --success-soft: var(--brand-success-night);
   --warning: var(--brand-warning-light);
-  --warning-foreground: var(--brand-midnight);
+  --warning-foreground: var(--brand-black);
   --warning-soft: var(--brand-warning-night);
   --destructive: var(--brand-danger-light);
-  --destructive-foreground: var(--brand-midnight);
+  --destructive-foreground: var(--brand-black);
   --destructive-soft: var(--brand-danger-night);
-  --info: var(--brand-indigo-light);
-  --info-foreground: var(--brand-midnight);
-  --info-soft: var(--brand-indigo-night);
-  --border: var(--brand-midnight-line);
+  --info: var(--brand-blue-light);
+  --info-foreground: var(--brand-black);
+  --info-soft: var(--brand-blue-night);
+  --border: var(--brand-charcoal-line);
   --input: var(--brand-control-border-dark);
-  --ring: var(--brand-indigo-light);
-  --chart-1: var(--brand-indigo-light);
-  --chart-2: var(--brand-amber);
+  --ring: var(--brand-blue-light);
+  --chart-1: var(--brand-blue-light);
+  --chart-2: var(--brand-success-light);
   --chart-3: var(--brand-text-on-dark);
-  --chart-4: var(--brand-indigo);
+  --chart-4: var(--brand-danger-light);
   --chart-5: var(--brand-control-border-dark);
-  --sidebar: var(--brand-night-deep);
+  --sidebar: var(--brand-black);
   --sidebar-foreground: var(--brand-text-on-dark);
   --sidebar-muted-foreground: var(--brand-text-on-dark-muted);
-  --sidebar-primary: var(--brand-indigo-light);
-  --sidebar-primary-foreground: var(--brand-midnight);
-  --sidebar-accent: var(--brand-midnight);
+  --sidebar-primary: var(--brand-blue-light);
+  --sidebar-primary-foreground: var(--brand-black);
+  --sidebar-accent: var(--brand-charcoal-raised);
   --sidebar-accent-foreground: var(--brand-text-on-dark);
-  --sidebar-border: var(--brand-midnight-raised);
-  --sidebar-ring: var(--brand-indigo-light);
+  --sidebar-border: var(--brand-charcoal-line);
+  --sidebar-ring: var(--brand-blue-light);
 }
 
 @layer base {
