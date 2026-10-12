@@ -10,9 +10,9 @@ The original README described an “AI-powered tenant referencing platform”. R
 
 ## Who it is for (confirmed)
 
-Primary users: **agency staff** (negotiators, property managers, accounts, branch and company admins).
+Zayto serves several first-class user groups through one identity: agency staff, independent landlords, invited landlords, applicants, tenants, and guarantors. A person may act in several capacities across different workspaces and relationships without creating separate accounts.
 
-Later, **landlord** and **tenant/applicant** portals may be needed. That is **proposed**, not in the proof of concept.
+Applicants, tenants, and guarantors have secure personal portal journeys rather than existing only as agency CRM records. Independent landlords can own a workspace, manage property, and purchase standalone services without an agency CRM subscription. Invited landlords see only information a managing agency explicitly shares.
 
 ## Proof of concept vs commercial product (confirmed)
 
@@ -41,15 +41,28 @@ We will **not** implement every lifecycle area in the PoC. See `ROADMAP.md`.
 
 ## Principles (confirmed)
 
-1. **Agency isolation** — one organisation must never see another’s data.
+1. **Workspace isolation** — one agency or landlord workspace must never see another's data.
 2. **Truth in the database** — the CRM is the system of record; portals and providers are edges.
 3. **Lettings first** — sales must not distort the first data model, but people and properties stay shared.
 4. **Honest software** — do not display a “pass” or “filed” state unless a real provider or user action happened.
 5. **UK context** — currency GBP, dates and addresses as used in England (and later devolved differences if specified). Scotland/Wales/NI variations are **unresolved**.
+6. **Independent modules** — CRM, pre-tenancy, property management, accounting, referencing, AML, Right to Rent, and other modules can be subscribed to and used without buying unrelated modules.
+7. **One identity, explicit contexts** — business membership and personal participation are separate; access follows the current workspace, relationship, resource, and field.
+8. **Commercial independence** — Zayto does not assume access to Blinc software, data, documents, supplier credentials, or commercial arrangements.
+
+## Commercial model (confirmed shape; details unresolved)
+
+Module access is controlled per workspace and may support free service, subscriptions, versioned plans, trials, add-ons, limits, allowances, and pay-per-use services. Specific tiers, pricing, trial periods, and free allowances are not agreed.
+
+Every action combines workspace entitlement, user permission, and resource/field access. External participants do not consume staff seats by default.
+
+## Native referencing and AML (confirmed)
+
+Referencing and AML are Zayto products, not links to somebody else's portal. Zayto owns the case workflow, user experience, consent, progress, audit, review, and commercial transaction. Approved external specialists may provide data and verification services through adapters. Zayto will not invent statutory, legal, underwriting, or pass/fail rules.
 
 ## Out of scope for now (confirmed)
 
 - Building native mobile apps
 - Fully automated underwriting without a named provider
 - Invented AI features that are not specified
-- Migrating or rewriting the existing login page until we add real authentication
+- Treating an authenticated identity as authorised without workspace, permission, entitlement, and resource checks

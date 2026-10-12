@@ -2,7 +2,7 @@
 
 Zayto is a UK residential lettings and property management CRM for letting agencies. Residential sales will be added later.
 
-**Status:** proof of concept. The login page is visual only (light, dark and system themes). PostgreSQL on Supabase (London) is connected via Prisma; there are no tables and no real sign-in yet. See `docs/ROADMAP.md`.
+**Status:** proof of concept. Local Supabase magic-link authentication and the protected dashboard shell work. PostgreSQL/Prisma connection plumbing exists, but there are no CRM tables, workspaces, permissions, entitlements, MFA enforcement, or product modules yet. Do not use real customer data. See `docs/ROADMAP.md`.
 
 ## Running it locally
 

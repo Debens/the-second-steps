@@ -26,7 +26,7 @@ Sanity-check significant decisions before implementing them, including accepted 
 - Checks: `npm run check` (typecheck, ESLint, Prettier, Vitest), `npm run test:e2e` (Playwright), `npm run build`
 
 - Database: PostgreSQL on Supabase (London) via Prisma 7.10 (`prisma/`, `core/db/`). No CRM tables yet. App connects as `zayto_app` over verified TLS (ADR-016).
-- Authentication: Supabase Auth with server-verified cookie sessions. Local magic links are delivered to Mailpit for allow-listed fictional sandbox users. Organisation membership, required MFA, Google sign-in, rate limiting, and production email delivery are not implemented yet (ADR-019).
+- Authentication: Supabase Auth with server-verified cookie sessions. Local magic links are delivered to Mailpit for allow-listed fictional sandbox users. Workspaces, memberships, participations, entitlements, required MFA, Google sign-in, rate limiting, and production email delivery are not implemented yet (ADR-019 to ADR-023).
 
 Queues are **not installed**.
 
@@ -38,7 +38,7 @@ The login page (`app/login/`) and protected dashboard shell (`app/dashboard/`) a
 - Never overwrite, reset, or discard uncommitted work.
 - Never claim a feature works without running the checks that exist.
 - Never assume an external API, webhook, or portal is available.
-- Every query and mutation must be scoped to the current **organisation** (agency isolation).
+- Every tenant-owned query and mutation must be scoped to the verified current **workspace**. Participant access must also be limited to the permitted resource and fields (ADR-020 to ADR-023).
 - Distinguish **done**, **tested**, and **unverified**.
 
 ## Where to look

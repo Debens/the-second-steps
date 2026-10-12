@@ -2,11 +2,50 @@
 
 Newest first. Status: **Accepted** | **Proposed** | **Superseded** | **Unresolved**.
 
+## ADR-024 — Commercial independence from Blinc
+
+- **Status:** Accepted (owner requirement, 2026-10-12)
+- **Decision:** Zayto is an independent product. It must not assume access to Blinc software, data, documents, intellectual property, supplier credentials, commercial terms, or integrations. Any imported artefact needs documented provenance and permission. Zayto contracts with its own providers, or supports customer-contracted providers through approved adapters.
+- **Date:** 2026-10-12
+
+## ADR-023 — Tenant isolation uses application scoping and PostgreSQL RLS from the first slice
+
+- **Status:** Accepted (owner decision, 2026-10-12). Supersedes ADR-006's proposed timing.
+- **Decision:** Every tenant-owned row is scoped by `workspaceId`. Server-side application code must derive the active workspace from verified access and filter every query and mutation. PostgreSQL Row Level Security is added with the first workspace-owned records as defence in depth, not deferred until later scale work and not used as a substitute for application checks.
+- **Testing:** Each repository and mutation needs tests proving that another workspace is denied. Participant-facing data also needs tests proving that joint applicants and other parties cannot read one another's private fields or evidence.
+- **Date:** 2026-10-12
+
+## ADR-022 — Identity, membership, participation, and personal portal
+
+- **Status:** Accepted (owner decision, 2026-10-12)
+- **Decision:** One global login identity may operate in many capacities. Business operators use workspace-specific `Membership`s. Applicants, tenants, guarantors, and invited landlords use resource-specific `Participation`s and access grants rather than broad workspace membership. Roles are never global customer roles.
+- **Personal data:** A small user-controlled personal profile may reduce repeated entry. Each workspace keeps its own operational person record and history. Information is shared into a case explicitly; sensitive evidence and results remain case-scoped. Joint applicants' and guarantors' financial, identity, and referencing information is private by default.
+- **Portal:** One personal portal may aggregate the signed-in user's authorised applications, tenancies, guarantees, and landlord relationships across workspaces. It must evaluate each participation separately and must not expose one workspace or relationship to another.
+- **Commercial treatment:** External participants do not consume staff seats. Plans may instead meter cases, properties, tenancies, storage, messages, or chargeable provider transactions.
+- **Date:** 2026-10-12
+
+## ADR-021 — Independently usable modules and three-layer access
+
+- **Status:** Accepted (owner decision, 2026-10-12)
+- **Decision:** Keep one modular monolith, but make CRM, pre-tenancy, property management, accounting, referencing, AML, Right to Rent, and future modules independently entitled and usable. Standalone services must not require an unrelated CRM subscription or depend on another optional module's internals.
+- **Access:** Every protected operation checks three separate questions on the server: (1) workspace entitlement or allowance, (2) the user's permission, and (3) access to the specific resource and fields. Navigation visibility is not enforcement.
+- **Commercial model:** Plans, prices, free allowances, trials, add-ons, usage limits, and pay-per-use terms remain unresolved. They will be represented through versioned catalogue and entitlement concepts rather than hard-coded plan names.
+- **Native checks:** Referencing and AML are Zayto-owned products and workflows. External specialists may supply data and verification services through adapters. Zayto will not invent legal, compliance, or underwriting rules.
+- **Date:** 2026-10-12
+
+## ADR-020 — Workspace is the tenant and commercial boundary
+
+- **Status:** Accepted (owner decision, 2026-10-12). Supersedes ADR-005's organisation-only boundary.
+- **Decision:** `Workspace` is the hard boundary for tenant data, subscriptions, entitlements, usage, and business permissions. Initial workspace types are agency, independent landlord, and internal platform. An organisation may own a workspace, while an individual landlord may own one without being modelled as a company.
+- **Identity:** One identity may hold different memberships and participations across many workspaces. Selecting a business workspace is explicit; object identifiers never select or prove workspace access.
+- **Administration:** Platform administration is separate from customer membership and grants no standing access to customer data. Support access will require separately approved controls and audit.
+- **Date:** 2026-10-12
+
 ## ADR-019 — Authentication provider: Supabase Auth
 
 - **Status:** Accepted (owner decision, 2026-10-11). Supersedes ADR-007.
 - **Decision:** Use **Supabase Auth** in the existing London project for identities, sessions, passwordless email sign-in, Google sign-in, invitations, and MFA. Staff remain invite-only and must reach the required MFA assurance level before accessing CRM data (ADR-015).
-- **Application tenancy:** Supabase Auth identifies the person but does not model Zayto's customer agencies. Zayto will own its `Organisation`, `Membership`, `Branch`, and role/permission records in Prisma. Every CRM query still derives the organisation from the authenticated membership and scopes by `organisationId`.
+- **Application tenancy:** Supabase Auth identifies the person but does not model Zayto workspaces or access. ADR-020 and ADR-022 now define Zayto-owned workspaces, memberships, participations, and permissions. Supabase metadata must not be the authority for customer roles or tenant access.
 - **Data access:** Prisma remains the server-side data layer for CRM records. The browser-facing Supabase Data API stays off for CRM data. Supabase browser credentials may be used only as documented for Auth; secret/service-role credentials remain server-only.
 - **Why changed:** Supabase Auth already provides managed magic links, Google OAuth, invitations, sessions, and MFA assurance levels in the service we have selected. This removes duplicated authentication infrastructure and avoids custom MFA gating required by Better Auth for magic-link and social sign-ins.
 - **Development email:** In the local proof of concept only, a server-side Supabase admin call generates a one-time hashed-token link without asking Supabase to send it. Zayto delivers that link to local Mailpit over its HTTP API. Only addresses in the explicit `SANDBOX_AUTH_EMAILS` allow-list can create a sandbox identity, and all addresses receive the same screen response. This adapter is disabled in production and must be replaced by an approved UK-compatible email provider before deployment.
@@ -43,8 +82,8 @@ Newest first. Status: **Accepted** | **Proposed** | **Superseded** | **Unresolve
 ## ADR-015 — Data residency, MFA, and agency onboarding
 
 - **Status:** Accepted (owner decision, 2026-10-11)
-- **Decision:** All agency and personal data is stored in the **UK only** (London region) for the database, file storage, and any provider that holds personal data. Staff **must** use two-step login (MFA). Agencies are **invite-only** for the proof of concept: the owner creates each organisation; there is no public sign-up.
-- **Deferred (owner: decide later):** whether one login may belong to several agencies. Design so membership is a separate table either way; do not block it in the schema.
+- **Decision:** All agency and personal data is stored in the **UK only** (London region) for the database, file storage, and any provider that holds personal data. Staff **must** use two-step login (MFA). Agencies are **invite-only** for the proof of concept: the owner creates each agency workspace; there is no public agency sign-up.
+- **Updated by ADR-020 and ADR-022:** one identity may belong to several workspaces and participate in cases across several organisations. Whether independent landlords may self-register for a free or paid workspace remains unresolved.
 - **Date:** 2026-10-11
 
 ## ADR-014 — Owner communication and ask-first working
@@ -105,14 +144,14 @@ Newest first. Status: **Accepted** | **Proposed** | **Superseded** | **Unresolve
 
 ## ADR-006 — Row Level Security
 
-- **Status:** Proposed
+- **Status:** Superseded by ADR-023 (timing confirmed)
 - **Context:** Application `organisationId` filters can be missed.
 - **Decision lean:** Add PostgreSQL RLS as defence in depth after basic Prisma scoping works. Not required for the first schema spike. The app already connects as `zayto_app` (cannot bypass RLS), so policies will apply when added.
 - **Date:** 2026-10-11
 
 ## ADR-005 — Multi-tenant isolation
 
-- **Status:** Accepted (design); not implemented
+- **Status:** Superseded by ADR-020
 - **Decision:** Shared PostgreSQL, `organisationId` on tenant data, shared-schema. Not a database-per-agency for v1.
 - **Why:** Simpler operations for a PoC and early commercial product. Revisit only if a customer contract requires physical isolation.
 - **Date:** 2026-10-11

@@ -28,5 +28,5 @@ Keep `"strict": true`. No `any`, no `as any`, no blanket `as` casts to silence e
 function save(data: any) { return db.property.create({ data }) }
 
 // GOOD
-function save(input: CreatePropertyInput, organisationId: OrganisationId) { /* validated input only */ }
+function save(input: CreatePropertyInput, workspaceId: WorkspaceId) { /* validated input only */ }
 ```

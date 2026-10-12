@@ -8,7 +8,7 @@ No third-party SDKs are installed. Do not call live providers unless the user en
 - Put the real vendor behind that interface.
 - Ship a **mock** implementation for local development.
 - Keep secrets on the server.
-- Record every call attempt in an integration audit (when the jobs/audit tables exist).
+- Record every call attempt against its workspace and case in an integration audit (when the jobs/audit tables exist).
 
 ## Capability interfaces (proposed)
 

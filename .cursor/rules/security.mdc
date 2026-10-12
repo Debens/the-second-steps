@@ -5,20 +5,20 @@ alwaysApply: true
 
 # Security
 
-Supabase Auth is installed with a local Mailpit magic-link sandbox. Organisation membership, required MFA, Google sign-in, rate limiting, and production email delivery are not implemented. Until those controls exist and the database is on a paid plan with backups, do not store real landlord, tenant, or financial data.
+Supabase Auth is installed with a local Mailpit magic-link sandbox. Workspaces, memberships, participations, entitlements, role/resource authorisation, required MFA, rate limiting, and production email delivery are not implemented. Until those controls exist and the database has suitable backups, do not store real landlord, applicant, tenant, guarantor, or financial data.
 
 **Current posture (2026-10-11):** the app connects as `zayto_app` over verified TLS (ADR-016). Supabase's browser Data API is off. There are no CRM tables yet. Supabase Auth sessions use cookies; the separate `zayto-theme` cookie is a display preference only.
 
-- Auth is **Supabase Auth** in the existing London project, with MFA required for all staff and invite-only agencies (ADR-019, ADR-015). Prisma remains the data layer for CRM records; do not expose CRM data through the browser Data API or put the Supabase secret/service-role key in client code.
+- Auth is **Supabase Auth** in the existing London project. One identity may hold many workspace memberships and resource participations; Supabase metadata is not the authority for customer roles or tenant access. MFA is required for staff/workspace owners before customer data access. Prisma remains the data layer; do not expose product data through the browser Data API or put the Supabase secret/service-role key in client code.
 - Personal data stays in the **UK** (database, files, providers). Do not pick a non-UK region or provider without owner approval.
 - Authenticate and **authorise on the server** for every query, Server Action, and Route Handler. UI hiding is not security.
-- Enforce organisation isolation first, then role, then resource (property, tenancy, document).
+- Enforce workspace isolation first, then entitlement, permission, resource, and field access. Joint applicants and guarantors have private submissions by default.
 - Least privilege. Default deny. Test that org A cannot read org B IDs in URLs.
 - Validate and encode output. Parameterised Prisma queries only (no string-built SQL).
 - Next.js Server Actions: verify session, CSRF/origin as the framework provides, and that the user may touch the resource.
 - Documents: private object storage, server-issued short-lived URLs, type/size checks, no public buckets for IDs or statements.
 - Secrets only in env / a secret manager. Never `NEXT_PUBLIC_` for private keys. All `.env*` files except `.env.example` are gitignored.
-- Log actor, organisation, action, resource id — not passwords, full bank details, or document contents.
+- Log actor, workspace, participation where relevant, action, outcome, and resource id — not passwords, tokens, full bank details, evidence, or document contents.
 - Rate-limit login, webhooks, and export endpoints when those exist.
 - GDPR/UK GDPR: lawful basis, retention, access/erasure, and audit. Legal copy is out of scope until specified.
 

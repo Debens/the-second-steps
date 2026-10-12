@@ -16,10 +16,30 @@
 
 ## Security posture today
 
-- Supabase Auth now proves identity and maintains server-verified sessions. The current dashboard is a sandbox only: organisation membership, role authorisation, required MFA, rate limiting, and production email delivery are not implemented. Do not put real personal or financial data in the database.
+- Supabase Auth proves identity and maintains server-verified sessions. The current dashboard is a sandbox only: workspaces, memberships, participations, entitlements, role authorisation, required MFA, rate limiting, and production email delivery are not implemented. Do not put real personal or financial data in the database.
 - The app talks to Postgres from the server as `zayto_app` over verified TLS. The browser Data API is off. Row Level Security is planned (ADR-006) but not on yet, because there are no tables.
 - Secrets stay in `.env.local` (gitignored). The public certificate is `certs/supabase-ca.crt`.
 - "Enforce SSL" is confirmed on. Free-tier backups are not enough for real data (ADR-016).
+
+## Tenant and account model (confirmed design; not implemented)
+
+`Workspace` is the hard boundary for customer data, subscriptions, entitlements, usage, and business permissions (ADR-020). An agency, an independent landlord, and Zayto's internal operation use different workspace types. An `Organisation` represents a legal or commercial body and may own a workspace; an individual landlord may own a workspace without being modelled as a company.
+
+One Supabase identity may have several kinds of access:
+
+- `Membership` — operates a business workspace as an owner, administrator, or staff member.
+- `Participation` — acts in a particular application, tenancy, guarantee, referencing case, or explicitly shared landlord relationship.
+- `ResourceGrant` — limits a participant to named resources, actions, and fields.
+
+Applicants, tenants, guarantors, and invited landlords are first-class users with a personal portal, but they are not broad members of an agency workspace. A small user-controlled personal profile may be reused with explicit confirmation; each workspace retains its own operational person records and history. Sensitive submissions remain case-scoped and private by default.
+
+Every protected operation checks, on the server:
+
+1. Workspace entitlement or allowance.
+2. User permission in the current membership or participation.
+3. Access to the specific resource and fields.
+
+Application queries always scope by `workspaceId`. PostgreSQL RLS is added with the first workspace-owned records as defence in depth (ADR-023).
 
 ## Style: modular monolith (confirmed)
 
@@ -37,7 +57,7 @@ We are **not** starting with microservices. That would add operational cost befo
 │   Lettings   │  Sales (later, no imports    │
 │   module     │  from lettings internals)    │
 ├──────────────┴──────────────────────────────┤
-│  Core: organisation, identity, people,       │
+│  Core: workspace, identity, people,          │
 │  property, documents, audit, jobs            │
 ├─────────────────────────────────────────────┤
 │  Data access (Prisma) → PostgreSQL           │
@@ -50,7 +70,7 @@ Dependencies flow **down**. Core must not import lettings or sales.
 
 Partly created. Expand as feature work starts:
 
-- `core/db/` — Prisma client and connection (exists). Later: organisation, membership, auth adapters, audit, files, jobs
+- `core/db/` — Prisma client and connection (exists). Later: workspace, membership, participation, entitlement, audit, files, jobs
 - `modules/lettings/` — applications, tenancies, rent, maintenance, compliance (not created)
 - `modules/sales/` — empty until needed
 - `components/ui/` — shadcn (exists)
@@ -75,4 +95,12 @@ CRM data is private. Default to **no public static cache**. Revalidate after mut
 
 ## Observability (proposed)
 
-Structured server logs with `organisationId`, `actorUserId`, `requestId`. Error reporting (e.g. Sentry) later. No PII in client `console.log`.
+Structured server and audit records must use `workspaceId`, `actorUserId`, `requestId`, and the relevant participation or resource where applicable. Error reporting (e.g. Sentry) is later. Do not put PII, sensitive evidence, tokens, or document contents in logs or the client console.
+
+## Commercial modules (confirmed design; not implemented)
+
+CRM, pre-tenancy, property management, accounting, referencing, AML, Right to Rent, and later modules are independently entitled. They may share narrow core capabilities, but an optional module must not require another optional module's subscription or import its internal data access.
+
+Plans, free allowances, trials, paid add-ons, usage limits, and pay-per-use services are represented through a versioned product catalogue, entitlements, service orders, and append-only usage events. Specific prices and tiers remain unresolved.
+
+Referencing and AML are native Zayto products: Zayto owns the case workflow, consent, audit, customer experience, and provider orchestration. Specialist data and verification services remain external adapters. Detailed legal and decision rules require written specifications.

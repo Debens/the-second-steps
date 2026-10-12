@@ -1,64 +1,86 @@
 # Roadmap
 
-Dates are not committed. Phases are **sequences**, not promises.
+Dates are not committed. Phases are sequences, not promises. Pricing, named plans, and the first commercial product slice remain unresolved.
 
-## Phase 0 — Foundations (current)
+## Phase 0 — Existing proof-of-concept foundation
 
-Done in this phase:
+Implemented:
 
-1. Checkpoint of the visual login, rules and `docs/`
-2. Next.js 16 and React 19.3 (ADR-011)
-3. App Router migration (ADR-012)
-4. ESLint, Prettier, Vitest, Playwright (ADR-013)
-5. `.env.example` without secrets
-6. Decisions: Supabase Auth, UK-only data, required MFA, invite-only agencies, Supabase London (ADR-019, 015, 016)
-7. Brand tokens and Inter (ADR-017)
-8. Light / dark / system themes and responsive conventions (ADR-018)
-9. Prisma 7 connected as `zayto_app`; Data API off; TLS certificate in the repo (ADR-004, 016)
+1. Next.js 16 / React 19 App Router application shell
+2. Light, dark, and system themes with responsive conventions
+3. ESLint, Prettier, Vitest, and Playwright tooling
+4. Supabase Auth local magic-link sandbox and protected dashboard
+5. Prisma/PostgreSQL connection plumbing with verified TLS in code
+6. Product, architecture, security, and decision documentation
 
-Still outstanding in this phase:
+Not implemented: CRM records, workspaces, memberships, participants, entitlements, MFA enforcement, RLS, production delivery, or product modules.
 
-1. Enforce required MFA before any CRM data is accessible
-2. Add organisation membership and role authorisation before the first CRM table
+## Phase 1 — Workspace and security foundation (confirmed direction)
 
-## Phase 1 — Proof of concept slice (proposed)
+Before customer data:
 
-A staff user can, in **one organisation**:
+1. Workspace boundary and ownership
+2. Operator memberships, minimal roles, and optional branch scope
+3. Explicit active business-workspace context
+4. Staff/workspace-owner MFA enforcement and recovery
+5. Server-side entitlement, permission, resource, and field checks
+6. Audit-event foundation
+7. Application `workspaceId` scoping plus PostgreSQL RLS
+8. Cross-workspace and cross-role tests
+9. CI gates including production build and browser tests
 
-1. Sign in for real (Supabase Auth magic-link sandbox is implemented; Google, MFA enforcement, rate limiting, organisation membership, and production email delivery remain)
-2. Create/view **properties** and **landlords**
-3. Create a **lettings listing** (not live portals)
-4. Record an **enquiry** and a **viewing**
-5. See loading, empty, and error UI
+## Phase 2 — Participant and personal-portal foundation (confirmed direction)
 
-Out of PoC slice: payments, AML, portals, e-sign, landlord portal.
+1. Workspace-scoped people and controlled identity links
+2. Small user-controlled personal profile
+3. Participations, invitations, claims, and resource grants
+4. Participant-private versus shared data classification
+5. Personal portal shell aggregating authorised cross-workspace journeys
+6. Cross-participant privacy tests, including joint applicants
 
-## Phase 2 — Applications and tenancy shell (proposed)
+## Phase 3 — Minimal commercial foundation (confirmed shape)
 
-Applicant household, tenancy record with parties and dates, document upload to **private** storage. Check orders as **placeholders**.
+1. Module/product registry
+2. Manually assigned workspace entitlements
+3. Service orders and append-only usage events
+4. Operator-seat versus external-participant distinction
 
-## Phase 3 — Operations (proposed)
+Full pricing, billing provider, checkout, discounts, invoicing, plan catalogue, trials, and free allowances can wait until a product slice demonstrates value.
 
-Compliance dates, work orders, inspections. Rent ledger **thin** (demands/receipts), not a full accounts suite.
+## Phase 4 — First vertical product slice (unresolved)
 
-## Phase 4 — Integrations (proposed)
+Candidates:
 
-First real adapter (likely documents or e-sign **or** one portal — **unresolved**). Mocks remain for local dev. Webhooks, idempotency, jobs.
+- Thin pre-tenancy applicant-to-tenant journey (current recommendation)
+- Agency CRM property/landlord slice
+- Independent-landlord management slice
+- Standalone tenant referencing
 
-## Phase 5 — Regulated checks (blocked on specs)
+Select one before designing module tables. Do not build every candidate together.
 
-Referencing, AML/KYC, Right to Rent, insurance, deposit protection — only after written rules.
+## Phase 5 — Standalone services and provider integrations
 
-## Phase 6 — Sales (later)
+Native Zayto referencing, AML, identity, or Right to Rent case workflows may be added after the relevant product/legal rules, privacy disclosures, storage, jobs, and provider contracts are approved. External specialists remain adapters.
 
-Sales instruction and pipeline on shared property/people. Separate module.
+## Phase 6 — Tenant operations and property management
 
-## Phase 7 — Portals and scale (later)
+Incrementally add tenancy documents, maintenance, communications, inspections, renewals, compliance records, and move-out. Financial views must wait for an approved accounting boundary.
 
-Landlord/tenant logins, richer finance, RLS, dedicated workers, UK hosting review.
+## Phase 7 — Commercial plans and freemium
 
-## Explicitly not scheduled
+Add versioned plans, free allowances, trials, add-ons, usage limits, pay-per-use checkout, billing reconciliation, downgrade behaviour, and abuse controls after pricing decisions. Free functionality must not create uncontrolled provider or storage costs.
 
-- Rewriting the stack for fashion
-- Microservices
-- Building all screens before auth and a first table
+## Later
+
+- Accounting ledger and reconciliation after separate design approval
+- Richer agency CRM and property management
+- Sales using shared neutral people/property concepts
+- Landlord/tenant mobile experiences if justified
+- Franchise/group structures and consolidated billing
+
+## Explicitly blocked
+
+- Real customer data before isolation, MFA, audit, backups, and recovery controls
+- Invented referencing, AML, Right to Rent, insurance, deposit, or notice rules
+- Assuming access to Blinc software, data, documents, credentials, or supplier arrangements
+- Microservices without a demonstrated operational or regulatory need

@@ -10,12 +10,12 @@ alwaysApply: false
 
 - Connect as `zayto_app`, never the `postgres` admin. Keep TLS verification on (`core/db/connection.ts`); never set `rejectUnauthorized: false` or `sslmode=no-verify`. Store money as integer pence and timestamps in UTC (see `typescript.mdc`).
 
-- One database, shared by modules. Every tenant-owned row has `organisationId` (UUID). Never query without that scope.
+- One database, shared by modules. Every tenant-owned row has `workspaceId` (UUID), including module records whose parent is already scoped. Never query without the verified workspace scope.
 - Use Prisma migrations (`migrate dev` locally, `migrate deploy` in production). Do not use `db push` against shared or production data.
-- Declare relations, unique constraints, and foreign keys in the schema. Index `organisationId`, foreign keys, and real search/filter columns.
+- Declare relations, unique constraints, and foreign keys in the schema. Prefer workspace-aware composite foreign keys where practical. Index `workspaceId`, foreign keys, and real search/filter columns.
 - Writes that must succeed together (e.g. tenancy + occupants) use a transaction.
 - Prevent N+1: `include`/`select` what the view needs, or batched queries. Do not loop `findUnique` per row.
 - Soft-delete only where the product needs history; otherwise hard-delete with FK rules. GDPR erasure is a planned process, not a silent overwrite.
-- Application checks are mandatory. PostgreSQL RLS is **proposed** as defence in depth (`docs/DECISIONS.md`), not a substitute for query scoping.
+- Application checks are mandatory. Add PostgreSQL RLS with the first workspace-owned records as defence in depth (ADR-023), never as a substitute for application scoping. Every data path needs cross-workspace tests; participant paths also need cross-participant privacy tests.
 
 Do not design the entire final schema in one change. Add tables for the current slice only.

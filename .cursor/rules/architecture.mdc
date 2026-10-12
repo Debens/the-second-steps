@@ -12,9 +12,13 @@ Zayto is a **modular monolith**: one Next.js app, one PostgreSQL database (Supab
 1. **Presentation** — pages, layouts, UI components. No Prisma, no provider SDKs.
 2. **Application** — use-cases (create tenancy, publish listing). Authz checks live here.
 3. **Domain** — types, invariants, IDs. No React, no HTTP.
-4. **Data access** — Prisma repositories only. Always filter by `organisationId`.
+4. **Data access** — Prisma repositories only. Always filter tenant data by verified `workspaceId` and enforce participant resource/field grants where applicable.
 
 Lettings must not import sales internals. Sales (later) may reuse **core** (organisation, people, property, documents, money primitives). Shared code goes in `core`, not copy-paste.
+
+CRM, pre-tenancy, property management, accounting, referencing, AML, Right to Rent, and other optional modules must be independently entitled and usable. An optional module must not require another optional module or import its internal repositories. Core owns narrow shared platform concepts: workspace, identity, access, people, property, entitlements, documents, audit, and jobs.
+
+Every protected operation separately checks workspace entitlement, user permission, and specific resource/field access (ADR-021). Membership is for business operators; applicants, tenants, guarantors, and invited landlords use participations and explicit grants (ADR-022).
 
 ## Direction
 

@@ -1,68 +1,119 @@
 # Data model (proposed)
 
-This is a **sketch for discussion**, not a Prisma schema and not a complete database. Do not create tables from this file until a PoC slice is agreed.
+This is a discussion model, not a Prisma schema. No tables should be created until the first product slice and remaining data-ownership decisions are approved.
 
-Every organisation-owned record is expected to include `organisationId`. That is how we isolate agencies.
+## Boundary and identifier rules
 
-IDs: **proposed** UUID primary keys.
+`Workspace` is the hard tenant boundary (ADR-020). Every workspace-owned row includes `workspaceId`, including module records whose parent already has it. Application code scopes every query and mutation by the verified workspace context; PostgreSQL RLS enforces the same boundary as defence in depth.
 
-## Core entities
+Proposed IDs are UUIDs. Where practical, relationships use composite workspace-aware foreign keys such as `(workspaceId, propertyId)` so the database rejects cross-workspace links. Index `workspaceId`, foreign keys, and genuine search columns.
 
-```
-Organisation 1──* Branch
-Organisation 1──* Membership (User + Role + optional Branch)
-Organisation 1──* Person
-Person 1──* PersonRole  (landlord | tenant | applicant | contractor | other)
-Organisation 1──* Property
-Property *──* Person     (via PropertyParty: owner, occupier, etc.)
-```
+## Global identity and personal account
 
-**Organisation** — the letting agency company (our customer).  
-**Branch** — an office. Users may be limited to one or more branches (**unresolved** how strict).  
-**User** — a login identity. Staff users belong to an organisation via membership.  
-**Person** — a human (or later a company landlord). Do not create separate “landlord table” vs “tenant table” as the only model; use **roles on a person** so the same human can be a landlord in one relationship and a tenant in another.  
-**Property** — address and physical facts. Lettings marketing and (later) sales listings hang off this.
-
-## Lettings entities (proposed)
-
-```
-Property 1──* Listing (channel: lettings)
-Listing 1──* Enquiry
-Listing 1──* Viewing
-Listing 1──* Offer
-Property 1──* Application (applicant household applying to let)
-Application 1──* ApplicationParty
-Application 1──* CheckOrder   (referencing | AML | Right to Rent | insurance — type enum)
-Application 0..1── Tenancy    (when offer accepted / agreement completed)
-Tenancy 1──* TenancyParty
-Tenancy 1──* RecurringCharge / Transaction   (finance — later)
-Property 1──* ComplianceItem
-Property 1──* WorkOrder
-Tenancy 1──* Inspection
-Tenancy 1──* DepositRecord   (placeholder)
+```text
+UserIdentity 1──* AuthenticationProviderLink
+UserIdentity 0..1── PersonalProfile
+UserIdentity 1──* Membership
+UserIdentity 1──* Participation
 ```
 
-**CheckOrder** stores provider, external id, status, and document links. It does **not** encode pass/fail policy.
+`UserIdentity` represents one human login and initially references Supabase Auth. It holds no global customer role.
 
-**Listing** vs **Property**: a property is the house; a listing is a marketing campaign (rent, available date, portal ids).
+`PersonalProfile` is a small, user-controlled set of reusable details. It is not a globally shared CRM contact record. Sharing into an application, tenancy, or check is explicit and produces an auditable workspace/case record or snapshot.
 
-## Documents and audit (proposed)
+## Workspaces, ownership, and business access
 
-- `Document` — organisation, related record (polymorphic or explicit FKs per type), storage key, mime, createdBy, retention.
-- `AuditEvent` — actor, organisation, action, entity type/id, metadata JSON (no secrets).
+```text
+Workspace 0..1── Organisation owner
+Workspace 0..1── Person owner
+Workspace 1──* Branch
+Workspace 1──* Membership *──1 UserIdentity
+Membership 1──* MembershipRole
+Membership *──* Branch (via MembershipBranchAccess)
+```
 
-## Sales (not designed)
+Initial workspace types are `agency`, `landlord`, and `platform_internal`. An agency or landlord company can be represented by an `Organisation`; an individual landlord can own a workspace without an artificial company record.
 
-When sales starts, **do not** fork Property. Add `Listing` with channel `sales` or a `SalesInstruction` that points at Property. Details **unresolved**.
+`Membership` is for people who operate a business workspace. Platform administration is separate and grants no standing customer-data access.
 
-## What we are deliberately not doing yet
+## Workspace people and relationships
 
-- Full chart of accounts
-- Multi-currency
-- Modelling every deposit scheme rule
-- Event sourcing
-- Separate database per agency (rejected for PoC; see `DECISIONS.md`)
+```text
+Workspace 1──* WorkspacePerson
+WorkspacePerson 0..1── IdentityPersonLink ──1 UserIdentity
+WorkspacePerson 1──* PersonRelationship
+Workspace 1──* Property
+Property *──* WorkspacePerson (via PropertyParty)
+```
 
-## Referential integrity (proposed)
+Each workspace keeps its own operational person record and history. An identity link allows the person to use Zayto without exposing their record or other relationships to another workspace. A person may be a landlord, applicant, tenant, guarantor, contractor, or staff member in different contexts; those capacities are relationships and participations, not global identity roles.
 
-Foreign keys in PostgreSQL. Unique `(organisationId, …)` where business keys exist (e.g. portal listing id per org). Cascade deletes only for true owned children (e.g. listing photos), never for people or properties because of history.
+## Participation and external access
+
+Applicants, tenants, guarantors, and invited landlords are first-class users but not broad members of an agency workspace.
+
+```text
+UserIdentity 1──* Participation
+Workspace 1──* Participation
+Participation 1──* ResourceGrant
+Participation 0..* ConsentRecord
+Participation 0..* Invitation / InvitationClaim
+```
+
+A participation identifies the workspace, module, case/resource, participant type, status, and effective dates. A grant limits permitted actions, records, and fields. Module-specific records such as `ApplicationParty`, `ReferenceSubject`, `TenancyParty`, and `GuaranteeParty` may link to this common access foundation.
+
+Joint application membership never grants access to another party's confidential information. Data must be classified as participant-private, shared with named participants, workspace-internal, provider-restricted, landlord-shareable, or final shared documentation.
+
+## Commercial access
+
+```text
+Product 1──* Feature
+Plan 1──* PlanVersion 1──* PlanEntitlementDefinition
+Workspace 1──* Subscription / Trial / AddOn
+Workspace 1──* WorkspaceEntitlement
+Workspace 1──* UsageEvent
+Workspace 1──* ServiceOrder
+```
+
+Plans are versioned so later catalogue edits do not silently change existing terms. Entitlements can come from a free plan, subscription, trial, add-on, promotion, manual grant, allowance, or one-off order. Usage events are append-only and idempotent; corrections use adjustments. Prices, tiers, allowances, grace periods, and providers remain unresolved.
+
+## Shared operational records
+
+- `Document` — workspace, owner/case, classification, storage key, mime type, creator, retention, and access grants.
+- `AuditEvent` — actor, workspace, participation/resource, action, outcome, request ID, and safe metadata.
+- `Job` / `OutboxEvent` — durable provider and webhook work.
+- `IntegrationAttempt` — workspace, provider, correlation/idempotency keys, status, and safe response metadata.
+- `Conversation`, `ConversationParticipant`, `Message`, and `Notification` — proposed; every audience is explicit.
+
+## Independently usable product modules
+
+Core owns only neutral platform concepts. Optional modules own their records and cannot require another optional module.
+
+- CRM: listings, enquiries, viewings, offers.
+- Pre-tenancy: applications, applicant parties, tasks, agreements, move-in.
+- Referencing: native reference cases, subjects, evidence, reviews, provider requests, and outcomes.
+- AML / identity / Right to Rent: native cases and workflows with external specialist adapters where approved.
+- Property management: work orders, inspections, renewals, compliance records.
+- Accounting: later ledger, charges, receipts, allocations, and reconciliation behind a strong boundary.
+- Sales: later, reusing neutral property and people concepts without importing lettings internals.
+
+Referencing and AML workflows are owned by Zayto. External results do not authorise invented legal, compliance, or underwriting rules.
+
+## Applicant-to-tenant continuity
+
+An application is not overwritten when it succeeds. The same identity gains a linked tenancy participation, while the historical application and submitted snapshots remain intact. Reusable profile fields can be confirmed; sensitive evidence or provider reports are not silently copied or shared.
+
+## Referential integrity and deletion
+
+Use foreign keys and workspace-scoped unique constraints. Cascade only true owned children. People, properties, applications, tenancies, financial entries, audit records, and regulated evidence require explicit retention and deletion rules. Exact legal retention remains unresolved.
+
+## Deliberately unresolved
+
+- Exact product plans, prices, trials, and free allowances
+- Customer-defined roles
+- Franchise and parent/child workspace structures
+- Personal-profile fields and cross-case evidence reuse
+- Data-controller/processor responsibilities by data category
+- Detailed accounting ledger design
+- Detailed referencing, AML, Right to Rent, insurance, and deposit rules
+- Sales entities and workflows
