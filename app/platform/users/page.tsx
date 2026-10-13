@@ -25,6 +25,7 @@ import {
 } from "@/core/platform/application/platform-directory";
 import { PlatformSearchForm } from "../search-form";
 import { StatusPill } from "../status-pill";
+import { UserDetailsDialog } from "./user-details-dialog";
 
 export const metadata: Metadata = {
   title: "Users | Zayto",
@@ -167,6 +168,10 @@ export default async function PlatformUsersPage({
                   <p className="text-xs text-muted-foreground">
                     Added {DATE_FORMAT.format(directoryUser.createdAt)}
                   </p>
+                  <UserDetailsDialog
+                    user={directoryUser}
+                    createdAtLabel={DATE_FORMAT.format(directoryUser.createdAt)}
+                  />
                 </CardContent>
               </Card>
             ))}
@@ -183,6 +188,9 @@ export default async function PlatformUsersPage({
                     <TableHead>Access</TableHead>
                     <TableHead>Customers</TableHead>
                     <TableHead>Date added</TableHead>
+                    <TableHead>
+                      <span className="sr-only">Actions</span>
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -216,6 +224,14 @@ export default async function PlatformUsersPage({
                       </TableCell>
                       <TableCell>
                         {DATE_FORMAT.format(directoryUser.createdAt)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <UserDetailsDialog
+                          user={directoryUser}
+                          createdAtLabel={DATE_FORMAT.format(
+                            directoryUser.createdAt,
+                          )}
+                        />
                       </TableCell>
                     </TableRow>
                   ))}

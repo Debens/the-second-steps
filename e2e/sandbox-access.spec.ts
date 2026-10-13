@@ -322,16 +322,40 @@ test.describe("sandbox access personas", () => {
 
     await page.goto("/platform/users");
     await expect(page.getByRole("heading", { name: "Users" })).toBeVisible();
-    await expect(page.getByRole("cell", { name: "Olivia Hart" })).toBeVisible();
-    await expect(page.getByRole("cell", { name: "Theo Grant" })).toBeVisible();
-    await expect(page.getByRole("cell", { name: "Maya Ellis" })).toBeVisible();
-    await expect(page.getByRole("cell", { name: "Noah Reed" })).toBeVisible();
+    await expect(
+      page.getByRole("cell", { name: "Olivia Hart", exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("cell", { name: "Theo Grant", exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("cell", { name: "Maya Ellis", exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("cell", { name: "Noah Reed", exact: true }),
+    ).toBeVisible();
 
     await page.getByLabel("Search users").fill("Olivia");
     await page.getByRole("button", { name: "Search" }).click();
     await expect(page).toHaveURL(/\/platform\/users\?q=Olivia$/);
-    await expect(page.getByRole("cell", { name: "Olivia Hart" })).toBeVisible();
+    await expect(
+      page.getByRole("cell", { name: "Olivia Hart", exact: true }),
+    ).toBeVisible();
     await expect(page.getByText("Theo Grant")).toHaveCount(0);
+
+    await page.getByRole("button", { name: "View Olivia Hart" }).click();
+    const userDialog = page.getByRole("dialog");
+    await expect(
+      userDialog.getByRole("heading", { name: "Olivia Hart" }),
+    ).toBeVisible();
+    await expect(userDialog.getByText("owner@zayto.local")).toBeVisible();
+    await expect(
+      userDialog.getByRole("heading", { name: "Zayto account" }),
+    ).toBeVisible();
+    await expect(userDialog.getByText("Oakfield Lettings")).toBeVisible();
+    await expect(userDialog.getByText("Active access")).toBeVisible();
+    await expect(userDialog.getByText("Account Owner")).toBeVisible();
+    await userDialog.getByRole("button", { name: "Close" }).click();
 
     await page.goto("/platform/customers");
     await expect(

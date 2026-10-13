@@ -34,6 +34,9 @@ Before customer data:
 8. Cross-workspace and cross-role tests - **browser and disposable Docker database coverage pass**
 9. Least-privilege runtime/migration role split - **implemented and verified on shared Supabase**
 10. CI gates - **code quality, production build, and database integration implemented**; browser tests and dependency audit remain
+11. Platform Owner user/customer administration: profile edits, access assignments, branch scope, and suspension controls
+12. Human-readable audit history on the relevant user and customer administration screens
+13. Production-ready account notifications with durable delivery, retries, templates, recipient rules, and communication preferences; local Mailpit messages may be used during development only
 
 ## Phase 2 — Participant and personal-portal foundation (confirmed direction)
 
