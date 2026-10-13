@@ -1,3 +1,5 @@
+import "server-only";
+
 import { PrismaPg } from "@prisma/adapter-pg";
 import { databaseSsl, databaseUrl } from "./connection";
 import { PrismaClient } from "./generated/client";

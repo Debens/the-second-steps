@@ -1,0 +1,349 @@
+import { randomUUID } from "node:crypto";
+import { Pool, type PoolClient } from "pg";
+import { afterAll, beforeEach, describe, expect, it } from "vitest";
+import {
+  getWorkspaceMembers,
+  updateWorkspaceMemberRoles,
+} from "@/core/access/application/workspace-members";
+import { db } from "@/core/db/client";
+
+const runtimeUrl = process.env.DATABASE_URL;
+const adminUrl = process.env.TEST_ADMIN_DATABASE_URL;
+
+if (!runtimeUrl || !adminUrl) {
+  throw new Error("Integration tests require isolated database URLs.");
+}
+
+for (const value of [runtimeUrl, adminUrl]) {
+  const url = new URL(value);
+  if (url.hostname !== "127.0.0.1" || url.pathname !== "/zayto_test") {
+    throw new Error("Refusing to run integration tests outside zayto_test.");
+  }
+}
+
+const runtimePool = new Pool({ connectionString: runtimeUrl, ssl: false });
+const adminPool = new Pool({ connectionString: adminUrl, ssl: false });
+
+const ids = {
+  workspaceA: randomUUID(),
+  workspaceB: randomUUID(),
+  branchA: randomUUID(),
+  branchB: randomUUID(),
+  managerIdentity: randomUUID(),
+  managerAuth: randomUUID(),
+  managerMembership: randomUUID(),
+  ownerOneIdentity: randomUUID(),
+  ownerOneAuth: randomUUID(),
+  ownerOneMembership: randomUUID(),
+  ownerTwoIdentity: randomUUID(),
+  ownerTwoAuth: randomUUID(),
+  ownerTwoMembership: randomUUID(),
+  sameBranchMembership: randomUUID(),
+  otherBranchMembership: randomUUID(),
+  overlappingMembership: randomUUID(),
+  workspaceWideMembership: randomUUID(),
+  workspaceBOwnerMembership: randomUUID(),
+};
+
+async function addIdentity(
+  client: PoolClient,
+  identityId: string,
+  authSubject = randomUUID(),
+) {
+  await client.query(
+    `INSERT INTO "user_identities" ("id", "updated_at")
+     VALUES ($1::uuid, CURRENT_TIMESTAMP)`,
+    [identityId],
+  );
+  await client.query(
+    `INSERT INTO "authentication_provider_links"
+      ("user_identity_id", "provider", "provider_subject")
+     VALUES ($1::uuid, 'supabase', $2::uuid)`,
+    [identityId, authSubject],
+  );
+}
+
+async function addMembership(
+  client: PoolClient,
+  input: {
+    id: string;
+    identityId: string;
+    workspaceId: string;
+    role: string;
+    branchIds?: string[];
+  },
+) {
+  const scopeMode = input.branchIds ? "named_branches" : "workspace";
+  await client.query(
+    `INSERT INTO "memberships"
+      ("id", "workspace_id", "user_identity_id", "scope_mode", "updated_at")
+     VALUES ($1::uuid, $2::uuid, $3::uuid, $4::membership_scope_mode,
+       CURRENT_TIMESTAMP)`,
+    [input.id, input.workspaceId, input.identityId, scopeMode],
+  );
+  await client.query(
+    `INSERT INTO "membership_roles"
+      ("workspace_id", "membership_id", "role_code")
+     VALUES ($1::uuid, $2::uuid, $3::membership_role_code)`,
+    [input.workspaceId, input.id, input.role],
+  );
+
+  for (const branchId of input.branchIds ?? []) {
+    await client.query(
+      `INSERT INTO "membership_branch_access"
+        ("workspace_id", "membership_id", "branch_id")
+       VALUES ($1::uuid, $2::uuid, $3::uuid)`,
+      [input.workspaceId, input.id, branchId],
+    );
+  }
+}
+
+async function seedAccessFoundation() {
+  const client = await adminPool.connect();
+  try {
+    await client.query("BEGIN");
+    await client.query(
+      `TRUNCATE TABLE "audit_events", "workspace_feature_flag_overrides",
+        "membership_branch_access", "membership_roles", "memberships",
+        "branches", "platform_role_assignments",
+        "authentication_provider_links", "workspaces", "user_identities"
+       CASCADE`,
+    );
+    await client.query(
+      `INSERT INTO "workspaces"
+        ("id", "slug", "display_name", "type", "updated_at")
+       VALUES
+        ($1::uuid, 'workspace-a', 'Workspace A', 'agency', CURRENT_TIMESTAMP),
+        ($2::uuid, 'workspace-b', 'Workspace B', 'agency', CURRENT_TIMESTAMP)`,
+      [ids.workspaceA, ids.workspaceB],
+    );
+    await client.query(
+      `INSERT INTO "branches" ("id", "workspace_id", "name", "updated_at")
+       VALUES
+        ($1::uuid, $3::uuid, 'Branch A', CURRENT_TIMESTAMP),
+        ($2::uuid, $3::uuid, 'Branch B', CURRENT_TIMESTAMP)`,
+      [ids.branchA, ids.branchB, ids.workspaceA],
+    );
+
+    await addIdentity(client, ids.managerIdentity, ids.managerAuth);
+    await addIdentity(client, ids.ownerOneIdentity, ids.ownerOneAuth);
+    await addIdentity(client, ids.ownerTwoIdentity, ids.ownerTwoAuth);
+    const sameBranchIdentity = randomUUID();
+    const otherBranchIdentity = randomUUID();
+    const overlappingIdentity = randomUUID();
+    const workspaceWideIdentity = randomUUID();
+    const workspaceBOwnerIdentity = randomUUID();
+    await addIdentity(client, sameBranchIdentity);
+    await addIdentity(client, otherBranchIdentity);
+    await addIdentity(client, overlappingIdentity);
+    await addIdentity(client, workspaceWideIdentity);
+    await addIdentity(client, workspaceBOwnerIdentity);
+
+    await addMembership(client, {
+      id: ids.managerMembership,
+      identityId: ids.managerIdentity,
+      workspaceId: ids.workspaceA,
+      role: "branch_manager",
+      branchIds: [ids.branchA],
+    });
+    await addMembership(client, {
+      id: ids.ownerOneMembership,
+      identityId: ids.ownerOneIdentity,
+      workspaceId: ids.workspaceA,
+      role: "workspace_owner",
+    });
+    await addMembership(client, {
+      id: ids.ownerTwoMembership,
+      identityId: ids.ownerTwoIdentity,
+      workspaceId: ids.workspaceA,
+      role: "workspace_owner",
+    });
+    await addMembership(client, {
+      id: ids.sameBranchMembership,
+      identityId: sameBranchIdentity,
+      workspaceId: ids.workspaceA,
+      role: "negotiator",
+      branchIds: [ids.branchA],
+    });
+    await addMembership(client, {
+      id: ids.otherBranchMembership,
+      identityId: otherBranchIdentity,
+      workspaceId: ids.workspaceA,
+      role: "negotiator",
+      branchIds: [ids.branchB],
+    });
+    await addMembership(client, {
+      id: ids.overlappingMembership,
+      identityId: overlappingIdentity,
+      workspaceId: ids.workspaceA,
+      role: "property_manager",
+      branchIds: [ids.branchA, ids.branchB],
+    });
+    await addMembership(client, {
+      id: ids.workspaceWideMembership,
+      identityId: workspaceWideIdentity,
+      workspaceId: ids.workspaceA,
+      role: "read_only",
+    });
+    await addMembership(client, {
+      id: ids.workspaceBOwnerMembership,
+      identityId: workspaceBOwnerIdentity,
+      workspaceId: ids.workspaceB,
+      role: "workspace_owner",
+    });
+    await client.query("COMMIT");
+  } catch (error) {
+    await client.query("ROLLBACK");
+    throw error;
+  } finally {
+    client.release();
+  }
+}
+
+beforeEach(seedAccessFoundation);
+
+afterAll(async () => {
+  await db.$disconnect();
+  await runtimePool.end();
+  await adminPool.end();
+});
+
+describe("database and workspace access hardening", () => {
+  it("hides every workspace until a verified context is present", async () => {
+    const baseline = await runtimePool.query(`SELECT "id" FROM "workspaces"`);
+    expect(baseline.rows).toHaveLength(0);
+
+    const client = await runtimePool.connect();
+    try {
+      await client.query("BEGIN");
+      await client.query("SELECT set_config('app.workspace_id', $1, true)", [
+        ids.workspaceA,
+      ]);
+      const visible = await client.query<{ id: string }>(
+        `SELECT "id" FROM "workspaces" ORDER BY "id"`,
+      );
+      expect(visible.rows.map(({ id }) => id)).toEqual([ids.workspaceA]);
+      await client.query("ROLLBACK");
+    } finally {
+      client.release();
+    }
+  });
+
+  it("prevents the runtime login from changing database structure or assuming the migrator role", async () => {
+    const role = await runtimePool.query<{
+      rolcreatedb: boolean;
+      rolcreaterole: boolean;
+      rolbypassrls: boolean;
+      rolsuper: boolean;
+    }>(
+      `SELECT "rolcreatedb", "rolcreaterole", "rolbypassrls", "rolsuper"
+       FROM "pg_roles" WHERE "rolname" = current_user`,
+    );
+    expect(role.rows[0]).toEqual({
+      rolcreatedb: false,
+      rolcreaterole: false,
+      rolbypassrls: false,
+      rolsuper: false,
+    });
+    await expect(
+      runtimePool.query(
+        `CREATE TABLE "public"."runtime_escape" ("id" integer)`,
+      ),
+    ).rejects.toThrow();
+    await expect(
+      runtimePool.query(`SELECT 1 FROM "public"."_prisma_migrations"`),
+    ).rejects.toThrow();
+    await expect(
+      runtimePool.query(`SET ROLE "zayto_migrator"`),
+    ).rejects.toThrow();
+  });
+
+  it("shows a Branch Manager workspace-wide staff and overlapping branches only", async () => {
+    const result = await getWorkspaceMembers(ids.managerAuth, "workspace-a");
+    expect(result).not.toBeNull();
+    const visibleIds = result?.members.map(({ id }) => id) ?? [];
+    expect(visibleIds).toEqual(
+      expect.arrayContaining([
+        ids.managerMembership,
+        ids.ownerOneMembership,
+        ids.ownerTwoMembership,
+        ids.sameBranchMembership,
+        ids.overlappingMembership,
+        ids.workspaceWideMembership,
+      ]),
+    );
+    expect(visibleIds).not.toContain(ids.otherBranchMembership);
+    expect(visibleIds).not.toContain(ids.workspaceBOwnerMembership);
+  });
+
+  it("rejects an audit actor membership from another workspace", async () => {
+    await expect(
+      adminPool.query(
+        `INSERT INTO "audit_events"
+          ("workspace_id", "actor_membership_id", "action", "outcome", "request_id")
+         VALUES ($1::uuid, $2::uuid, 'security.test', 'denied', $3)`,
+        [ids.workspaceA, ids.workspaceBOwnerMembership, randomUUID()],
+      ),
+    ).rejects.toThrow();
+  });
+
+  it("serialises competing owner demotions so one active owner remains", async () => {
+    const [first, second] = await Promise.all([
+      updateWorkspaceMemberRoles({
+        authSubject: ids.ownerOneAuth,
+        workspaceSlug: "workspace-a",
+        targetMembershipId: ids.ownerTwoMembership,
+        proposedRoleValues: ["agency_admin"],
+      }),
+      updateWorkspaceMemberRoles({
+        authSubject: ids.ownerTwoAuth,
+        workspaceSlug: "workspace-a",
+        targetMembershipId: ids.ownerOneMembership,
+        proposedRoleValues: ["agency_admin"],
+      }),
+    ]);
+    expect([first.ok, second.ok].filter(Boolean)).toHaveLength(1);
+
+    const ownerCount = await adminPool.query<{ count: string }>(
+      `SELECT COUNT(*)::text AS "count"
+       FROM "membership_roles"
+       INNER JOIN "memberships" ON "memberships"."id" = "membership_roles"."membership_id"
+       WHERE "memberships"."workspace_id" = $1::uuid
+         AND "memberships"."status" = 'active'
+         AND "membership_roles"."role_code" = 'workspace_owner'`,
+      [ids.workspaceA],
+    );
+    expect(ownerCount.rows[0]?.count).toBe("1");
+
+    const deniedAudit = await adminPool.query(
+      `SELECT 1 FROM "audit_events"
+       WHERE "workspace_id" = $1::uuid
+         AND "action" = 'membership.roles.update'
+         AND "outcome" = 'denied'`,
+      [ids.workspaceA],
+    );
+    expect(deniedAudit.rowCount).toBe(1);
+  });
+
+  it("rejects an empty named-branch membership at commit", async () => {
+    const client = await adminPool.connect();
+    try {
+      await client.query("BEGIN");
+      const identityId = randomUUID();
+      await addIdentity(client, identityId);
+      await addMembership(client, {
+        id: randomUUID(),
+        identityId,
+        workspaceId: ids.workspaceA,
+        role: "negotiator",
+        branchIds: [],
+      });
+      await expect(client.query("COMMIT")).rejects.toThrow(
+        /requires at least one branch/,
+      );
+    } finally {
+      await client.query("ROLLBACK").catch(() => undefined);
+      client.release();
+    }
+  });
+});

@@ -22,9 +22,12 @@ Every protected operation separately checks workspace entitlement, user permissi
 
 ## Direction
 
-`ui → application → domain → data`  
-`lettings | sales → core`  
+`ui → application → domain`
+`application → data-access ports; data adapters → domain`
+`lettings | sales → core`
 Never `core → lettings` or `core → sales`. No circular imports.
+
+Domain code never imports Prisma or data adapters. Application use-cases coordinate domain rules and repository interfaces; infrastructure implements those interfaces.
 
 ## Async work
 

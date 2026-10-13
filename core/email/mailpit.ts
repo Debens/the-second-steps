@@ -1,3 +1,5 @@
+import "server-only";
+
 import { getMailpitApiUrl } from "@/core/auth/env";
 
 export async function sendSandboxMagicLink(email: string, signInUrl: string) {

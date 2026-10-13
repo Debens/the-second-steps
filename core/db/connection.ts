@@ -15,7 +15,22 @@ export function databaseUrl(): string {
   return url;
 }
 
+export function databaseSslMode() {
+  const mode = process.env.DATABASE_SSL_MODE ?? "verify-full";
+  if (mode !== "verify-full" && mode !== "disable") {
+    throw new Error(
+      'DATABASE_SSL_MODE must be either "verify-full" or "disable".',
+    );
+  }
+  if (mode === "disable" && process.env.NODE_ENV === "production") {
+    throw new Error("Database TLS cannot be disabled in production.");
+  }
+  return mode;
+}
+
 export function databaseSsl() {
+  if (databaseSslMode() === "disable") return false;
+
   return {
     ca: readFileSync(DATABASE_CA_PATH, "utf8"),
     rejectUnauthorized: true,

@@ -3,11 +3,17 @@ import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   resolve: {
-    alias: { "@": path.resolve(import.meta.dirname) },
+    alias: {
+      "@": path.resolve(import.meta.dirname),
+      "server-only": path.resolve(
+        import.meta.dirname,
+        "tests/server-only-stub.ts",
+      ),
+    },
   },
   test: {
     include: ["**/*.test.ts", "**/*.test.tsx"],
-    exclude: ["node_modules/**", ".next/**", "e2e/**"],
+    exclude: ["node_modules/**", ".next/**", "e2e/**", "tests/integration/**"],
     passWithNoTests: true,
   },
 });

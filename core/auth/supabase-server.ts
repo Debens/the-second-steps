@@ -33,3 +33,4 @@ export async function requireUser() {
 
   return data.user;
 }
+import "server-only";

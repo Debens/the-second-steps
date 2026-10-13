@@ -8,8 +8,16 @@ test("the home page redirects to login", async ({ page }) => {
 });
 
 test("login form explains the local magic-link flow", async ({ page }) => {
-  await page.goto("/login");
+  const response = await page.goto("/login");
   await expect(page).toHaveTitle("Login | Zayto");
+
+  const headers = response?.headers() ?? {};
+  expect(headers["content-security-policy"]).toContain(
+    "frame-ancestors 'none'",
+  );
+  expect(headers["x-content-type-options"]).toBe("nosniff");
+  expect(headers["referrer-policy"]).toBe("strict-origin-when-cross-origin");
+  expect(headers["x-powered-by"]).toBeUndefined();
 
   await expect(page.getByLabel("Email")).toBeVisible();
   await expect(

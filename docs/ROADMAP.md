@@ -9,25 +9,29 @@ Implemented:
 1. Next.js 16 / React 19 App Router application shell
 2. Light, dark, and system themes with responsive conventions
 3. ESLint, Prettier, Vitest, and Playwright tooling
-4. Supabase Auth local magic-link sandbox and protected dashboard
+4. Supabase Auth local magic-link sandbox, feature-flagged TOTP mechanism, and protected role-aware shells
 5. Prisma/PostgreSQL connection plumbing with verified TLS in code
-6. Product, architecture, security, and decision documentation
+6. Workspace, membership, branch-scope, fixed-role, RLS, and audit-event foundation
+7. Separate customer workspace and Zayto Platform Owner shells
+8. Server-evaluated global, Zayto-user, and workspace feature-flag foundation
+9. Product, architecture, security, and decision documentation
 
-Not implemented: CRM records, workspaces, memberships, participants, entitlements, MFA enforcement, RLS, production delivery, or product modules.
+Not implemented: CRM records, participants, entitlements, invitations, MFA recovery operations, production delivery, rate limiting, backups suitable for real data, CI, or product modules. Public Supabase sign-up still requires external confirmation.
 
 ## Phase 1 — Workspace and security foundation (confirmed direction)
 
 Before customer data:
 
-1. Workspace boundary and ownership
-2. Operator memberships, minimal roles, and optional branch scope
-3. Explicit active business-workspace context
-4. Staff/workspace-owner MFA enforcement and recovery
+1. Workspace boundary and Account Owner role - **foundation implemented**
+2. Operator memberships, minimal roles, and branch scope - **implemented and verified, including shared hardening migrations**
+3. Explicit active business-workspace context - **implemented**
+4. Staff/Account Owner MFA mechanism - **implemented behind a development flag**; release enforcement and recovery remain
 5. Server-side entitlement, permission, resource, and field checks
-6. Audit-event foundation
-7. Application `workspaceId` scoping plus PostgreSQL RLS
-8. Cross-workspace and cross-role tests
-9. CI gates including production build and browser tests
+6. Audit-event foundation - **implemented for feature flags and role changes; broader access audit remains**
+7. Application `workspaceId` scoping plus PostgreSQL RLS - **implemented for foundation tables; disposable integration verification pending**
+8. Cross-workspace and cross-role tests - **browser coverage exists; Docker database suite written but not yet run**
+9. Least-privilege runtime/migration role split - **implemented and verified on shared Supabase**
+10. CI gates including production build, database integration, browser tests, and dependency audit
 
 ## Phase 2 — Participant and personal-portal foundation (confirmed direction)
 

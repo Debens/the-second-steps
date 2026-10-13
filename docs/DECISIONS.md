@@ -2,6 +2,38 @@
 
 Newest first. Status: **Accepted** | **Proposed** | **Superseded** | **Unresolved**.
 
+## ADR-027 — Security hardening, isolated database tests, and least-privilege database roles
+
+- **Status:** Accepted and implemented; disposable PostgreSQL verification, shared-environment role cutover, and access-hardening migrations passed on 2026-10-13 (owner decisions, 2026-10-13)
+- **Decision:** Use a disposable local PostgreSQL database for RLS, cross-workspace, cross-branch, constraint, audit, and concurrency tests. Docker Desktop is the approved local runner. The test database uses fictional credentials, memory-backed storage, and is destroyed after each run; automated integration tests must refuse non-local or incorrectly named databases.
+- **Database roles:** The deployed website uses `zayto_app` for DML only. Prisma deployment uses a separate `zayto_migrator` login that owns Zayto tables, types, functions, and migration history. Both roles are non-superuser, cannot create roles/databases, cannot bypass RLS, and do not inherit privileges. The migration credential is server/operator-only and never available to website runtime code.
+- **RLS threat model:** RLS is defence against omitted tenant filters and accidental cross-workspace queries. It is not a boundary against a fully compromised website process because the runtime connection sets PostgreSQL request context itself. Application authorisation, parameterised queries, server-only modules, least-privilege object ownership, and audit remain mandatory.
+- **Access invariants:** A named-branch membership needs at least one branch. Branch-scoped staff visibility includes workspace-wide staff and staff sharing a branch, but excludes other-branch-only staff. Role mutations are serialised by workspace and may not remove the final active Account Owner. Sensitive denials are audited without credentials or sensitive content.
+- **Feature failure:** Ordinary unavailable flags fail off; unavailable security controls such as required staff MFA fail on. At release MFA applies to all Zayto platform users and agency staff, while future participant policy remains separate.
+- **Hosting:** Vercel is the intended first production host. Production builds require the MFA release safeguard. Security headers are set in Next.js; UK execution/logging/data-processing configuration, backups, monitoring, rate limiting, production email, and recovery remain release gates.
+- **External state:** Public Supabase Auth sign-up must be disabled so only existing/invited users can sign in. This is verified by `npm run check:release`; the dashboard change is not complete until independently confirmed.
+- **Date:** 2026-10-13
+
+## ADR-026 — Server-evaluated feature flags and staged MFA enforcement
+
+- **Status:** Accepted and implemented (owner decision, 2026-10-13)
+- **Decision:** Build feature flags in the existing PostgreSQL database, evaluated only by server-side application code. Flags support a global default, an optional explicit workspace override, and a testing audience made up of identities with an active internal platform role. Do not infer internal users from an email domain. Feature flags control availability and never replace authentication, workspace membership, permissions, entitlements, RLS, or record/field checks.
+- **Precedence:** For an active staff identity: enabled Zayto testing audience first, then explicit workspace override, then global state. A missing override inherits. Unknown, inactive, or malformed ordinary flags fail disabled; an unreadable security control such as required staff MFA fails enabled under ADR-027.
+- **Administration:** Platform Owners manage global and Zayto-audience settings in the internal shell. Changes are validated server-side and audited. Workspace override storage and evaluation are included in the foundation; the UI belongs on the future company profile.
+- **MFA staging:** Put the existing staff TOTP gate behind `staff_mfa`. It starts disabled globally and for Zayto users during proof-of-concept development. Disabling enforcement does not delete enrolled factors. MFA remains a release requirement under ADR-015 and ADR-025.
+- **Release protection:** The server-only `REQUIRE_STAFF_MFA=true` deployment setting forces staff MFA on and prevents it being disabled from the admin screen. Vercel production builds fail when it is not true. It may strengthen but never weaken the database setting. Deployment still requires separate approval.
+- **Date:** 2026-10-13
+
+## ADR-025 — Initial operator roles and separate platform administration
+
+- **Status:** Accepted and implemented (owner decision, 2026-10-12)
+- **Customer roles:** Use the fixed workspace roles `workspace_owner`, `agency_admin`, `branch_manager`, `negotiator`, `property_manager`, `accounts`, and `read_only`. The UI calls `workspace_owner` **Account Owner**. Read Only is exclusive. Only an Account Owner can grant or remove Account Owner; self-role changes and removal of the final active Account Owner are denied. Branch Managers may view workspace-wide staff and staff sharing one of their branches, but not other-branch-only staff; they cannot invite people or change roles.
+- **Platform role:** `platform_owner` is stored outside workspace membership and opens a distinct Zayto internal shell. It does not provide standing access to customer records. Future support access requires a separately approved, workspace-specific, time-limited, justified, strongly authenticated, and audited design.
+- **Routing and assurance:** `/dashboard` safely resolves or presents the available contexts, customer workspaces use `/dashboard/w/[workspaceSlug]`, and internal administration uses `/platform`. Server checks protect direct URLs. Supabase authenticator-app TOTP at AAL2 is implemented and remains required for release; ADR-026 permits feature-flagged enforcement during proof-of-concept development.
+- **Development personas:** The local allow-list includes fictional Account Owner, Platform Owner, dual-context, and no-access identities so browser tests prove each routing outcome. They use real magic-link and TOTP flows; there is no authentication bypass.
+- **Deferred:** Invitations, customer-defined roles, production email, MFA recovery operations, and product-module permissions.
+- **Date:** 2026-10-12
+
 ## ADR-024 — Commercial independence from Blinc
 
 - **Status:** Accepted (owner requirement, 2026-10-12)
@@ -44,7 +76,7 @@ Newest first. Status: **Accepted** | **Proposed** | **Superseded** | **Unresolve
 ## ADR-019 — Authentication provider: Supabase Auth
 
 - **Status:** Accepted (owner decision, 2026-10-11). Supersedes ADR-007.
-- **Decision:** Use **Supabase Auth** in the existing London project for identities, sessions, passwordless email sign-in, Google sign-in, invitations, and MFA. Staff remain invite-only and must reach the required MFA assurance level before accessing CRM data (ADR-015).
+- **Decision:** Use **Supabase Auth** in the existing London project for identities, sessions, passwordless email sign-in, Google sign-in, invitations, and MFA. Staff remain invite-only and must reach the required MFA assurance level before accessing CRM data (ADR-015). Supabase's provider-level public sign-up setting must be disabled; an application allow-list alone is not the invite-only boundary.
 - **Application tenancy:** Supabase Auth identifies the person but does not model Zayto workspaces or access. ADR-020 and ADR-022 now define Zayto-owned workspaces, memberships, participations, and permissions. Supabase metadata must not be the authority for customer roles or tenant access.
 - **Data access:** Prisma remains the server-side data layer for CRM records. The browser-facing Supabase Data API stays off for CRM data. Supabase browser credentials may be used only as documented for Auth; secret/service-role credentials remain server-only.
 - **Why changed:** Supabase Auth already provides managed magic links, Google OAuth, invitations, sessions, and MFA assurance levels in the service we have selected. This removes duplicated authentication infrastructure and avoids custom MFA gating required by Better Auth for magic-link and social sign-ins.
@@ -73,7 +105,7 @@ Newest first. Status: **Accepted** | **Proposed** | **Superseded** | **Unresolve
 
 - **Status:** Accepted (owner decision, 2026-10-11); project created and connected (London, PostgreSQL 17)
 - **Decision:** Host PostgreSQL on **Supabase** in the London region. Use Prisma from our server for CRM data and Supabase Auth for identity and sessions (ADR-019). Do **not** expose CRM data through the browser-facing Supabase Data API.
-- **App database user (owner-approved):** the app connects as `zayto_app`, not the `postgres` admin. It can create and use tables in the `public` schema and create the temporary database Prisma uses to check migrations, but it is not an admin and cannot bypass Row Level Security. Connection is via the Session pooler (port 5432).
+- **Database roles (updated by ADR-027):** the app connects through the Session pooler as DML-only `zayto_app`, never `postgres`. A separate `zayto_migrator` owns and changes Zayto database objects and migration history. The earlier proof-of-concept permission for `zayto_app` to own tables and create databases was withdrawn in the verified shared Supabase cutover on 2026-10-13.
 - **Encryption:** connections must use TLS and verify Supabase's certificate authority, stored at `certs/supabase-ca.crt` (public, safe to commit). The file is Supabase's published "Supabase Root 2021 CA" (valid to April 2031), checked against the root the database actually presents (SHA-256 fingerprints match). The app passes it to `pg`; Prisma's CLI receives it as the `sslcert` URL parameter (Prisma's name for the root certificate, not libpq's `sslrootcert`). "Enforce SSL" is on and the app connection was retested successfully on 2026-10-11. Data API: turned off by the owner.
 - **Storage lean:** Supabase Storage (same London project, private buckets) for documents, to be confirmed under ADR-008.
 - **Constraints:** Free tier is for the proof of concept only (no real tenant/landlord data). Move to a paid plan with backups before real data; ask the owner before any paid upgrade.
@@ -82,7 +114,7 @@ Newest first. Status: **Accepted** | **Proposed** | **Superseded** | **Unresolve
 ## ADR-015 — Data residency, MFA, and agency onboarding
 
 - **Status:** Accepted (owner decision, 2026-10-11)
-- **Decision:** All agency and personal data is stored in the **UK only** (London region) for the database, file storage, and any provider that holds personal data. Staff **must** use two-step login (MFA). Agencies are **invite-only** for the proof of concept: the owner creates each agency workspace; there is no public agency sign-up.
+- **Decision:** All agency and personal data is stored in the **UK only** (London region) for the database, file storage, and any provider that holds personal data. Staff **must** use two-step login (MFA) at release. ADR-026 allows enforcement to remain feature-flagged off during proof-of-concept development, with a release safeguard that can force it on. Agencies are **invite-only** for the proof of concept: the owner creates each agency workspace; there is no public agency sign-up.
 - **Updated by ADR-020 and ADR-022:** one identity may belong to several workspaces and participate in cases across several organisations. Whether independent landlords may self-register for a free or paid workspace remains unresolved.
 - **Date:** 2026-10-11
 

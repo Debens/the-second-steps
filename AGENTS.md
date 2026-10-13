@@ -25,8 +25,8 @@ Sanity-check significant decisions before implementing them, including accepted 
 - Light/dark/system themes and responsive conventions: every new screen and component must support both themes and mobile, tablet and desktop from the start (`.cursor/rules/ui-design.mdc`, ADR-018)
 - Checks: `npm run check` (typecheck, ESLint, Prettier, Vitest), `npm run test:e2e` (Playwright), `npm run build`
 
-- Database: PostgreSQL on Supabase (London) via Prisma 7.10 (`prisma/`, `core/db/`). No CRM tables yet. App connects as `zayto_app` over verified TLS (ADR-016).
-- Authentication: Supabase Auth with server-verified cookie sessions. Local magic links are delivered to Mailpit for allow-listed fictional sandbox users. Workspaces, memberships, participations, entitlements, required MFA, Google sign-in, rate limiting, and production email delivery are not implemented yet (ADR-019 to ADR-023).
+- Database: PostgreSQL on Supabase (London) via Prisma 7.10 (`prisma/`, `core/db/`). The access foundation exists; no CRM tables exist. The app uses least-privilege `zayto_app` over verified TLS, while `zayto_migrator` owns schema objects and applies migrations. The shared role cutover and access-hardening migrations were applied and verified on 2026-10-13 (ADR-016 and ADR-027).
+- Authentication: Supabase Auth with server-verified cookie sessions. Local magic links are delivered to Mailpit for allow-listed fictional sandbox users. Workspaces, memberships, fixed roles, role-aware shells, and feature-flagged TOTP are implemented. Participations, entitlements, invitations, MFA recovery, Google sign-in, rate limiting, and production email delivery are not implemented (ADR-019 to ADR-026).
 
 Queues are **not installed**.
 

@@ -8,7 +8,7 @@ alwaysApply: false
 
 **Installed:** PostgreSQL (Supabase, London) + Prisma 7.10. Schema `prisma/schema.prisma`, config `prisma.config.ts`, client `db` from `core/db/client.ts` (server code only). Ask the owner before adding tables or running a migration against the shared database.
 
-- Connect as `zayto_app`, never the `postgres` admin. Keep TLS verification on (`core/db/connection.ts`); never set `rejectUnauthorized: false` or `sslmode=no-verify`. Store money as integer pence and timestamps in UTC (see `typescript.mdc`).
+- Runtime connects as least-privilege `zayto_app`; Prisma migrations use separate `zayto_migrator`. Never give the website the migration credential or use `postgres` at runtime. The ADR-027 shared Supabase role cutover was applied and verified on 2026-10-13. Keep TLS verification on (`core/db/connection.ts`); `DATABASE_SSL_MODE=disable` is permitted only for the disposable local test database and is rejected in production. Store money as integer pence and timestamps in UTC (see `typescript.mdc`).
 
 - One database, shared by modules. Every tenant-owned row has `workspaceId` (UUID), including module records whose parent is already scoped. Never query without the verified workspace scope.
 - Use Prisma migrations (`migrate dev` locally, `migrate deploy` in production). Do not use `db push` against shared or production data.

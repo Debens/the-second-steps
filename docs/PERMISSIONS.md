@@ -1,6 +1,6 @@
 # Permissions and access
 
-Supabase login and server-verified sessions are implemented. Workspaces, memberships, participations, entitlements, MFA enforcement, roles, grants, and CRM data access are not implemented.
+Supabase login, server-verified sessions, the workspace and membership access foundation, fixed staff roles, feature-flagged TOTP MFA enforcement, and the separate Platform Owner shell are implemented. Participations, entitlements, resource/field grants, invitations, and CRM data access are not implemented.
 
 ## Three-layer access model (confirmed)
 
@@ -16,25 +16,40 @@ Menus may reflect these answers, but the server enforces them. Never trust a cli
 
 `Workspace` is the hard tenant boundary. Application code derives it from verified access and scopes every query and mutation. PostgreSQL RLS applies the same boundary from the first workspace-owned tables. Changing a UUID or workspace selector must never cross that boundary.
 
-Branch scope is additional and weaker. Proposed options are whole-workspace access, one branch, several named branches, or an explicit resource exception.
+Branch scope is additional and weaker. Memberships use either whole-workspace access or a non-empty explicit list of named branches. A branch-scoped staff viewer sees workspace-wide staff plus staff sharing at least one of their branches; staff assigned exclusively to other branches are hidden. Resource exceptions are deferred.
 
 ## Business memberships (confirmed model)
 
-Memberships are for people operating a workspace. Initial role names remain proposed:
+Memberships are for people operating a workspace. The first fixed role set is implemented:
 
-| Role               | Intent                                                                       |
-| ------------------ | ---------------------------------------------------------------------------- |
-| `workspace_owner`  | Owns an agency or independent-landlord workspace and its commercial settings |
-| `agency_admin`     | Agency users, branches, permissions, and all agency records                  |
-| `branch_manager`   | Operational access within approved branches; invitation powers unresolved    |
-| `negotiator`       | Listings, enquiries, viewings, offers, and applications                      |
-| `property_manager` | Tenancies, inspections, maintenance, and compliance                          |
-| `accounts`         | Financial records when accounting exists                                     |
-| `read_only`        | Reporting or training within its granted scope                               |
+| Role               | Intent                                                                        |
+| ------------------ | ----------------------------------------------------------------------------- |
+| `workspace_owner`  | **Account Owner** in the UI; customer account, access, and commercial control |
+| `agency_admin`     | Agency users, branches, permissions, and all agency records                   |
+| `branch_manager`   | Views staff and operates within approved branches; cannot administer roles    |
+| `negotiator`       | Listings, enquiries, viewings, offers, and applications                       |
+| `property_manager` | Tenancies, inspections, maintenance, and compliance                           |
+| `accounts`         | Financial records when accounting exists                                      |
+| `read_only`        | Reporting or training within its granted scope                                |
 
-A membership may hold several roles. The exact role matrix is unresolved until the first product slice.
+A membership may hold several roles. `read_only` is exclusive and cannot be combined with another role. Only an existing Account Owner can grant or remove `workspace_owner`; Agency Admins can administer ordinary staff roles. Self-role changes and removal of the final active Account Owner are denied. Role changes are serialised per workspace and database triggers protect the last active owner after the hardening migration is applied. The current permissions cover the access foundation only; each later product module must add its own narrow permissions.
 
-`platform_admin` is not a customer membership role. Platform support has no automatic customer access; future just-in-time support access must be strongly authenticated, justified, time-limited, and audited.
+`platform_owner` is a Zayto staff role stored separately from customer memberships. It grants the internal platform shell, not standing access to customer records. Future support access must be strongly authenticated, justified, time-limited, workspace-specific, and audited.
+
+## Local sandbox identities
+
+These fictional addresses work only in the approved local magic-link sandbox. Sign in at `/login` and open the latest message in Mailpit. The authenticator step appears only when `staff_mfa` is enabled for the effective audience. There are no passwords or bypass codes.
+
+## Feature flags
+
+Feature flags control whether a capability is available; they do not grant membership, permissions, entitlements, or record access. Platform Owners manage global and verified Zayto-user audiences at `/platform/feature-flags`. Workspace override storage and evaluation are implemented, with the controls deferred to the future company profile. Effective precedence for staff is: enabled Zayto testing audience, explicit workspace override, then global default. An ordinary unavailable feature fails off; an unavailable security control such as staff MFA fails on. All changes are server-authorised and audited.
+
+| Email                        | Expected result                                     |
+| ---------------------------- | --------------------------------------------------- |
+| `owner@zayto.local`          | Oakfield Lettings (Demo) as Account Owner           |
+| `platform.owner@zayto.local` | Zayto Platform Owner shell only                     |
+| `dual.owner@zayto.local`     | Context chooser for platform and Oakfield workspace |
+| `no.access@zayto.local`      | Signed in safely, with no platform/workspace access |
 
 ## Participants (confirmed model)
 
@@ -62,14 +77,14 @@ Invitations are purpose-bound, single-use, expiring, revocable, and auditable. T
 ## Security and audit requirements
 
 - Default deny at entitlement, permission, resource, and field levels.
-- Required staff and workspace-owner MFA before customer data access.
+- Required staff and Account Owner MFA at release. Development enforcement is controlled by `staff_mfa`; the server-only release safeguard can force it on but never off.
 - Log authentication, permission changes, invitations, failed access, exports, sensitive document views, and money events without logging the sensitive content.
 - Test cross-workspace, cross-branch, cross-role, and cross-participant denial for every data path.
 - Revoke active access when a relationship ends while preserving any continuing right to retain specific documents.
 
 ## Unresolved product and legal decisions
 
-- Exact role matrix and whether customers can create roles
+- Customer-defined roles and future module-specific permission matrices
 - Applicant/tenant MFA and step-up authentication rules
 - What reference and AML progress or results each party may see
 - What landlords may receive from checks

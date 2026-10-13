@@ -40,6 +40,15 @@ export default async function LoginPage({
         <ThemeToggle className="absolute top-4 right-4" />
         <div className="w-full max-w-sm space-y-8">
           <ZaytoWordmark className="lg:hidden" />
+          {error === "access-setup" && (
+            <p
+              role="alert"
+              className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive"
+            >
+              Your sign-in was verified, but the local access profile could not
+              be prepared. Try again or check the development server logs.
+            </p>
+          )}
           <LoginForm invalidLink={error === "invalid-link"} />
         </div>
       </main>

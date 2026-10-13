@@ -9,3 +9,286 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
+
+enum IdentityStatus {
+  ACTIVE    @map("active")
+  SUSPENDED @map("suspended")
+
+  @@map("identity_status")
+}
+
+enum AuthenticationProvider {
+  SUPABASE @map("supabase")
+
+  @@map("authentication_provider")
+}
+
+enum WorkspaceType {
+  AGENCY            @map("agency")
+  LANDLORD          @map("landlord")
+  PLATFORM_INTERNAL @map("platform_internal")
+
+  @@map("workspace_type")
+}
+
+enum WorkspaceStatus {
+  ACTIVE    @map("active")
+  SUSPENDED @map("suspended")
+  CLOSED    @map("closed")
+
+  @@map("workspace_status")
+}
+
+enum BranchStatus {
+  ACTIVE   @map("active")
+  INACTIVE @map("inactive")
+
+  @@map("branch_status")
+}
+
+enum MembershipStatus {
+  ACTIVE    @map("active")
+  SUSPENDED @map("suspended")
+  ENDED     @map("ended")
+
+  @@map("membership_status")
+}
+
+enum MembershipScopeMode {
+  WORKSPACE      @map("workspace")
+  NAMED_BRANCHES @map("named_branches")
+
+  @@map("membership_scope_mode")
+}
+
+enum MembershipRoleCode {
+  WORKSPACE_OWNER  @map("workspace_owner")
+  AGENCY_ADMIN     @map("agency_admin")
+  BRANCH_MANAGER   @map("branch_manager")
+  NEGOTIATOR       @map("negotiator")
+  PROPERTY_MANAGER @map("property_manager")
+  ACCOUNTS         @map("accounts")
+  READ_ONLY        @map("read_only")
+
+  @@map("membership_role_code")
+}
+
+enum PlatformRoleCode {
+  PLATFORM_OWNER @map("platform_owner")
+
+  @@map("platform_role_code")
+}
+
+enum PlatformRoleStatus {
+  ACTIVE    @map("active")
+  SUSPENDED @map("suspended")
+  ENDED     @map("ended")
+
+  @@map("platform_role_status")
+}
+
+enum AuditOutcome {
+  SUCCEEDED @map("succeeded")
+  DENIED    @map("denied")
+  FAILED    @map("failed")
+
+  @@map("audit_outcome")
+}
+
+enum FeatureFlagStatus {
+  ACTIVE  @map("active")
+  RETIRED @map("retired")
+
+  @@map("feature_flag_status")
+}
+
+model UserIdentity {
+  id                      String                         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  status                  IdentityStatus                 @default(ACTIVE)
+  createdAt               DateTime                       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt               DateTime                       @updatedAt @map("updated_at") @db.Timestamptz(6)
+  providerLinks           AuthenticationProviderLink[]
+  memberships             Membership[]
+  platformRoles           PlatformRoleAssignment[]       @relation("PlatformRoleUser")
+  platformRolesAssigned   PlatformRoleAssignment[]       @relation("PlatformRoleAssignedBy")
+  membershipRolesAssigned MembershipRole[]               @relation("MembershipRoleAssignedBy")
+  branchAccessAssigned    MembershipBranchAccess[]       @relation("BranchAccessAssignedBy")
+  auditEvents             AuditEvent[]                   @relation("AuditActor")
+  featureFlagChanges      WorkspaceFeatureFlagOverride[] @relation("FeatureFlagChangedBy")
+
+  @@map("user_identities")
+}
+
+model AuthenticationProviderLink {
+  id              String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userIdentityId  String                 @map("user_identity_id") @db.Uuid
+  provider        AuthenticationProvider
+  providerSubject String                 @map("provider_subject") @db.Uuid
+  createdAt       DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
+  userIdentity    UserIdentity           @relation(fields: [userIdentityId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerSubject])
+  @@index([userIdentityId])
+  @@map("authentication_provider_links")
+}
+
+model Workspace {
+  id                   String                         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  slug                 String                         @unique @db.VarChar(63)
+  displayName          String                         @map("display_name") @db.VarChar(160)
+  type                 WorkspaceType
+  status               WorkspaceStatus                @default(ACTIVE)
+  createdAt            DateTime                       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt            DateTime                       @updatedAt @map("updated_at") @db.Timestamptz(6)
+  branches             Branch[]
+  memberships          Membership[]
+  auditEvents          AuditEvent[]
+  featureFlagOverrides WorkspaceFeatureFlagOverride[]
+
+  @@map("workspaces")
+}
+
+model Branch {
+  id          String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workspaceId String                   @map("workspace_id") @db.Uuid
+  name        String                   @db.VarChar(160)
+  status      BranchStatus             @default(ACTIVE)
+  createdAt   DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt   DateTime                 @updatedAt @map("updated_at") @db.Timestamptz(6)
+  workspace   Workspace                @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  access      MembershipBranchAccess[]
+
+  @@unique([workspaceId, id])
+  @@unique([workspaceId, name])
+  @@index([workspaceId, status])
+  @@map("branches")
+}
+
+model Membership {
+  id             String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workspaceId    String                   @map("workspace_id") @db.Uuid
+  userIdentityId String                   @map("user_identity_id") @db.Uuid
+  status         MembershipStatus         @default(ACTIVE)
+  scopeMode      MembershipScopeMode      @map("scope_mode")
+  startedAt      DateTime                 @default(now()) @map("started_at") @db.Timestamptz(6)
+  endedAt        DateTime?                @map("ended_at") @db.Timestamptz(6)
+  createdAt      DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt      DateTime                 @updatedAt @map("updated_at") @db.Timestamptz(6)
+  workspace      Workspace                @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  userIdentity   UserIdentity             @relation(fields: [userIdentityId], references: [id], onDelete: Restrict)
+  roles          MembershipRole[]
+  branchAccess   MembershipBranchAccess[]
+  auditEvents    AuditEvent[]             @relation("AuditMembership")
+
+  @@unique([workspaceId, userIdentityId])
+  @@unique([workspaceId, id])
+  @@index([userIdentityId, status])
+  @@index([workspaceId, status])
+  @@map("memberships")
+}
+
+model MembershipRole {
+  id                       String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workspaceId              String             @map("workspace_id") @db.Uuid
+  membershipId             String             @map("membership_id") @db.Uuid
+  roleCode                 MembershipRoleCode @map("role_code")
+  assignedByUserIdentityId String?            @map("assigned_by_user_identity_id") @db.Uuid
+  assignedAt               DateTime           @default(now()) @map("assigned_at") @db.Timestamptz(6)
+  membership               Membership         @relation(fields: [workspaceId, membershipId], references: [workspaceId, id], onDelete: Cascade)
+  assignedBy               UserIdentity?      @relation("MembershipRoleAssignedBy", fields: [assignedByUserIdentityId], references: [id], onDelete: SetNull)
+
+  @@unique([membershipId, roleCode])
+  @@index([workspaceId, roleCode])
+  @@index([assignedByUserIdentityId])
+  @@map("membership_roles")
+}
+
+model MembershipBranchAccess {
+  id                       String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workspaceId              String        @map("workspace_id") @db.Uuid
+  membershipId             String        @map("membership_id") @db.Uuid
+  branchId                 String        @map("branch_id") @db.Uuid
+  assignedByUserIdentityId String?       @map("assigned_by_user_identity_id") @db.Uuid
+  assignedAt               DateTime      @default(now()) @map("assigned_at") @db.Timestamptz(6)
+  membership               Membership    @relation(fields: [workspaceId, membershipId], references: [workspaceId, id], onDelete: Cascade)
+  branch                   Branch        @relation(fields: [workspaceId, branchId], references: [workspaceId, id], onDelete: Cascade)
+  assignedBy               UserIdentity? @relation("BranchAccessAssignedBy", fields: [assignedByUserIdentityId], references: [id], onDelete: SetNull)
+
+  @@unique([membershipId, branchId])
+  @@index([workspaceId, branchId])
+  @@index([assignedByUserIdentityId])
+  @@map("membership_branch_access")
+}
+
+model PlatformRoleAssignment {
+  id                       String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userIdentityId           String             @map("user_identity_id") @db.Uuid
+  roleCode                 PlatformRoleCode   @map("role_code")
+  status                   PlatformRoleStatus @default(ACTIVE)
+  assignedByUserIdentityId String?            @map("assigned_by_user_identity_id") @db.Uuid
+  assignedAt               DateTime           @default(now()) @map("assigned_at") @db.Timestamptz(6)
+  endedAt                  DateTime?          @map("ended_at") @db.Timestamptz(6)
+  userIdentity             UserIdentity       @relation("PlatformRoleUser", fields: [userIdentityId], references: [id], onDelete: Restrict)
+  assignedBy               UserIdentity?      @relation("PlatformRoleAssignedBy", fields: [assignedByUserIdentityId], references: [id], onDelete: SetNull)
+
+  @@unique([userIdentityId, roleCode])
+  @@index([status, roleCode])
+  @@index([assignedByUserIdentityId])
+  @@map("platform_role_assignments")
+}
+
+model AuditEvent {
+  id                  String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workspaceId         String?       @map("workspace_id") @db.Uuid
+  actorUserIdentityId String?       @map("actor_user_identity_id") @db.Uuid
+  actorMembershipId   String?       @map("actor_membership_id") @db.Uuid
+  action              String        @db.VarChar(120)
+  outcome             AuditOutcome
+  targetType          String?       @map("target_type") @db.VarChar(80)
+  targetId            String?       @map("target_id") @db.VarChar(160)
+  requestId           String        @map("request_id") @db.VarChar(160)
+  metadata            Json?
+  createdAt           DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+  workspace           Workspace?    @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  actorUserIdentity   UserIdentity? @relation("AuditActor", fields: [actorUserIdentityId], references: [id], onDelete: SetNull)
+  actorMembership     Membership?   @relation("AuditMembership", fields: [workspaceId, actorMembershipId], references: [workspaceId, id], onDelete: Restrict)
+
+  @@index([workspaceId, createdAt])
+  @@index([actorUserIdentityId, createdAt])
+  @@index([actorMembershipId])
+  @@index([action, createdAt])
+  @@map("audit_events")
+}
+
+model FeatureFlag {
+  id                 String                         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  key                String                         @unique @db.VarChar(80)
+  displayName        String                         @map("display_name") @db.VarChar(160)
+  description        String                         @db.VarChar(500)
+  globalEnabled      Boolean                        @default(false) @map("global_enabled")
+  zaytoUsersEnabled  Boolean                        @default(false) @map("zayto_users_enabled")
+  status             FeatureFlagStatus              @default(ACTIVE)
+  createdAt          DateTime                       @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt          DateTime                       @updatedAt @map("updated_at") @db.Timestamptz(6)
+  workspaceOverrides WorkspaceFeatureFlagOverride[]
+
+  @@index([status])
+  @@map("feature_flags")
+}
+
+model WorkspaceFeatureFlagOverride {
+  id                      String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workspaceId             String        @map("workspace_id") @db.Uuid
+  featureFlagId           String        @map("feature_flag_id") @db.Uuid
+  enabled                 Boolean
+  changedByUserIdentityId String?       @map("changed_by_user_identity_id") @db.Uuid
+  changedAt               DateTime      @default(now()) @map("changed_at") @db.Timestamptz(6)
+  workspace               Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  featureFlag             FeatureFlag   @relation(fields: [featureFlagId], references: [id], onDelete: Cascade)
+  changedBy               UserIdentity? @relation("FeatureFlagChangedBy", fields: [changedByUserIdentityId], references: [id], onDelete: SetNull)
+
+  @@unique([workspaceId, featureFlagId])
+  @@index([featureFlagId])
+  @@index([changedByUserIdentityId])
+  @@map("workspace_feature_flag_overrides")
+}

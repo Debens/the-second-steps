@@ -2,26 +2,28 @@
 
 ## What we have today (confirmed, inspected)
 
-| Piece                                      | Status                                                               |
-| ------------------------------------------ | -------------------------------------------------------------------- |
-| Next.js 16.4 + React 19.3                  | Installed; **App Router** (`app/layout.tsx`, `app/login/`)           |
-| TypeScript, `strict: true`, `@/` imports   | Installed; `npm run typecheck`                                       |
-| Tailwind CSS 4 + `styles/globals.css`      | Installed; Inter; brand tokens (ADR-017)                             |
-| Light / dark / system themes               | Installed (`components/theme/`, ADR-018)                             |
-| shadcn/ui (Nova, Base UI), `components/ui` | Installed; `rsc: true`                                               |
-| PostgreSQL (Supabase London) / Prisma 7.10 | Installed and connected as `zayto_app`; no tables yet (ADR-004, 016) |
-| Auth                                       | Supabase Auth installed; local Mailpit magic-link sandbox            |
-| ESLint, Prettier, Vitest, Playwright       | Installed (ADR-013); `npm run check`, `npm run test:e2e`             |
-| Job queue                                  | **Not installed**                                                    |
+| Piece                                      | Status                                                                |
+| ------------------------------------------ | --------------------------------------------------------------------- |
+| Next.js 16.4 + React 19.3                  | Installed; **App Router** (`app/layout.tsx`, `app/login/`)            |
+| TypeScript, `strict: true`, `@/` imports   | Installed; `npm run typecheck`                                        |
+| Tailwind CSS 4 + `styles/globals.css`      | Installed; Inter; brand tokens (ADR-017)                              |
+| Light / dark / system themes               | Installed (`components/theme/`, ADR-018)                              |
+| shadcn/ui (Nova, Base UI), `components/ui` | Installed; `rsc: true`                                                |
+| PostgreSQL (Supabase London) / Prisma 7.10 | Access foundation and least-privilege role split applied and verified |
+| Auth                                       | Supabase Auth, Mailpit sandbox magic links, and TOTP MFA gate         |
+| Feature flags                              | Global, Zayto-user, and workspace rollout controls                    |
+| ESLint, Prettier, Vitest, Playwright       | Installed (ADR-013); `npm run check`, `npm run test:e2e`              |
+| Job queue                                  | **Not installed**                                                     |
 
 ## Security posture today
 
-- Supabase Auth proves identity and maintains server-verified sessions. The current dashboard is a sandbox only: workspaces, memberships, participations, entitlements, role authorisation, required MFA, rate limiting, and production email delivery are not implemented. Do not put real personal or financial data in the database.
-- The app talks to Postgres from the server as `zayto_app` over verified TLS. The browser Data API is off. Row Level Security is planned (ADR-006) but not on yet, because there are no tables.
+- Supabase Auth proves identity and maintains server-verified sessions. Staff access requires an active platform role or workspace membership. TOTP AAL2 is implemented behind the `staff_mfa` flag, currently disabled for development and protected by a release-only force-on setting. Participations, entitlements, rate limiting, recovery operations, and production email delivery are not implemented. Do not put real personal or financial data in the database.
+- The app talks to Postgres from the server as least-privilege `zayto_app` over verified TLS. The separate `zayto_migrator` role owns Zayto schema objects and migration history. The shared ownership/role cutover was applied and verified on 2026-10-13. The browser Data API is off. RLS is enabled and forced on every access-foundation table; application checks remain mandatory.
+- RLS protects against missing application filters, not a fully compromised website process: PostgreSQL custom request settings are asserted by the same runtime connection. Removing DDL/object ownership from `zayto_app`, explicit application authorisation, parameterised queries, and server-only boundaries remain essential.
 - Secrets stay in `.env.local` (gitignored). The public certificate is `certs/supabase-ca.crt`.
 - "Enforce SSL" is confirmed on. Free-tier backups are not enough for real data (ADR-016).
 
-## Tenant and account model (confirmed design; not implemented)
+## Tenant and account model (foundation implemented; wider model proposed)
 
 `Workspace` is the hard boundary for customer data, subscriptions, entitlements, usage, and business permissions (ADR-020). An agency, an independent landlord, and Zayto's internal operation use different workspace types. An `Organisation` represents a legal or commercial body and may own a workspace; an individual landlord may own a workspace without being modelled as a company.
 
@@ -39,7 +41,7 @@ Every protected operation checks, on the server:
 2. User permission in the current membership or participation.
 3. Access to the specific resource and fields.
 
-Application queries always scope by `workspaceId`. PostgreSQL RLS is added with the first workspace-owned records as defence in depth (ADR-023).
+Application queries scope by the verified `workspaceId`. PostgreSQL RLS is enabled on the access-foundation records as defence in depth (ADR-023); the same pattern is required for every future tenant-owned repository.
 
 ## Style: modular monolith (confirmed)
 
@@ -64,11 +66,11 @@ We are **not** starting with microservices. That would add operational cost befo
 └─────────────────────────────────────────────┘
 ```
 
-Dependencies flow **down**. Core must not import lettings or sales.
+Presentation depends on application use-cases. Application code depends on domain rules and repository interfaces. Prisma adapters implement those interfaces; domain code never imports the data layer. Core must not import lettings or sales.
 
 ## Target folder shape (proposed)
 
-Partly created. Expand as feature work starts:
+Partly created. `core/feature-flags/` now contains fixed keys, precedence, server evaluation, administration, and database access. Expand the remaining areas as feature work starts:
 
 - `core/db/` — Prisma client and connection (exists). Later: workspace, membership, participation, entitlement, audit, files, jobs
 - `modules/lettings/` — applications, tenancies, rent, maintenance, compliance (not created)
@@ -83,9 +85,9 @@ Exact paths may sit under `src/` later. **Unresolved** whether to introduce `src
 
 App Router is in use (`app/`). Do not add `pages/`. New screens use Server Components by default, with small Client Components for interactivity (see `app/login/`).
 
-## Hosting and jobs (unresolved)
+## Hosting and jobs
 
-Where we deploy (Vercel, a UK VM, container) is unset. That affects file storage, cron, and how we run workers. Hosting that holds personal data must be in the **UK** (ADR-015).
+Vercel is confirmed for the first production release. Dynamic execution must be pinned to an approved UK region and Vercel's data processing, logs, analytics, caching, and subprocessors must be checked before real personal data is used. Static assets may use Vercel's global network, but tenant data must never be placed in publicly cached output. Deployment remains unapproved and no Vercel project configuration has been applied.
 
 **Proposed** for jobs: persist a `Job` row and process it with a later worker (for example [Inngest](https://www.inngest.com/) or a Postgres-backed worker). For the first PoC slice, short internal writes may stay in-request **with timeouts**; anything that calls a third party should still be a job.
 

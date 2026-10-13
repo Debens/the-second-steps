@@ -1,6 +1,8 @@
-# Data model (proposed)
+# Data model
 
-This is a discussion model, not a Prisma schema. No tables should be created until the first product slice and remaining data-ownership decisions are approved.
+The access-foundation subset is implemented in Prisma and PostgreSQL. The remaining product model is a discussion model and must not be turned into tables until its product and data-ownership decisions are approved.
+
+Implemented tables: `user_identities`, `authentication_provider_links`, `workspaces`, `branches`, `memberships`, `membership_roles`, `membership_branch_access`, `platform_role_assignments`, `audit_events`, `feature_flags`, and `workspace_feature_flag_overrides`. Their migrations enable and force RLS, use transaction-local verified identity/workspace context, and apply workspace-aware foreign keys. The pending hardening migration also makes audit actor memberships workspace-aware, rejects empty named-branch scopes, and protects the last active Account Owner. No CRM or participant tables exist yet.
 
 ## Boundary and identifier rules
 
@@ -32,7 +34,7 @@ Membership 1──* MembershipRole
 Membership *──* Branch (via MembershipBranchAccess)
 ```
 
-Initial workspace types are `agency`, `landlord`, and `platform_internal`. An agency or landlord company can be represented by an `Organisation`; an individual landlord can own a workspace without an artificial company record.
+Implemented workspace types are `agency`, `landlord`, and `platform_internal`. The proposed `Organisation` and individual-owner records are not implemented yet.
 
 `Membership` is for people who operate a business workspace. Platform administration is separate and grants no standing customer-data access.
 

@@ -1,5 +1,9 @@
 import { afterEach, describe, expect, it } from "vitest";
-import { getSandboxAuthEmails, normaliseEmail } from "./config";
+import {
+  getSandboxAuthEmails,
+  getSandboxPersona,
+  normaliseEmail,
+} from "./config";
 
 const originalEmails = process.env.SANDBOX_AUTH_EMAILS;
 
@@ -24,5 +28,15 @@ describe("sandbox auth configuration", () => {
     expect(getSandboxAuthEmails()).toEqual(
       new Set(["one@example.com", "two@example.com"]),
     );
+  });
+
+  it("maps approved local identities to sandbox personas", () => {
+    expect(getSandboxPersona("OWNER@ZAYTO.LOCAL")).toBe("account_owner");
+    expect(getSandboxPersona("platform.owner@zayto.local")).toBe(
+      "platform_owner",
+    );
+    expect(getSandboxPersona("dual.owner@zayto.local")).toBe("dual_owner");
+    expect(getSandboxPersona("no.access@zayto.local")).toBe("no_access");
+    expect(getSandboxPersona("unknown@zayto.local")).toBeNull();
   });
 });

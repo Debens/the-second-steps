@@ -1,0 +1,20 @@
+name: zayto-tests
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: zayto_test
+      POSTGRES_PASSWORD: zayto_test_admin_only
+      POSTGRES_USER: zayto_test_admin
+    ports:
+      - "127.0.0.1:55432:5432"
+    tmpfs:
+      - /var/lib/postgresql/data
+    volumes:
+      - ./scripts/test-db-init.sql:/docker-entrypoint-initdb.d/10-zayto-roles.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U zayto_test_admin -d zayto_test"]
+      interval: 1s
+      timeout: 3s
+      retries: 30
