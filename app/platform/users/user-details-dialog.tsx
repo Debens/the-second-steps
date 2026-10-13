@@ -1,7 +1,8 @@
 "use client";
 
-import { Eye } from "lucide-react";
+import { Check, Copy, Eye } from "lucide-react";
 import Link from "next/link";
+import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -15,6 +16,14 @@ import {
 import { ROLE_LABELS } from "@/core/access/domain/role";
 import type { PlatformUserSummary } from "@/core/platform/application/platform-directory";
 import { StatusPill } from "../status-pill";
+import {
+  COPY_EMAIL_FEEDBACK_MS,
+  copyDisplayedEmail,
+  copyEmailFeedback,
+  signInEmailCopyValue,
+  writeClipboardText,
+  type CopyEmailStatus,
+} from "./copy-email";
 
 const MEMBERSHIP_STATUS_LABELS = {
   ACTIVE: "Active access",
@@ -37,6 +46,70 @@ function Detail({
   );
 }
 
+function copyButtonClassName(status: CopyEmailStatus) {
+  if (status === "copied") {
+    return "border-transparent bg-success-soft text-success hover:bg-success-soft hover:text-success";
+  }
+
+  if (status === "failed") {
+    return "border-transparent bg-destructive-soft text-destructive hover:bg-destructive-soft hover:text-destructive";
+  }
+
+  return undefined;
+}
+
+function CopyEmailButton({ email }: { email: string }) {
+  const [status, setStatus] = useState<CopyEmailStatus>("idle");
+  const resetTimer = useRef<number | null>(null);
+  const feedback = copyEmailFeedback(status);
+
+  useEffect(() => {
+    return () => {
+      if (resetTimer.current !== null) {
+        window.clearTimeout(resetTimer.current);
+      }
+    };
+  }, []);
+
+  function showFeedback(next: CopyEmailStatus) {
+    setStatus(next);
+    if (resetTimer.current !== null) {
+      window.clearTimeout(resetTimer.current);
+    }
+    resetTimer.current = window.setTimeout(() => {
+      setStatus("idle");
+      resetTimer.current = null;
+    }, COPY_EMAIL_FEEDBACK_MS);
+  }
+
+  async function copyEmail() {
+    const copied = await copyDisplayedEmail(email, writeClipboardText);
+    showFeedback(copied ? "copied" : "failed");
+  }
+
+  const Icon = status === "copied" ? Check : Copy;
+
+  return (
+    <span className="relative inline-flex">
+      <Button
+        type="button"
+        variant="outline"
+        size="icon-sm"
+        className={copyButtonClassName(status)}
+        aria-label={feedback.label}
+        onClick={() => {
+          void copyEmail();
+        }}
+      >
+        <Icon aria-hidden="true" />
+      </Button>
+      <span className="sr-only" role="status">
+        {feedback.announcement}
+      </span>
+    </span>
+  );
+}
+
 export function UserDetailsDialog({
   user,
   createdAtLabel,
@@ -45,6 +118,7 @@ export function UserDetailsDialog({
   createdAtLabel: string;
 }) {
   const displayName = user.displayName ?? "Unnamed user";
+  const signInEmail = signInEmailCopyValue(user.primaryEmail);
 
   return (
     <Dialog>
@@ -82,7 +156,14 @@ export function UserDetailsDialog({
           </div>
           <dl className="grid gap-x-6 gap-y-4 rounded-lg border bg-muted/20 p-4 sm:grid-cols-2">
             <Detail label="Sign-in email">
-              {user.primaryEmail ?? "Email not recorded"}
+              {signInEmail ? (
+                <div className="flex items-center gap-2">
+                  <span className="min-w-0 break-all">{signInEmail}</span>
+                  <CopyEmailButton email={signInEmail} />
+                </div>
+              ) : (
+                (user.primaryEmail ?? "Email not recorded")
+              )}
             </Detail>
             <Detail label="Account status">
               <StatusPill
