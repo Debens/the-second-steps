@@ -1,0 +1,55 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Check, build, and test
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    env:
+      CI: "true"
+      NEXT_TELEMETRY_DISABLED: "1"
+      DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/zayto_ci
+      MIGRATION_DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/zayto_ci
+      DATABASE_SSL_MODE: verify-full
+      NEXT_PUBLIC_SUPABASE_URL: https://ci.invalid
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ci-placeholder
+      SUPABASE_SECRET_KEY: ci-placeholder
+      NEXT_PUBLIC_APP_URL: http://127.0.0.1:3000
+      REQUIRE_STAFF_MFA: "false"
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Use Node.js 22.17.1
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22.17.1
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run code checks and unit tests
+        run: npm run check
+
+      - name: Build production application
+        run: npm run build
+
+      - name: Run database integration tests
+        run: npm run test:integration
