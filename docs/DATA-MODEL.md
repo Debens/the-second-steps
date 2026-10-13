@@ -2,7 +2,7 @@
 
 The access-foundation subset is implemented in Prisma and PostgreSQL. The remaining product model is a discussion model and must not be turned into tables until its product and data-ownership decisions are approved.
 
-Implemented tables: `user_identities`, `authentication_provider_links`, `workspaces`, `branches`, `memberships`, `membership_roles`, `membership_branch_access`, `platform_role_assignments`, `audit_events`, `feature_flags`, and `workspace_feature_flag_overrides`. Their migrations enable and force RLS, use transaction-local verified identity/workspace context, and apply workspace-aware foreign keys. The pending hardening migration also makes audit actor memberships workspace-aware, rejects empty named-branch scopes, and protects the last active Account Owner. No CRM or participant tables exist yet.
+Implemented tables: `user_identities`, `authentication_provider_links`, `workspaces`, `branches`, `memberships`, `membership_roles`, `membership_branch_access`, `platform_role_assignments`, `audit_events`, `feature_flags`, and `workspace_feature_flag_overrides`. Their migrations enable and force RLS, use transaction-local verified identity/workspace context, and apply workspace-aware foreign keys. Applied hardening protects workspace-aware audit actors, named-branch scopes, and the final active Account Owner. No CRM or participant tables exist yet.
 
 ## Boundary and identifier rules
 
@@ -19,7 +19,7 @@ UserIdentity 1──* Membership
 UserIdentity 1──* Participation
 ```
 
-`UserIdentity` represents one human login and initially references Supabase Auth. It holds no global customer role.
+`UserIdentity` represents one human login and initially references Supabase Auth. It holds no global customer role. Nullable display name and primary email fields support the internal user directory; Supabase remains the authentication authority.
 
 `PersonalProfile` is a small, user-controlled set of reusable details. It is not a globally shared CRM contact record. Sharing into an application, tenancy, or check is explicit and produces an auditable workspace/case record or snapshot.
 
@@ -35,6 +35,8 @@ Membership *──* Branch (via MembershipBranchAccess)
 ```
 
 Implemented workspace types are `agency`, `landlord`, and `platform_internal`. The proposed `Organisation` and individual-owner records are not implemented yet.
+
+The implemented workspace and branch records also hold the small set of customer administration details shown to Platform Owners: trading/legal name, company number, contact details, registered address, branch contact/address, and active status. These are account metadata rather than CRM people, property, or tenancy records.
 
 `Membership` is for people who operate a business workspace. Platform administration is separate and grants no standing customer-data access.
 

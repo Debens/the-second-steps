@@ -1,5 +1,6 @@
 import { Building2, ShieldCheck, Users } from "lucide-react";
 import type { Metadata } from "next";
+import Link from "next/link";
 import {
   Card,
   CardContent,
@@ -14,14 +15,16 @@ export const metadata: Metadata = {
 
 const areas = [
   {
-    title: "Customer workspaces",
-    description: "Workspace lifecycle controls will appear here.",
+    title: "Customers",
+    description: "View customer profiles, branches and rollout settings.",
     icon: Building2,
+    href: "/platform/customers",
   },
   {
-    title: "Platform access",
-    description: "Platform Owner management will appear here.",
+    title: "Users",
+    description: "View identities and their platform or customer access.",
     icon: Users,
+    href: "/platform/users",
   },
 ];
 
@@ -50,16 +53,23 @@ export default function PlatformPage() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
-        {areas.map(({ description, icon: Icon, title }) => (
+        {areas.map(({ description, href, icon: Icon, title }) => (
           <Card key={title}>
             <CardHeader>
               <Icon aria-hidden="true" className="size-5 text-primary" />
-              <CardTitle>{title}</CardTitle>
+              <CardTitle>
+                <Link
+                  href={href}
+                  className="text-primary underline-offset-4 hover:underline"
+                >
+                  {title}
+                </Link>
+              </CardTitle>
               <CardDescription>{description}</CardDescription>
             </CardHeader>
             <CardContent>
               <p className="text-xs text-muted-foreground">
-                No customer data is exposed in this proof-of-concept view.
+                Customer CRM records remain outside this platform context.
               </p>
             </CardContent>
           </Card>

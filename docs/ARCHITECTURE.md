@@ -12,6 +12,7 @@
 | PostgreSQL (Supabase London) / Prisma 7.10 | Access foundation and least-privilege role split applied and verified |
 | Auth                                       | Supabase Auth, Mailpit sandbox magic links, and TOTP MFA gate         |
 | Feature flags                              | Global, Zayto-user, and workspace rollout controls                    |
+| Platform administration                    | Read-only user/customer directories and customer feature controls     |
 | ESLint, Prettier, Vitest, Playwright       | Installed (ADR-013); `npm run check`, `npm run test:e2e`              |
 | Job queue                                  | **Not installed**                                                     |
 
@@ -32,6 +33,8 @@ One Supabase identity may have several kinds of access:
 - `Membership` — operates a business workspace as an owner, administrator, or staff member.
 - `Participation` — acts in a particular application, tenancy, guarantee, referencing case, or explicitly shared landlord relationship.
 - `ResourceGrant` — limits a participant to named resources, actions, and fields.
+
+The internal Platform Owner shell may read limited account and customer administration metadata, including user names/emails, workspace details, branches, memberships, and feature-flag settings. This does not grant access to customer CRM records. Customer administration mutations remain limited to audited feature-flag overrides in the current slice.
 
 Applicants, tenants, guarantors, and invited landlords are first-class users with a personal portal, but they are not broad members of an agency workspace. A small user-controlled personal profile may be reused with explicit confirmation; each workspace retains its own operational person records and history. Sensitive submissions remain case-scoped and private by default.
 

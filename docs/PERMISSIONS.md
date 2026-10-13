@@ -1,6 +1,6 @@
 # Permissions and access
 
-Supabase login, server-verified sessions, the workspace and membership access foundation, fixed staff roles, feature-flagged TOTP MFA enforcement, and the separate Platform Owner shell are implemented. Participations, entitlements, resource/field grants, invitations, and CRM data access are not implemented.
+Supabase login, server-verified sessions, the workspace and membership access foundation, fixed staff roles, feature-flagged TOTP MFA enforcement, and the separate Platform Owner shell are implemented. Platform Owners can browse limited user/customer administration metadata and manage audited customer feature-flag overrides; this does not grant CRM-record access. Participations, entitlements, resource/field grants, invitations, and CRM data access are not implemented.
 
 ## Three-layer access model (confirmed)
 
@@ -42,7 +42,7 @@ These fictional addresses work only in the approved local magic-link sandbox. Si
 
 ## Feature flags
 
-Feature flags control whether a capability is available; they do not grant membership, permissions, entitlements, or record access. Platform Owners manage global and verified Zayto-user audiences at `/platform/feature-flags`. Workspace override storage and evaluation are implemented, with the controls deferred to the future company profile. Effective precedence for staff is: enabled Zayto testing audience, explicit workspace override, then global default. An ordinary unavailable feature fails off; an unavailable security control such as staff MFA fails on. All changes are server-authorised and audited.
+Feature flags control whether a capability is available; they do not grant membership, permissions, entitlements, or record access. Platform Owners manage global and verified Zayto-user audiences at `/platform/feature-flags`, and workspace overrides from each customer profile. Customer overrides use inherit/on/off and show the effective result. Effective precedence for staff is: enabled Zayto testing audience, explicit workspace override, then global default. An ordinary unavailable feature fails off; an unavailable security control such as staff MFA fails on. All changes are server-authorised and audited.
 
 | Email                        | Expected result                                     |
 | ---------------------------- | --------------------------------------------------- |

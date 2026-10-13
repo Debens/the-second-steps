@@ -1,6 +1,6 @@
 # Feature flags and staged MFA
 
-**Status:** Implemented, verified, committed, and pushed through the proof-of-concept scope. Unit, disposable-database integration, browser (including shared-sandbox MFA mutation and cleanup), and production-build verification pass. Public Supabase Auth sign-up is disabled and independently verified. Company-profile controls, production release-lock activation, and deployment remain deliberately deferred.
+**Status:** Implemented and verified through the proof-of-concept scope. Unit, disposable-database integration, browser (including shared-sandbox MFA mutation and cleanup), and production-build verification pass. Public Supabase Auth sign-up is disabled and independently verified. Customer-profile controls are now implemented; production release-lock activation and deployment remain deliberately deferred.
 
 **Owner decisions (2026-10-13):**
 
@@ -9,7 +9,7 @@
 - “Zayto users” means identities with an active internal platform role, never an email-domain check.
 - Evaluation precedence is Zayto testing enablement, then an explicit workspace override, then the global default.
 - The MFA flag starts disabled globally and disabled for Zayto users.
-- Platform Owners receive global and Zayto-audience controls now. Workspace override storage and evaluation are implemented now, while controls on a company profile wait until that profile exists.
+- Platform Owners receive global and Zayto-audience controls plus workspace overrides on each customer profile.
 - At release, required security flags such as staff MFA become protected from accidental disabling.
 
 ## 1. Outcome
@@ -27,15 +27,13 @@ Feature flags control availability, not authorisation. A flag can never create w
 - A server-only evaluator with one documented precedence rule.
 - Platform Owner administration at `/platform/feature-flags`.
 - Audited global and Zayto-audience changes.
-- Database/application support for workspace overrides, ready for a later company profile screen.
+- Database/application support and customer-profile controls for workspace overrides.
 - The existing MFA gate conditional on the evaluated `staff_mfa` flag.
 - Unit, database-isolation, and browser coverage.
 - Updated architecture, permissions, roadmap, and decision documentation.
 
 ## 3. Explicitly deferred
 
-- A company directory or company profile screen.
-- Workspace override controls in the UI until that company profile exists.
 - Percentage rollouts, random cohorts, schedules, geography/device targeting, experiments, and multivariate values.
 - Individual-person overrides. The only person audience is verified Zayto staff as a group.
 - A third-party feature-flag provider.
@@ -46,7 +44,7 @@ Feature flags control availability, not authorisation. A flag can never create w
 
 Each flag has a stable code key, display name, description, global state, Zayto-audience state, lifecycle status, and timestamps. Keys are defined in TypeScript so a misspelt or unknown flag defaults to disabled.
 
-Workspace overrides have two stored values (`enabled` or `disabled`); absence means `inherit`. The company-profile UI will eventually present all three choices.
+Workspace overrides have two stored values (`enabled` or `disabled`); absence means `inherit`. The customer-profile UI presents all three choices and the effective result.
 
 Evaluation for a signed-in identity and optional workspace:
 
@@ -81,7 +79,7 @@ This is global platform configuration, not customer data. Only a verified Platfo
 - Unique `(workspaceId, featureFlagId)`.
 - Workspace-aware indexing and foreign keys.
 
-Platform Owners may manage overrides through the future company administration surface. Workspace users may only have an override evaluated for a workspace they are already authorised to enter. They cannot list or mutate configuration.
+Platform Owners manage overrides through the customer administration surface. Workspace users may only have an override evaluated for a workspace they are already authorised to enter. They cannot list or mutate configuration.
 
 ### Audit
 
@@ -130,7 +128,7 @@ Add **Feature flags** to platform navigation. The page lists code-owned flags an
 
 Every Server Action re-verifies the Supabase user and active Platform Owner role, validates the requested fixed key and booleans, writes atomically, and appends an audit event. Client-side hiding is convenience only.
 
-Workspace overrides are not editable here in this slice. When the company profile is built, its feature tab will show `Inherit global`, `On for this company`, and `Off for this company`, plus the effective result and the source of that result.
+Workspace overrides are edited from the customer profile's Feature flags tab. It shows `Inherit global`, `On for this customer`, and `Off for this customer`, plus the effective result and its source.
 
 ## 9. Release protection
 

@@ -8,7 +8,10 @@ import { Button } from "@/components/ui/button";
 import { getPlatformAccessContext } from "@/core/access/application/access-context";
 import { requireMfaUser } from "@/core/auth/mfa";
 import { signOut } from "../dashboard/actions";
-import { PlatformNavigation } from "./platform-navigation";
+import {
+  PlatformMobileNavigation,
+  PlatformNavigation,
+} from "./platform-navigation";
 
 export default async function PlatformLayout({
   children,
@@ -39,12 +42,13 @@ export default async function PlatformLayout({
           <PlatformNavigation />
         </div>
         <p className="mt-auto text-xs text-sidebar-muted-foreground">
-          Customer records are not available from this context
+          Customer CRM records are not available from this context
         </p>
       </aside>
 
       <div className="min-w-0 flex-1">
         <header className="flex h-16 items-center gap-3 border-b border-primary/20 bg-primary/5 px-4 md:px-6 lg:px-8">
+          <PlatformMobileNavigation />
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold">Zayto platform</p>
             <p className="truncate text-xs text-muted-foreground">
@@ -58,15 +62,6 @@ export default async function PlatformLayout({
             size="sm"
           >
             Switch context
-          </Button>
-          <Button
-            render={<Link href="/platform/feature-flags" />}
-            nativeButton={false}
-            variant="ghost"
-            size="sm"
-            className="lg:hidden"
-          >
-            Feature flags
           </Button>
           <ThemeToggle />
           <form action={signOut}>

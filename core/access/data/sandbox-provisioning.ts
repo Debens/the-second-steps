@@ -12,7 +12,33 @@ import {
 
 const SANDBOX_WORKSPACE = {
   slug: "oakfield-lettings-demo",
-  displayName: "Oakfield Lettings (Demo)",
+  displayName: "Oakfield Lettings",
+  legalName: "Oakfield Lettings Limited (Demo)",
+  companyNumber: "00000000",
+  primaryEmail: "hello@oakfield.test",
+  telephone: "020 7946 0998",
+  website: "https://oakfield.example",
+  registeredAddress1: "1 Example Square",
+  registeredTownCity: "Demo Town",
+  registeredCounty: "London",
+  registeredPostcode: "ZZ1 1ZZ",
+} as const;
+
+const SANDBOX_PERSONA_NAMES: Readonly<Record<SandboxPersona, string>> = {
+  account_owner: "Olivia Hart",
+  platform_owner: "Theo Grant",
+  dual_owner: "Maya Ellis",
+  no_access: "Noah Reed",
+};
+
+const SANDBOX_BRANCH = {
+  name: "Main Branch",
+  email: "main@oakfield.test",
+  telephone: "020 7946 0998",
+  address1: "1 Example Square",
+  townCity: "Demo Town",
+  county: "London",
+  postcode: "ZZ1 1ZZ",
 } as const;
 
 function needsWorkspace(persona: SandboxPersona) {
@@ -60,13 +86,25 @@ export async function provisionSandboxAccess(input: {
 
     if (!existingLink) {
       await transaction.userIdentity.create({
-        data: { id: userIdentityId },
+        data: {
+          id: userIdentityId,
+          displayName: SANDBOX_PERSONA_NAMES[persona],
+          primaryEmail: input.email.trim().toLowerCase(),
+        },
       });
       await transaction.authenticationProviderLink.create({
         data: {
           userIdentityId,
           provider: AuthenticationProvider.SUPABASE,
           providerSubject: input.authSubject,
+        },
+      });
+    } else {
+      await transaction.userIdentity.update({
+        where: { id: userIdentityId },
+        data: {
+          displayName: SANDBOX_PERSONA_NAMES[persona],
+          primaryEmail: input.email.trim().toLowerCase(),
         },
       });
     }
@@ -98,7 +136,7 @@ export async function provisionSandboxAccess(input: {
           status: "ACTIVE",
         },
         update: {
-          displayName: SANDBOX_WORKSPACE.displayName,
+          ...SANDBOX_WORKSPACE,
           status: "ACTIVE",
         },
       });
@@ -109,15 +147,15 @@ export async function provisionSandboxAccess(input: {
         where: {
           workspaceId_name: {
             workspaceId: workspace.id,
-            name: "Main Branch",
+            name: SANDBOX_BRANCH.name,
           },
         },
         create: {
           workspaceId: workspace.id,
-          name: "Main Branch",
+          ...SANDBOX_BRANCH,
           status: "ACTIVE",
         },
-        update: { status: "ACTIVE" },
+        update: { ...SANDBOX_BRANCH, status: "ACTIVE" },
       });
 
       const membership = await transaction.membership.upsert({

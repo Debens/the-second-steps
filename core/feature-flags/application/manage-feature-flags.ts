@@ -60,16 +60,18 @@ export async function updateFeatureFlagSettings(input: {
     input.authSubject,
     async (transaction, identity): Promise<UpdateFeatureFlagResult> => {
       if (!identity.isPlatformOwner) {
-        await transaction.auditEvent.create({
-          data: {
-            actorUserIdentityId: identity.userIdentityId,
-            action: "feature_flag.update",
-            outcome: "DENIED",
-            targetType: "feature_flag",
-            targetId: input.key,
-            requestId: randomUUID(),
-            metadata: { reason: "access_denied" },
-          },
+        await transaction.auditEvent.createMany({
+          data: [
+            {
+              actorUserIdentityId: identity.userIdentityId,
+              action: "feature_flag.update",
+              outcome: "DENIED",
+              targetType: "feature_flag",
+              targetId: input.key,
+              requestId: randomUUID(),
+              metadata: { reason: "access_denied" },
+            },
+          ],
         });
         return { ok: false, error: "access_denied" };
       }

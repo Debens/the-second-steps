@@ -14,9 +14,11 @@ Implemented:
 6. Workspace, membership, branch-scope, fixed-role, RLS, and audit-event foundation
 7. Separate customer workspace and Zayto Platform Owner shells
 8. Server-evaluated global, Zayto-user, and workspace feature-flag foundation
-9. Product, architecture, security, and decision documentation
+9. Read-only Platform Owner user/customer directories and customer feature-flag controls
+10. CI checks for code quality, production build, and database integration
+11. Product, architecture, security, and decision documentation
 
-Not implemented: CRM records, participants, entitlements, invitations, MFA recovery operations, production delivery, rate limiting, backups suitable for real data, CI, or product modules. Public Supabase sign-up is disabled and independently verified.
+Not implemented: CRM records, participants, entitlements, invitations, MFA recovery operations, production delivery, rate limiting, backups suitable for real data, browser/dependency-audit CI gates, or product modules. Public Supabase sign-up is disabled and independently verified.
 
 ## Phase 1 — Workspace and security foundation (confirmed direction)
 
@@ -31,7 +33,7 @@ Before customer data:
 7. Application `workspaceId` scoping plus PostgreSQL RLS - **implemented and verified for foundation tables**
 8. Cross-workspace and cross-role tests - **browser and disposable Docker database coverage pass**
 9. Least-privilege runtime/migration role split - **implemented and verified on shared Supabase**
-10. CI gates including production build, database integration, browser tests, and dependency audit
+10. CI gates - **code quality, production build, and database integration implemented**; browser tests and dependency audit remain
 
 ## Phase 2 — Participant and personal-portal foundation (confirmed direction)
 

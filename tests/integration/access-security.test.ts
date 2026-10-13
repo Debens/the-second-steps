@@ -6,6 +6,16 @@ import {
   updateWorkspaceMemberRoles,
 } from "@/core/access/application/workspace-members";
 import { db } from "@/core/db/client";
+import {
+  listCustomerFeatureFlags,
+  updateCustomerFeatureFlagOverride,
+} from "@/core/platform/application/customer-feature-flags";
+import {
+  getCustomerProfile,
+  listCustomerBranches,
+  listCustomers,
+  listPlatformUsers,
+} from "@/core/platform/application/platform-directory";
 
 const runtimeUrl = process.env.DATABASE_URL;
 const adminUrl = process.env.TEST_ADMIN_DATABASE_URL;
@@ -38,6 +48,8 @@ const ids = {
   ownerTwoIdentity: randomUUID(),
   ownerTwoAuth: randomUUID(),
   ownerTwoMembership: randomUUID(),
+  platformIdentity: randomUUID(),
+  platformAuth: randomUUID(),
   sameBranchMembership: randomUUID(),
   otherBranchMembership: randomUUID(),
   overlappingMembership: randomUUID(),
@@ -49,11 +61,13 @@ async function addIdentity(
   client: PoolClient,
   identityId: string,
   authSubject = randomUUID(),
+  profile?: { displayName: string; primaryEmail: string },
 ) {
   await client.query(
-    `INSERT INTO "user_identities" ("id", "updated_at")
-     VALUES ($1::uuid, CURRENT_TIMESTAMP)`,
-    [identityId],
+    `INSERT INTO "user_identities"
+      ("id", "display_name", "primary_email", "updated_at")
+     VALUES ($1::uuid, $2, $3, CURRENT_TIMESTAMP)`,
+    [identityId, profile?.displayName ?? null, profile?.primaryEmail ?? null],
   );
   await client.query(
     `INSERT INTO "authentication_provider_links"
@@ -128,6 +142,16 @@ async function seedAccessFoundation() {
     await addIdentity(client, ids.managerIdentity, ids.managerAuth);
     await addIdentity(client, ids.ownerOneIdentity, ids.ownerOneAuth);
     await addIdentity(client, ids.ownerTwoIdentity, ids.ownerTwoAuth);
+    await addIdentity(client, ids.platformIdentity, ids.platformAuth, {
+      displayName: "Theo Grant",
+      primaryEmail: "platform.owner@zayto.local",
+    });
+    await client.query(
+      `INSERT INTO "platform_role_assignments"
+        ("user_identity_id", "role_code")
+       VALUES ($1::uuid, 'platform_owner')`,
+      [ids.platformIdentity],
+    );
     const sameBranchIdentity = randomUUID();
     const otherBranchIdentity = randomUUID();
     const overlappingIdentity = randomUUID();
@@ -345,5 +369,97 @@ describe("database and workspace access hardening", () => {
       await client.query("ROLLBACK").catch(() => undefined);
       client.release();
     }
+  });
+
+  it("allows a Platform Owner to search identity and customer metadata only", async () => {
+    const users = await listPlatformUsers(ids.platformAuth, "Theo");
+    expect(users).toHaveLength(1);
+    expect(users?.[0]).toMatchObject({
+      id: ids.platformIdentity,
+      displayName: "Theo Grant",
+      primaryEmail: "platform.owner@zayto.local",
+      isPlatformOwner: true,
+    });
+
+    const customers = await listCustomers(ids.platformAuth, "Workspace A");
+    expect(customers).toHaveLength(1);
+    expect(customers?.[0]).toMatchObject({
+      id: ids.workspaceA,
+      activeBranchCount: 2,
+      activeUserCount: 7,
+    });
+
+    const profile = await getCustomerProfile(ids.platformAuth, "workspace-a");
+    expect(profile?.id).toBe(ids.workspaceA);
+    const branches = await listCustomerBranches(
+      ids.platformAuth,
+      "workspace-a",
+    );
+    expect(branches?.map(({ id }) => id)).toEqual([ids.branchA, ids.branchB]);
+  });
+
+  it("denies the platform directory to an ordinary workspace member", async () => {
+    await expect(listPlatformUsers(ids.ownerOneAuth)).resolves.toBeNull();
+    await expect(listCustomers(ids.ownerOneAuth)).resolves.toBeNull();
+    await expect(
+      getCustomerProfile(ids.ownerOneAuth, "workspace-a"),
+    ).resolves.toBeNull();
+  });
+
+  it("updates one customer feature-flag override and records its audit", async () => {
+    const initial = await listCustomerFeatureFlags(
+      ids.platformAuth,
+      "workspace-a",
+    );
+    expect(initial?.[0]?.overrideMode).toBe("inherit");
+
+    await expect(
+      updateCustomerFeatureFlagOverride({
+        authSubject: ids.platformAuth,
+        customerSlug: "workspace-a",
+        key: "staff_mfa",
+        mode: "enabled",
+      }),
+    ).resolves.toEqual({ ok: true });
+
+    const workspaceA = await listCustomerFeatureFlags(
+      ids.platformAuth,
+      "workspace-a",
+    );
+    const workspaceB = await listCustomerFeatureFlags(
+      ids.platformAuth,
+      "workspace-b",
+    );
+    expect(workspaceA?.[0]).toMatchObject({
+      overrideMode: "enabled",
+      effectiveEnabled: true,
+    });
+    expect(workspaceB?.[0]?.overrideMode).toBe("inherit");
+
+    const audit = await adminPool.query(
+      `SELECT "outcome", "workspace_id" FROM "audit_events"
+       WHERE "action" = 'workspace_feature_flag.update'
+         AND "target_id" = 'staff_mfa'`,
+    );
+    expect(audit.rows).toEqual([
+      { outcome: "succeeded", workspace_id: ids.workspaceA },
+    ]);
+  });
+
+  it("denies customer feature-flag changes by an ordinary member", async () => {
+    await expect(
+      updateCustomerFeatureFlagOverride({
+        authSubject: ids.ownerOneAuth,
+        customerSlug: "workspace-a",
+        key: "staff_mfa",
+        mode: "enabled",
+      }),
+    ).resolves.toEqual({ ok: false, error: "access_denied" });
+
+    const overrideCount = await adminPool.query<{ count: string }>(
+      `SELECT COUNT(*)::text AS "count"
+       FROM "workspace_feature_flag_overrides"`,
+    );
+    expect(overrideCount.rows[0]?.count).toBe("0");
   });
 });

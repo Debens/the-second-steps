@@ -314,6 +314,64 @@ test.describe("sandbox access personas", () => {
     });
   }
 
+  test("Platform Owner can browse the user and customer directories", async ({
+    page,
+    request,
+  }) => {
+    await openMagicLink(page, request, "platform.owner@zayto.local");
+
+    await page.goto("/platform/users");
+    await expect(page.getByRole("heading", { name: "Users" })).toBeVisible();
+    await expect(page.getByRole("cell", { name: "Olivia Hart" })).toBeVisible();
+    await expect(page.getByRole("cell", { name: "Theo Grant" })).toBeVisible();
+    await expect(page.getByRole("cell", { name: "Maya Ellis" })).toBeVisible();
+    await expect(page.getByRole("cell", { name: "Noah Reed" })).toBeVisible();
+
+    await page.getByLabel("Search users").fill("Olivia");
+    await page.getByRole("button", { name: "Search" }).click();
+    await expect(page).toHaveURL(/\/platform\/users\?q=Olivia$/);
+    await expect(page.getByRole("cell", { name: "Olivia Hart" })).toBeVisible();
+    await expect(page.getByText("Theo Grant")).toHaveCount(0);
+
+    await page.goto("/platform/customers");
+    await expect(
+      page.getByRole("heading", { name: "Customers" }),
+    ).toBeVisible();
+    await page.getByLabel("Search customers").fill("Oakfield");
+    await page.getByRole("button", { name: "Search" }).click();
+    await expect(page).toHaveURL(/\/platform\/customers\?q=Oakfield$/);
+    await page
+      .locator("table")
+      .getByRole("link", { name: "Oakfield Lettings" })
+      .click();
+
+    await expect(
+      page.getByRole("heading", { name: "Oakfield Lettings" }),
+    ).toBeVisible();
+    await expect(
+      page.getByText("Oakfield Lettings Limited (Demo)"),
+    ).toBeVisible();
+
+    const customerNavigation = page.getByRole("navigation", {
+      name: "Customer profile",
+    });
+    await customerNavigation.getByRole("link", { name: "Branches" }).click();
+    await expect(page.getByRole("cell", { name: "Main Branch" })).toBeVisible();
+    await expect(
+      page.getByRole("cell", { name: "main@oakfield.test" }),
+    ).toBeVisible();
+
+    await customerNavigation
+      .getByRole("link", { name: "Feature flags" })
+      .click();
+    await expect(
+      page.getByText("Staff two-step verification", { exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("radio", { name: /Inherit global setting/i }),
+    ).toBeChecked();
+  });
+
   test("the Zayto testing audience can require MFA independently", async ({
     page,
     request,

@@ -104,6 +104,8 @@ enum FeatureFlagStatus {
 
 model UserIdentity {
   id                      String                         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  displayName             String?                        @map("display_name") @db.VarChar(160)
+  primaryEmail            String?                        @map("primary_email") @db.VarChar(254)
   status                  IdentityStatus                 @default(ACTIVE)
   createdAt               DateTime                       @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt               DateTime                       @updatedAt @map("updated_at") @db.Timestamptz(6)
@@ -116,6 +118,8 @@ model UserIdentity {
   auditEvents             AuditEvent[]                   @relation("AuditActor")
   featureFlagChanges      WorkspaceFeatureFlagOverride[] @relation("FeatureFlagChangedBy")
 
+  @@index([displayName])
+  @@index([primaryEmail])
   @@map("user_identities")
 }
 
@@ -136,6 +140,16 @@ model Workspace {
   id                   String                         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   slug                 String                         @unique @db.VarChar(63)
   displayName          String                         @map("display_name") @db.VarChar(160)
+  legalName            String?                        @map("legal_name") @db.VarChar(160)
+  companyNumber        String?                        @map("company_number") @db.VarChar(8)
+  primaryEmail         String?                        @map("primary_email") @db.VarChar(254)
+  telephone            String?                        @db.VarChar(32)
+  website              String?                        @db.VarChar(2048)
+  registeredAddress1   String?                        @map("registered_address_1") @db.VarChar(160)
+  registeredAddress2   String?                        @map("registered_address_2") @db.VarChar(160)
+  registeredTownCity   String?                        @map("registered_town_city") @db.VarChar(100)
+  registeredCounty     String?                        @map("registered_county") @db.VarChar(100)
+  registeredPostcode   String?                        @map("registered_postcode") @db.VarChar(16)
   type                 WorkspaceType
   status               WorkspaceStatus                @default(ACTIVE)
   createdAt            DateTime                       @default(now()) @map("created_at") @db.Timestamptz(6)
@@ -152,6 +166,13 @@ model Branch {
   id          String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   workspaceId String                   @map("workspace_id") @db.Uuid
   name        String                   @db.VarChar(160)
+  email       String?                  @db.VarChar(254)
+  telephone   String?                  @db.VarChar(32)
+  address1    String?                  @map("address_1") @db.VarChar(160)
+  address2    String?                  @map("address_2") @db.VarChar(160)
+  townCity    String?                  @map("town_city") @db.VarChar(100)
+  county      String?                  @db.VarChar(100)
+  postcode    String?                  @db.VarChar(16)
   status      BranchStatus             @default(ACTIVE)
   createdAt   DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime                 @updatedAt @map("updated_at") @db.Timestamptz(6)
