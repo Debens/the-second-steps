@@ -18,6 +18,14 @@ Sanity-check significant decisions before implementing them, including accepted 
 4. Work in small steps. Do not generate large amounts of code at once.
 5. Do not invent business rules for referencing, insurance, AML, KYC, Right to Rent, or deposits. Those will be specified separately.
 
+## Efficiency and proportionality
+
+- Use the existing project documentation, decisions, installed-version guidance, and code before starting new research. Check current primary/official sources when facts may have changed, an external service or security/compliance decision is involved, or the local evidence is genuinely insufficient.
+- Keep changes focused on the requested outcome. Avoid drive-by refactors, speculative infrastructure, repeated investigation of established facts, and abstractions without a current need. Prefer the simplest maintainable solution that preserves the documented architecture and security boundaries.
+- Use targeted checks while iterating on small or documentation-only changes. Run proportionate regression coverage when completing significant features, and comprehensive checks for authentication, permissions, tenant isolation, financial data, database migrations, and other security-critical work. Do not skip a check needed to establish correctness, and continue to run the documented full gates before declaring a significant slice complete.
+- Record improvements that can safely wait in the relevant plan instead of expanding the current task. Flag work whose cost is disproportionate to its immediate benefit.
+- Keep progress updates, explanations, and project documentation concise and useful. Minimise unnecessary tool calls and repeated analysis, but never trade away security, data integrity, or essential verification to reduce usage.
+
 ## Current stack (installed)
 
 - Next.js 16.4, **App Router** (`app/`). The Pages Router has been removed; do not add `pages/`.
@@ -26,7 +34,7 @@ Sanity-check significant decisions before implementing them, including accepted 
 - Checks: `npm run check` (typecheck, ESLint, Prettier, Vitest), `npm run test:e2e` (Playwright), `npm run build`
 
 - Database: PostgreSQL on Supabase (London) via Prisma 7.10 (`prisma/`, `core/db/`). The access foundation exists; no CRM tables exist. The app uses least-privilege `zayto_app` over verified TLS, while `zayto_migrator` owns schema objects and applies migrations. The shared role cutover and access-hardening migrations were applied and verified on 2026-10-13 (ADR-016 and ADR-027).
-- Authentication: Supabase Auth with server-verified cookie sessions. Local magic links are delivered to Mailpit for allow-listed fictional sandbox users. Workspaces, memberships, fixed roles, role-aware shells, and feature-flagged TOTP are implemented. Participations, entitlements, invitations, MFA recovery, Google sign-in, rate limiting, and production email delivery are not implemented (ADR-019 to ADR-026).
+- Authentication: Supabase Auth with server-verified cookie sessions. Public new-user sign-up is disabled. Local magic links are delivered to Mailpit for allow-listed fictional sandbox users. Workspaces, memberships, fixed roles, role-aware shells, and feature-flagged TOTP are implemented. Participations, entitlements, invitations, MFA recovery, Google sign-in, rate limiting, and production email delivery are not implemented (ADR-019 to ADR-026).
 
 Queues are **not installed**.
 

@@ -16,7 +16,7 @@ Implemented:
 8. Server-evaluated global, Zayto-user, and workspace feature-flag foundation
 9. Product, architecture, security, and decision documentation
 
-Not implemented: CRM records, participants, entitlements, invitations, MFA recovery operations, production delivery, rate limiting, backups suitable for real data, CI, or product modules. Public Supabase sign-up still requires external confirmation.
+Not implemented: CRM records, participants, entitlements, invitations, MFA recovery operations, production delivery, rate limiting, backups suitable for real data, CI, or product modules. Public Supabase sign-up is disabled and independently verified.
 
 ## Phase 1 — Workspace and security foundation (confirmed direction)
 
@@ -28,8 +28,8 @@ Before customer data:
 4. Staff/Account Owner MFA mechanism - **implemented behind a development flag**; release enforcement and recovery remain
 5. Server-side entitlement, permission, resource, and field checks
 6. Audit-event foundation - **implemented for feature flags and role changes; broader access audit remains**
-7. Application `workspaceId` scoping plus PostgreSQL RLS - **implemented for foundation tables; disposable integration verification pending**
-8. Cross-workspace and cross-role tests - **browser coverage exists; Docker database suite written but not yet run**
+7. Application `workspaceId` scoping plus PostgreSQL RLS - **implemented and verified for foundation tables**
+8. Cross-workspace and cross-role tests - **browser and disposable Docker database coverage pass**
 9. Least-privilege runtime/migration role split - **implemented and verified on shared Supabase**
 10. CI gates including production build, database integration, browser tests, and dependency audit
 

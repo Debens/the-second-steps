@@ -4,7 +4,7 @@ Zayto is **not ready for real customer data or production release** until every 
 
 ## Identity and authentication
 
-- [ ] Supabase **Allow new users to sign up** is disabled and `npm run check:release` confirms it.
+- [x] Supabase **Allow new users to sign up** is disabled and the live Auth settings endpoint confirms it (2026-10-13); `npm run check:release` enforces it for release.
 - [ ] Production invitation and email delivery use an approved UK-compatible provider.
 - [ ] `REQUIRE_STAFF_MFA=true` is set for Vercel production and cannot be overridden off.
 - [ ] All Zayto platform users and agency staff complete TOTP at AAL2.
@@ -13,10 +13,10 @@ Zayto is **not ready for real customer data or production release** until every 
 
 ## Tenant access and database
 
-- [ ] `scripts/database/split-database-roles.sql` has been reviewed, applied by an authorised Supabase administrator, and its ownership report checked.
+- [x] `scripts/database/split-database-roles.sql` has been reviewed, applied by an authorised Supabase administrator, and its ownership report checked (2026-10-13).
 - [ ] Vercel runtime has only `DATABASE_URL` for `zayto_app`; deployment/migration automation alone has `MIGRATION_DATABASE_URL` for `zayto_migrator`.
-- [ ] The hardening migration is applied to shared Supabase and verified without weakening forced RLS.
-- [ ] `npm run test:integration` passes against the disposable Docker database.
+- [x] The hardening migrations are applied to shared Supabase and verified without weakening forced RLS (2026-10-13).
+- [x] `npm run test:integration` passes against the disposable Docker database (2026-10-13).
 - [ ] Every product repository added later has cross-workspace and, where relevant, cross-branch/cross-participant tests.
 - [ ] Supabase backups and point-in-time recovery meet the agreed recovery point and recovery time; a restore has been rehearsed.
 

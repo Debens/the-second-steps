@@ -11,7 +11,7 @@ Newest first. Status: **Accepted** | **Proposed** | **Superseded** | **Unresolve
 - **Access invariants:** A named-branch membership needs at least one branch. Branch-scoped staff visibility includes workspace-wide staff and staff sharing a branch, but excludes other-branch-only staff. Role mutations are serialised by workspace and may not remove the final active Account Owner. Sensitive denials are audited without credentials or sensitive content.
 - **Feature failure:** Ordinary unavailable flags fail off; unavailable security controls such as required staff MFA fail on. At release MFA applies to all Zayto platform users and agency staff, while future participant policy remains separate.
 - **Hosting:** Vercel is the intended first production host. Production builds require the MFA release safeguard. Security headers are set in Next.js; UK execution/logging/data-processing configuration, backups, monitoring, rate limiting, production email, and recovery remain release gates.
-- **External state:** Public Supabase Auth sign-up must be disabled so only existing/invited users can sign in. This is verified by `npm run check:release`; the dashboard change is not complete until independently confirmed.
+- **External state:** Public Supabase Auth sign-up is disabled so only existing/invited users can sign in. The live Auth settings endpoint was independently verified on 2026-10-13, and `npm run check:release` continues to enforce the setting for release.
 - **Date:** 2026-10-13
 
 ## ADR-026 — Server-evaluated feature flags and staged MFA enforcement

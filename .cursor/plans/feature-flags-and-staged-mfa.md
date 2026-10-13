@@ -1,6 +1,6 @@
 # Feature flags and staged MFA
 
-**Status:** Implemented foundation with follow-up hardening in progress. Unit, disposable-database integration, browser (including shared-sandbox MFA mutation and cleanup), and production-build verification pass. Company-profile controls, public-sign-up disablement, production release-lock activation, deployment, commit, and push remain incomplete.
+**Status:** Implemented, verified, committed, and pushed through the proof-of-concept scope. Unit, disposable-database integration, browser (including shared-sandbox MFA mutation and cleanup), and production-build verification pass. Public Supabase Auth sign-up is disabled and independently verified. Company-profile controls, production release-lock activation, and deployment remain deliberately deferred.
 
 **Owner decisions (2026-10-13):**
 
