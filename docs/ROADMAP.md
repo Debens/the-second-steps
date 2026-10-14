@@ -34,7 +34,7 @@ Before customer data:
 8. Cross-workspace and cross-role tests - **browser and disposable Docker database coverage pass**
 9. Least-privilege runtime/migration role split - **implemented and verified on shared Supabase**
 10. CI gates - **code quality, production build, and database integration implemented**; browser tests and dependency audit remain
-11. Platform Owner and customer account administration: first-name/last-name editing and its supporting Platform Owner update policy are implemented and verified on shared Supabase; customer-detail editing, customer/branch user views, branch-scope management, invitations, and suspension controls remain planned in `.cursor/plans/customer-account-and-access-management.md`
+11. Platform Owner and customer account administration: first-name/last-name editing and branch-scoped customer user identity visibility are verified on shared Supabase; the consolidated customer Settings area and audited customer-detail editing are locally verified, while branch user views, branch-scope management, invitations, and suspension controls remain planned in `.cursor/plans/customer-account-and-access-management.md`
 12. Human-readable audit history on the relevant user and customer administration screens
 13. Production-ready account notifications with durable delivery, retries, templates, recipient rules, and communication preferences; local Mailpit messages may be used during development only
 

@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import {
   Card,
+  CardAction,
   CardContent,
   CardDescription,
   CardHeader,
@@ -23,49 +24,61 @@ export default async function WorkspaceUsersPage({
   if (!result) redirect("/access-denied");
 
   return (
-    <div className="mx-auto grid max-w-5xl gap-6">
+    <div className="grid gap-6">
       <div>
-        <p className="text-sm text-muted-foreground">Workspace settings</p>
-        <h1 className="text-2xl font-semibold tracking-tight">
-          People and roles
-        </h1>
+        <h2 className="text-lg font-semibold">Users &amp; access</h2>
         <p className="mt-1 text-sm text-muted-foreground">
-          Roles grant permissions only inside this customer workspace. Platform
-          access is managed separately.
+          Review each user’s access and edit their roles from one place.
         </p>
       </div>
 
       <div className="grid gap-4">
-        {result.members.map((member, index) => (
-          <Card key={member.id}>
-            <CardHeader>
-              <CardTitle>
-                {member.isCurrentUser
-                  ? "You"
-                  : `Team member ${String(index + 1).padStart(2, "0")}`}
-              </CardTitle>
-              <CardDescription>
-                {member.status === "ACTIVE" ? "Active" : member.status} ·{" "}
-                {member.scopeMode === "WORKSPACE"
-                  ? "Whole workspace"
-                  : `${member.branchCount} named branch${member.branchCount === 1 ? "" : "es"}`}
-              </CardDescription>
-              <p className="text-xs text-muted-foreground">
-                Current roles:{" "}
-                {member.roles.map((role) => ROLE_LABELS[role]).join(", ")}
-              </p>
-            </CardHeader>
-            <CardContent>
-              <RoleForm
-                canManage={result.canManageRoles}
-                isCurrentUser={member.isCurrentUser}
-                membershipId={member.id}
-                roles={member.roles}
-                workspaceSlug={workspaceSlug}
-              />
-            </CardContent>
-          </Card>
-        ))}
+        {result.members.map((member, index) => {
+          const recordedName = [member.firstName, member.lastName]
+            .filter(Boolean)
+            .join(" ");
+          const userLabel =
+            recordedName ||
+            member.primaryEmail ||
+            `Unnamed user ${String(index + 1).padStart(2, "0")}`;
+
+          return (
+            <Card key={member.id}>
+              <CardHeader>
+                <CardTitle>{userLabel}</CardTitle>
+                <CardDescription>
+                  {member.primaryEmail ?? "No email recorded"}
+                  {member.isCurrentUser ? " · You" : ""}
+                  {" · "}
+                  {member.status === "ACTIVE" ? "Active" : member.status} ·{" "}
+                  {member.scopeMode === "WORKSPACE"
+                    ? "Whole workspace"
+                    : `${member.branchCount} named branch${member.branchCount === 1 ? "" : "es"}`}
+                </CardDescription>
+                {result.canManageRoles && !member.isCurrentUser && (
+                  <CardAction>
+                    <RoleForm
+                      membershipId={member.id}
+                      roles={member.roles}
+                      userLabel={userLabel}
+                      workspaceSlug={workspaceSlug}
+                    />
+                  </CardAction>
+                )}
+              </CardHeader>
+              <CardContent className="flex flex-wrap gap-2">
+                {member.roles.map((role) => (
+                  <span
+                    key={role}
+                    className="rounded-md bg-muted px-2 py-1 text-xs font-medium"
+                  >
+                    {ROLE_LABELS[role]}
+                  </span>
+                ))}
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
     </div>
   );

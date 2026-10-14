@@ -30,6 +30,9 @@ const UUID_PATTERN =
 
 export type WorkspaceMemberSummary = {
   id: string;
+  firstName: string | null;
+  lastName: string | null;
+  primaryEmail: string | null;
   isCurrentUser: boolean;
   status: "ACTIVE" | "SUSPENDED" | "ENDED";
   roles: readonly SystemRole[];
@@ -125,6 +128,13 @@ export async function getWorkspaceMembers(
         userIdentityId: true,
         status: true,
         scopeMode: true,
+        userIdentity: {
+          select: {
+            firstName: true,
+            lastName: true,
+            primaryEmail: true,
+          },
+        },
         roles: { select: { roleCode: true } },
         _count: { select: { branchAccess: true } },
       },
@@ -136,6 +146,9 @@ export async function getWorkspaceMembers(
       canManageRoles: hasPermission(actorRoles, "membership.roles.manage"),
       members: memberships.map((membership) => ({
         id: membership.id,
+        firstName: membership.userIdentity.firstName,
+        lastName: membership.userIdentity.lastName,
+        primaryEmail: membership.userIdentity.primaryEmail,
         isCurrentUser: membership.userIdentityId === identity.userIdentityId,
         status: membership.status,
         roles: toSystemRoles(membership.roles),

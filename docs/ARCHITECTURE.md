@@ -34,7 +34,9 @@ One Supabase identity may have several kinds of access:
 - `Participation` — acts in a particular application, tenancy, guarantee, referencing case, or explicitly shared landlord relationship.
 - `ResourceGrant` — limits a participant to named resources, actions, and fields.
 
-The internal Platform Owner shell may read limited account and customer administration metadata, including user names/emails, workspace details, branches, memberships, and feature-flag settings. This does not grant access to customer CRM records. Customer administration mutations remain limited to audited feature-flag overrides in the current slice.
+The internal Platform Owner shell may read limited account and customer administration metadata, including user names/emails, workspace details, branches, memberships, and feature-flag settings. This does not grant access to customer CRM records. The current audited mutations cover feature-flag overrides, user names, and customer/contact details; authorised customer roles may edit the same ordinary customer/contact details through their verified workspace context.
+
+Within a customer workspace, staff-directory identity fields are readable only for memberships already visible through the actor's `membership.read` permission and branch scope. PostgreSQL RLS mirrors that boundary for co-member names and sign-in emails; provider identities remain separate and hidden.
 
 Applicants, tenants, guarantors, and invited landlords are first-class users with a personal portal, but they are not broad members of an agency workspace. A small user-controlled personal profile may be reused with explicit confirmation; each workspace retains its own operational person records and history. Sensitive submissions remain case-scoped and private by default.
 

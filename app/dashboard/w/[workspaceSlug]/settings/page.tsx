@@ -1,30 +1,29 @@
-import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { redirect } from "next/navigation";
+import { CustomerDetailsEditor } from "@/components/workspace/customer-details-editor";
+import { requireMfaUser } from "@/core/auth/mfa";
+import { getWorkspaceCustomerDetails } from "@/core/workspace/application/workspace-details";
+import { updateWorkspaceCustomerDetailsAction } from "./actions";
 
-export default function WorkspaceSettingsPage() {
+export default async function WorkspaceSettingsPage({
+  params,
+}: {
+  params: Promise<{ workspaceSlug: string }>;
+}) {
+  const { workspaceSlug } = await params;
+  const path = `/dashboard/w/${workspaceSlug}/settings`;
+  const user = await requireMfaUser(path, { workspaceSlug });
+  const result = await getWorkspaceCustomerDetails(user.id, workspaceSlug);
+  if (!result) redirect("/access-denied");
+  const { details, canEdit } = result;
+
   return (
-    <div className="mx-auto grid max-w-4xl gap-6">
-      <div>
-        <p className="text-sm text-muted-foreground">Workspace settings</p>
-        <h1 className="text-2xl font-semibold tracking-tight">
-          Workspace details
-        </h1>
-      </div>
-      <Card>
-        <CardHeader>
-          <CardTitle>Settings foundation</CardTitle>
-          <CardDescription>
-            Workspace settings are protected by membership and server-side
-            permissions. MFA is staged behind a feature flag during development
-            and is mandatory for release. Editing details and commercial
-            settings will be added as separate, permission-checked actions.
-          </CardDescription>
-        </CardHeader>
-      </Card>
-    </div>
+    <CustomerDetailsEditor
+      action={updateWorkspaceCustomerDetailsAction.bind(null, workspaceSlug)}
+      canEdit={canEdit}
+      details={details}
+      typeLabel={
+        details.type === "AGENCY" ? "Letting agency" : "Independent landlord"
+      }
+    />
   );
 }

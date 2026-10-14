@@ -377,11 +377,72 @@ test.describe("sandbox access personas", () => {
         page.getByRole("heading", { name: persona.expectedHeading }),
       ).toBeVisible();
 
+      if (persona.email === "owner@zayto.local") {
+        const mainNavigation = page.getByRole("navigation", {
+          name: "Main navigation",
+        });
+        await mainNavigation.getByRole("link", { name: "Settings" }).click();
+        await expect(
+          page.getByRole("heading", { name: "Settings" }),
+        ).toBeVisible();
+
+        const settingsNavigation = page.getByRole("navigation", {
+          name: "Settings",
+        });
+        await expect(
+          settingsNavigation.getByRole("link", { name: "Details" }),
+        ).toHaveAttribute("aria-current", "page");
+        await expect(page.getByText("Letting agency")).toBeVisible();
+        await page
+          .getByRole("button", { name: "Edit customer details" })
+          .click();
+        await expect(page.getByLabel("Customer name")).toHaveValue(
+          "Oakfield Lettings",
+        );
+        await page.getByRole("button", { name: "Cancel" }).click();
+        await page
+          .getByRole("button", { name: "Edit contact details" })
+          .click();
+        await expect(page.getByLabel("Primary email")).toHaveValue(
+          "hello@oakfield.test",
+        );
+        await page.getByRole("button", { name: "Cancel" }).click();
+
+        await settingsNavigation
+          .getByRole("link", { name: "Users & access" })
+          .click();
+        await expect(
+          page.getByRole("heading", { name: "Users & access" }),
+        ).toBeVisible();
+        await expect(
+          page.getByText("Olivia Hart", { exact: true }),
+        ).toBeVisible();
+        await expect(page.getByText(/^owner@zayto\.local/)).toBeVisible();
+        await settingsNavigation
+          .getByRole("link", { name: "Branches" })
+          .click();
+        await expect(page.getByText("Branches", { exact: true })).toBeVisible();
+      }
+
       if (persona.email === "platform.owner@zayto.local") {
         await page.goto("/platform/feature-flags");
         await expect(
           page.getByRole("heading", { name: "Feature flags" }),
         ).toBeVisible();
+      }
+
+      if (persona.email === "dual.owner@zayto.local") {
+        await page.goto("/dashboard/w/oakfield-lettings-demo/settings/users");
+        await page.getByRole("button", { name: "Edit" }).click();
+        const roleDialog = page.getByRole("dialog");
+        await expect(
+          roleDialog.getByRole("heading", { name: "Edit Olivia Hart" }),
+        ).toBeVisible();
+        await roleDialog.getByRole("button", { name: /Account Owner/ }).click();
+        await expect(
+          page.getByRole("checkbox", { name: /Account Owner/ }),
+        ).toBeChecked();
+        await roleDialog.getByRole("button", { name: "Cancel" }).click();
       }
 
       if (persona.deniedUrl) {
@@ -468,6 +529,14 @@ test.describe("sandbox access personas", () => {
     await expect(
       page.getByText("Oakfield Lettings Limited (Demo)"),
     ).toBeVisible();
+    await page.getByRole("button", { name: "Edit customer details" }).click();
+    await expect(page.getByLabel("Customer name")).toHaveValue(
+      "Oakfield Lettings",
+    );
+    await expect(page.getByLabel("Legal name")).toHaveValue(
+      "Oakfield Lettings Limited (Demo)",
+    );
+    await page.getByRole("button", { name: "Cancel" }).click();
 
     const customerNavigation = page.getByRole("navigation", {
       name: "Customer profile",

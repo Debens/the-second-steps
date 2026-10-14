@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, Menu, Settings, Users } from "lucide-react";
+import { Home, Menu, Settings } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ZaytoWordmark } from "@/components/brand/zayto-wordmark";
@@ -19,14 +19,15 @@ function NavigationItems({ workspaceSlug }: { workspaceSlug: string }) {
   const base = `/dashboard/w/${workspaceSlug}`;
   const items = [
     { label: "Overview", icon: Home, href: base },
-    { label: "People & roles", icon: Users, href: `${base}/settings/users` },
-    { label: "Workspace settings", icon: Settings, href: `${base}/settings` },
+    { label: "Settings", icon: Settings, href: `${base}/settings` },
   ];
 
   return (
     <nav aria-label="Main navigation" className="grid gap-1">
       {items.map(({ href, icon: Icon, label }) => {
-        const active = pathname === href;
+        const active =
+          pathname === href ||
+          (href !== base && pathname.startsWith(`${href}/`));
         return (
           <Link
             key={label}

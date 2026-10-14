@@ -17,6 +17,25 @@ import {
   listPlatformUsers,
 } from "@/core/platform/application/platform-directory";
 import { updatePlatformUserName } from "@/core/platform/application/platform-user-management";
+import {
+  getWorkspaceCustomerDetails,
+  updatePlatformCustomerDetails,
+  updateWorkspaceCustomerDetails,
+} from "@/core/workspace/application/workspace-details";
+
+const UPDATED_CUSTOMER_DETAILS = {
+  displayName: "Workspace A Updated",
+  legalName: "Workspace A Limited",
+  companyNumber: "AB123456",
+  primaryEmail: "hello@workspace-a.test",
+  telephone: "020 7946 0998",
+  website: "https://workspace-a.example",
+  registeredAddress1: "1 Example Square",
+  registeredAddress2: "",
+  registeredTownCity: "Demo Town",
+  registeredCounty: "London",
+  registeredPostcode: "ZZ1 1ZZ",
+};
 
 const runtimeUrl = process.env.DATABASE_URL;
 const adminUrl = process.env.TEST_ADMIN_DATABASE_URL;
@@ -51,6 +70,11 @@ const ids = {
   ownerTwoMembership: randomUUID(),
   platformIdentity: randomUUID(),
   platformAuth: randomUUID(),
+  sameBranchIdentity: randomUUID(),
+  otherBranchIdentity: randomUUID(),
+  overlappingIdentity: randomUUID(),
+  workspaceWideIdentity: randomUUID(),
+  workspaceBOwnerIdentity: randomUUID(),
   sameBranchMembership: randomUUID(),
   otherBranchMembership: randomUUID(),
   overlappingMembership: randomUUID(),
@@ -145,9 +169,21 @@ async function seedAccessFoundation() {
       [ids.branchA, ids.branchB, ids.workspaceA],
     );
 
-    await addIdentity(client, ids.managerIdentity, ids.managerAuth);
-    await addIdentity(client, ids.ownerOneIdentity, ids.ownerOneAuth);
-    await addIdentity(client, ids.ownerTwoIdentity, ids.ownerTwoAuth);
+    await addIdentity(client, ids.managerIdentity, ids.managerAuth, {
+      firstName: "Morgan",
+      lastName: "Manager",
+      primaryEmail: "manager@workspace-a.test",
+    });
+    await addIdentity(client, ids.ownerOneIdentity, ids.ownerOneAuth, {
+      firstName: "Olivia",
+      lastName: "Owner",
+      primaryEmail: "owner.one@workspace-a.test",
+    });
+    await addIdentity(client, ids.ownerTwoIdentity, ids.ownerTwoAuth, {
+      firstName: "Owen",
+      lastName: "Owner",
+      primaryEmail: "owner.two@workspace-a.test",
+    });
     await addIdentity(client, ids.platformIdentity, ids.platformAuth, {
       firstName: "Theo",
       lastName: "Grant",
@@ -159,16 +195,31 @@ async function seedAccessFoundation() {
        VALUES ($1::uuid, 'platform_owner')`,
       [ids.platformIdentity],
     );
-    const sameBranchIdentity = randomUUID();
-    const otherBranchIdentity = randomUUID();
-    const overlappingIdentity = randomUUID();
-    const workspaceWideIdentity = randomUUID();
-    const workspaceBOwnerIdentity = randomUUID();
-    await addIdentity(client, sameBranchIdentity);
-    await addIdentity(client, otherBranchIdentity);
-    await addIdentity(client, overlappingIdentity);
-    await addIdentity(client, workspaceWideIdentity);
-    await addIdentity(client, workspaceBOwnerIdentity);
+    await addIdentity(client, ids.sameBranchIdentity, randomUUID(), {
+      firstName: "Sam",
+      lastName: "Samebranch",
+      primaryEmail: "same@workspace-a.test",
+    });
+    await addIdentity(client, ids.otherBranchIdentity, randomUUID(), {
+      firstName: "Orla",
+      lastName: "Otherbranch",
+      primaryEmail: "other@workspace-a.test",
+    });
+    await addIdentity(client, ids.overlappingIdentity, randomUUID(), {
+      firstName: "Alex",
+      lastName: "Overlap",
+      primaryEmail: "overlap@workspace-a.test",
+    });
+    await addIdentity(client, ids.workspaceWideIdentity, randomUUID(), {
+      firstName: "Will",
+      lastName: "Workspace",
+      primaryEmail: "workspace.wide@workspace-a.test",
+    });
+    await addIdentity(client, ids.workspaceBOwnerIdentity, randomUUID(), {
+      firstName: "Bea",
+      lastName: "WorkspaceB",
+      primaryEmail: "owner@workspace-b.test",
+    });
 
     await addMembership(client, {
       id: ids.managerMembership,
@@ -191,34 +242,34 @@ async function seedAccessFoundation() {
     });
     await addMembership(client, {
       id: ids.sameBranchMembership,
-      identityId: sameBranchIdentity,
+      identityId: ids.sameBranchIdentity,
       workspaceId: ids.workspaceA,
       role: "negotiator",
       branchIds: [ids.branchA],
     });
     await addMembership(client, {
       id: ids.otherBranchMembership,
-      identityId: otherBranchIdentity,
+      identityId: ids.otherBranchIdentity,
       workspaceId: ids.workspaceA,
       role: "negotiator",
       branchIds: [ids.branchB],
     });
     await addMembership(client, {
       id: ids.overlappingMembership,
-      identityId: overlappingIdentity,
+      identityId: ids.overlappingIdentity,
       workspaceId: ids.workspaceA,
       role: "property_manager",
       branchIds: [ids.branchA, ids.branchB],
     });
     await addMembership(client, {
       id: ids.workspaceWideMembership,
-      identityId: workspaceWideIdentity,
+      identityId: ids.workspaceWideIdentity,
       workspaceId: ids.workspaceA,
       role: "read_only",
     });
     await addMembership(client, {
       id: ids.workspaceBOwnerMembership,
-      identityId: workspaceBOwnerIdentity,
+      identityId: ids.workspaceBOwnerIdentity,
       workspaceId: ids.workspaceB,
       role: "workspace_owner",
     });
@@ -305,6 +356,66 @@ describe("database and workspace access hardening", () => {
     );
     expect(visibleIds).not.toContain(ids.otherBranchMembership);
     expect(visibleIds).not.toContain(ids.workspaceBOwnerMembership);
+    expect(result?.members).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: ids.sameBranchMembership,
+          firstName: "Sam",
+          lastName: "Samebranch",
+          primaryEmail: "same@workspace-a.test",
+        }),
+      ]),
+    );
+  });
+
+  it("limits workspace identity details to permitted roles and branch-visible members", async () => {
+    const client = await runtimePool.connect();
+    try {
+      await client.query("BEGIN");
+      await client.query(
+        "SELECT set_config('app.user_identity_id', $1, true)",
+        [ids.managerIdentity],
+      );
+      await client.query("SELECT set_config('app.workspace_id', $1, true)", [
+        ids.workspaceA,
+      ]);
+      const visible = await client.query<{ id: string }>(
+        `SELECT "id" FROM "user_identities" ORDER BY "id"`,
+      );
+      const visibleIds = visible.rows.map(({ id }) => id);
+      expect(visibleIds).toEqual(
+        expect.arrayContaining([
+          ids.managerIdentity,
+          ids.ownerOneIdentity,
+          ids.ownerTwoIdentity,
+          ids.sameBranchIdentity,
+          ids.overlappingIdentity,
+          ids.workspaceWideIdentity,
+        ]),
+      );
+      expect(visibleIds).not.toContain(ids.otherBranchIdentity);
+      expect(visibleIds).not.toContain(ids.workspaceBOwnerIdentity);
+      await client.query("ROLLBACK");
+
+      await client.query("BEGIN");
+      await client.query(
+        "SELECT set_config('app.user_identity_id', $1, true)",
+        [ids.sameBranchIdentity],
+      );
+      await client.query("SELECT set_config('app.workspace_id', $1, true)", [
+        ids.workspaceA,
+      ]);
+      const noDirectoryPermission = await client.query<{ id: string }>(
+        `SELECT "id" FROM "user_identities" ORDER BY "id"`,
+      );
+      expect(noDirectoryPermission.rows).toEqual([
+        { id: ids.sameBranchIdentity },
+      ]);
+      await client.query("ROLLBACK");
+    } finally {
+      await client.query("ROLLBACK").catch(() => undefined);
+      client.release();
+    }
   });
 
   it("rejects an audit actor membership from another workspace", async () => {
@@ -412,6 +523,105 @@ describe("database and workspace access hardening", () => {
     await expect(
       getCustomerProfile(ids.ownerOneAuth, "workspace-a"),
     ).resolves.toBeNull();
+  });
+
+  it("shows customer details with role-aware editing capability", async () => {
+    const owner = await getWorkspaceCustomerDetails(
+      ids.ownerOneAuth,
+      "workspace-a",
+    );
+    expect(owner).toMatchObject({
+      details: { id: ids.workspaceA, displayName: "Workspace A" },
+      canEdit: true,
+    });
+
+    const manager = await getWorkspaceCustomerDetails(
+      ids.managerAuth,
+      "workspace-a",
+    );
+    expect(manager).toMatchObject({
+      details: { id: ids.workspaceA, displayName: "Workspace A" },
+      canEdit: false,
+    });
+    await expect(
+      getWorkspaceCustomerDetails(ids.ownerOneAuth, "workspace-b"),
+    ).resolves.toBeNull();
+  });
+
+  it("allows an Account Owner to update only their workspace details", async () => {
+    await expect(
+      updateWorkspaceCustomerDetails({
+        authSubject: ids.ownerOneAuth,
+        workspaceSlug: "workspace-a",
+        details: UPDATED_CUSTOMER_DETAILS,
+      }),
+    ).resolves.toEqual({ ok: true });
+
+    const workspaces = await adminPool.query<{
+      id: string;
+      display_name: string;
+      primary_email: string | null;
+    }>(
+      `SELECT "id", "display_name", "primary_email"
+       FROM "workspaces" ORDER BY "slug"`,
+    );
+    expect(workspaces.rows).toEqual([
+      {
+        id: ids.workspaceA,
+        display_name: "Workspace A Updated",
+        primary_email: "hello@workspace-a.test",
+      },
+      {
+        id: ids.workspaceB,
+        display_name: "Workspace B",
+        primary_email: null,
+      },
+    ]);
+
+    const audit = await adminPool.query<{
+      actor_membership_id: string;
+      metadata: { changedFields: string[] };
+    }>(
+      `SELECT "actor_membership_id", "metadata"
+       FROM "audit_events"
+       WHERE "action" = 'workspace.details.update'
+         AND "target_id" = $1`,
+      [ids.workspaceA],
+    );
+    expect(audit.rows[0]?.actor_membership_id).toBe(ids.ownerOneMembership);
+    expect(audit.rows[0]?.metadata.changedFields).toContain("displayName");
+  });
+
+  it("denies customer-detail editing without workspace.update", async () => {
+    await expect(
+      updateWorkspaceCustomerDetails({
+        authSubject: ids.managerAuth,
+        workspaceSlug: "workspace-a",
+        details: UPDATED_CUSTOMER_DETAILS,
+      }),
+    ).resolves.toEqual({ ok: false, error: "access_denied" });
+
+    const workspace = await adminPool.query<{ display_name: string }>(
+      `SELECT "display_name" FROM "workspaces" WHERE "id" = $1::uuid`,
+      [ids.workspaceA],
+    );
+    expect(workspace.rows[0]?.display_name).toBe("Workspace A");
+  });
+
+  it("allows a Platform Owner to update customer details", async () => {
+    await expect(
+      updatePlatformCustomerDetails({
+        authSubject: ids.platformAuth,
+        customerSlug: "workspace-a",
+        details: UPDATED_CUSTOMER_DETAILS,
+      }),
+    ).resolves.toEqual({ ok: true });
+
+    const workspace = await adminPool.query<{ display_name: string }>(
+      `SELECT "display_name" FROM "workspaces" WHERE "id" = $1::uuid`,
+      [ids.workspaceA],
+    );
+    expect(workspace.rows[0]?.display_name).toBe("Workspace A Updated");
   });
 
   it("allows a Platform Owner to update a name and audits the change", async () => {

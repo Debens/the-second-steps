@@ -1,6 +1,6 @@
 # Permissions and access
 
-Supabase login, server-verified sessions, the workspace and membership access foundation, fixed staff roles, feature-flagged TOTP MFA enforcement, and the separate Platform Owner shell are implemented. Platform Owners can browse limited user/customer administration metadata and manage audited customer feature-flag overrides; this does not grant CRM-record access. Participations, entitlements, resource/field grants, invitations, and CRM data access are not implemented.
+Supabase login, server-verified sessions, the workspace and membership access foundation, fixed staff roles, feature-flagged TOTP MFA enforcement, and the separate Platform Owner shell are implemented. Platform Owners can browse limited user/customer administration metadata and manage audited user names, customer/contact details, and customer feature-flag overrides; authorised customer roles can edit ordinary customer/contact details within their verified workspace. None of this grants CRM-record access. Participations, entitlements, resource/field grants, invitations, and CRM data access are not implemented.
 
 ## Three-layer access model (confirmed)
 
@@ -17,6 +17,8 @@ Menus may reflect these answers, but the server enforces them. Never trust a cli
 `Workspace` is the hard tenant boundary. Application code derives it from verified access and scopes every query and mutation. PostgreSQL RLS applies the same boundary from the first workspace-owned tables. Changing a UUID or workspace selector must never cross that boundary.
 
 Branch scope is additional and weaker. Memberships use either whole-workspace access or a non-empty explicit list of named branches. A branch-scoped staff viewer sees workspace-wide staff plus staff sharing at least one of their branches; staff assigned exclusively to other branches are hidden. Resource exceptions are deferred.
+
+Users with `membership.read` may see the first name, last name, and sign-in email of memberships visible under those workspace and branch rules. The database enforces the same boundary; authentication-provider links and identities from unrelated workspaces remain hidden.
 
 ## Business memberships (confirmed model)
 
