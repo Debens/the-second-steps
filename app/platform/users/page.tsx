@@ -25,7 +25,7 @@ import {
 } from "@/core/platform/application/platform-directory";
 import { formatPersonName } from "@/core/platform/domain/user-profile";
 import { PlatformSearchForm } from "../search-form";
-import { StatusPill } from "../status-pill";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { UserDetailsDialog } from "./user-details-dialog";
 
 export const metadata: Metadata = {
@@ -149,7 +149,7 @@ export default async function PlatformUsersPage({
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="grid gap-4">
-                  <StatusPill
+                  <StatusBadge
                     label={
                       directoryUser.status === "ACTIVE" ? "Active" : "Suspended"
                     }
@@ -210,7 +210,7 @@ export default async function PlatformUsersPage({
                         {directoryUser.primaryEmail ?? "Not recorded"}
                       </TableCell>
                       <TableCell>
-                        <StatusPill
+                        <StatusBadge
                           label={
                             directoryUser.status === "ACTIVE"
                               ? "Active"

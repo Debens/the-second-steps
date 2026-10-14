@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { requireMfaUser } from "@/core/auth/mfa";
 import { getCustomerProfile } from "@/core/platform/application/platform-directory";
-import { StatusPill } from "../../status-pill";
 import { CustomerTabs } from "./customer-tabs";
 
 function customerStatus(status: "ACTIVE" | "SUSPENDED" | "CLOSED") {
@@ -39,7 +39,7 @@ export default async function CustomerProfileLayout({
               : "Independent landlord"}
           </p>
         </div>
-        <StatusPill {...customerStatus(customer.status)} />
+        <StatusBadge {...customerStatus(customer.status)} />
       </div>
 
       <CustomerTabs customerSlug={customerSlug} />

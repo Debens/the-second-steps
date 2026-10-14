@@ -17,10 +17,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { requireMfaUser } from "@/core/auth/mfa";
 import { listCustomers } from "@/core/platform/application/platform-directory";
 import { PlatformSearchForm } from "../search-form";
-import { StatusPill } from "../status-pill";
 
 export const metadata: Metadata = {
   title: "Customers | Zayto",
@@ -115,7 +115,7 @@ export default async function PlatformCustomersPage({
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="grid gap-3">
-                    <StatusPill {...status} />
+                    <StatusBadge {...status} />
                     <div className="grid grid-cols-2 gap-3 text-sm">
                       <div>
                         <p className="text-xs text-muted-foreground">
@@ -169,7 +169,7 @@ export default async function PlatformCustomersPage({
                         </TableCell>
                         <TableCell>{customerType(customer.type)}</TableCell>
                         <TableCell>
-                          <StatusPill {...status} />
+                          <StatusBadge {...status} />
                         </TableCell>
                         <TableCell>{customer.activeBranchCount}</TableCell>
                         <TableCell>{customer.activeUserCount}</TableCell>

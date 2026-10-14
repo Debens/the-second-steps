@@ -15,10 +15,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { BranchUserList } from "@/components/workspace/branch-user-list";
 import { requireMfaUser } from "@/core/auth/mfa";
 import { listCustomerBranches } from "@/core/platform/application/platform-directory";
-import { StatusPill } from "../../../status-pill";
 
 function addressFor(branch: {
   address1: string | null;
@@ -75,7 +75,7 @@ export default async function CustomerBranchesPage({
               </CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4">
-              <StatusPill
+              <StatusBadge
                 label={branch.status === "ACTIVE" ? "Active" : "Inactive"}
                 tone={branch.status === "ACTIVE" ? "active" : "inactive"}
               />
@@ -107,7 +107,7 @@ export default async function CustomerBranchesPage({
                 <TableRow key={branch.id}>
                   <TableCell className="font-medium">{branch.name}</TableCell>
                   <TableCell>
-                    <StatusPill
+                    <StatusBadge
                       label={branch.status === "ACTIVE" ? "Active" : "Inactive"}
                       tone={branch.status === "ACTIVE" ? "active" : "inactive"}
                     />

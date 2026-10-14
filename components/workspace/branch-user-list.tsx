@@ -1,4 +1,6 @@
 import { UsersRound } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { formatPersonName } from "@/core/platform/domain/user-profile";
 
 type BranchUser = {
@@ -9,12 +11,6 @@ type BranchUser = {
   status: "ACTIVE" | "SUSPENDED" | "ENDED";
   scopeMode: "WORKSPACE" | "NAMED_BRANCHES";
 };
-
-function membershipStatus(status: BranchUser["status"]) {
-  if (status === "ACTIVE") return "Active";
-  if (status === "SUSPENDED") return "Suspended";
-  return "Ended";
-}
 
 export function BranchUserList({
   users,
@@ -51,14 +47,21 @@ export function BranchUserList({
                   {user.primaryEmail ?? "Email not recorded"}
                 </p>
               </div>
-              <p className="shrink-0 text-xs text-muted-foreground">
-                {user.scopeMode === "WORKSPACE"
-                  ? "All branches"
-                  : "This branch"}
-                {user.status === "ACTIVE"
-                  ? ""
-                  : ` · ${membershipStatus(user.status)}`}
-              </p>
+              <div className="flex shrink-0 flex-wrap gap-1.5 sm:justify-end">
+                <Badge
+                  variant={user.scopeMode === "WORKSPACE" ? "info" : "outline"}
+                >
+                  {user.scopeMode === "WORKSPACE"
+                    ? "All branches"
+                    : "This branch"}
+                </Badge>
+                {user.status !== "ACTIVE" && (
+                  <StatusBadge
+                    label={user.status === "SUSPENDED" ? "Suspended" : "Ended"}
+                    tone={user.status === "SUSPENDED" ? "suspended" : "closed"}
+                  />
+                )}
+              </div>
             </li>
           ))}
         </ul>

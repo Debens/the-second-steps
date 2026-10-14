@@ -353,6 +353,18 @@ test.describe("sandbox access personas", () => {
           page.getByText("Olivia Hart", { exact: true }),
         ).toBeVisible();
         await expect(page.getByText(/^owner@zayto\.local/)).toBeVisible();
+        const ownerUserCard = page
+          .locator('[data-slot="card"]')
+          .filter({ hasText: "Olivia Hart" });
+        await expect(
+          ownerUserCard.getByText("Active", { exact: true }),
+        ).toHaveClass(/bg-success-soft/);
+        await expect(
+          ownerUserCard.getByText("All branches", { exact: true }),
+        ).toHaveClass(/bg-info-soft/);
+        await expect(
+          ownerUserCard.getByText("Account Owner", { exact: true }),
+        ).toHaveClass(/bg-secondary/);
         await settingsNavigation
           .getByRole("link", { name: "Branches" })
           .click();
@@ -372,6 +384,9 @@ test.describe("sandbox access personas", () => {
           mainBranchCard.getByRole("heading", { name: "Main Branch" }),
         ).toBeVisible();
         await expect(
+          mainBranchCard.getByText("Active branch", { exact: true }),
+        ).toHaveClass(/bg-success-soft/);
+        await expect(
           mainBranchCard.getByText("main@oakfield.test"),
         ).toBeVisible();
         await expect(mainBranchCard.getByText("020 7946 0998")).toBeVisible();
@@ -383,7 +398,7 @@ test.describe("sandbox access personas", () => {
         ).toBeVisible();
         await expect(
           mainBranchCard.getByText("All branches", { exact: true }).first(),
-        ).toBeVisible();
+        ).toHaveClass(/bg-info-soft/);
         await expect(
           riversideBranchCard.getByRole("heading", {
             name: "Riverside Branch",
@@ -569,17 +584,17 @@ test.describe("sandbox access personas", () => {
       .getByRole("row")
       .filter({ hasText: "Priya Shah" });
     await expect(
-      priyaUserRow.getByRole("cell", {
-        name: "Main Branch, Riverside Branch",
-        exact: true,
-      }),
-    ).toBeVisible();
+      priyaUserRow.getByText("Main Branch", { exact: true }),
+    ).toHaveAttribute("data-variant", "outline");
+    await expect(
+      priyaUserRow.getByText("Riverside Branch", { exact: true }),
+    ).toHaveAttribute("data-variant", "outline");
     const suspendedUserRow = customerUsersTable
       .getByRole("row")
       .filter({ hasText: "Jordan Reed" });
     await expect(
       suspendedUserRow.getByText("Suspended", { exact: true }),
-    ).toBeVisible();
+    ).toHaveClass(/bg-warning-soft/);
 
     await page.setViewportSize({ width: 390, height: 844 });
     const currentOrigin = new URL(page.url()).origin;
@@ -592,6 +607,12 @@ test.describe("sandbox access personas", () => {
     await expect(
       page.getByText("Olivia Hart", { exact: true }).first(),
     ).toBeVisible();
+    const mobileOwnerCard = page
+      .locator('[data-slot="card"]:visible')
+      .filter({ hasText: "Olivia Hart" });
+    await expect(
+      mobileOwnerCard.getByText("Active", { exact: true }),
+    ).toHaveClass(/bg-success-soft/);
     expect(
       await page.evaluate(
         () => document.documentElement.scrollWidth <= window.innerWidth,
@@ -647,6 +668,9 @@ test.describe("sandbox access personas", () => {
     await expect(
       page.getByRole("radio", { name: /Inherit global setting/i }),
     ).toBeChecked();
+    await expect(page.getByText(/^Inherited · global (on|off)$/)).toHaveClass(
+      /bg-info-soft/,
+    );
   });
 
   test("Platform Owner can update and restore a sandbox user name", async ({

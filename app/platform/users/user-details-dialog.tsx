@@ -21,7 +21,7 @@ import {
   formatPersonName,
   PERSON_NAME_PART_MAX_LENGTH,
 } from "@/core/platform/domain/user-profile";
-import { StatusPill } from "../status-pill";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { updateUserNameAction, type UpdateUserProfileState } from "./actions";
 import {
   COPY_EMAIL_FEEDBACK_MS,
@@ -327,7 +327,7 @@ export function UserDetailsDialog({
               )}
             </Detail>
             <Detail label="Account status">
-              <StatusPill
+              <StatusBadge
                 label={user.status === "ACTIVE" ? "Active" : "Suspended"}
                 tone={user.status === "ACTIVE" ? "active" : "suspended"}
               />
@@ -370,7 +370,7 @@ export function UserDetailsDialog({
                     >
                       {membership.customer.displayName}
                     </Link>
-                    <StatusPill
+                    <StatusBadge
                       label={MEMBERSHIP_STATUS_LABELS[membership.status]}
                       tone={
                         membership.status === "ACTIVE"

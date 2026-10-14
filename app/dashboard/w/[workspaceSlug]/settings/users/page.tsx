@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardAction,
@@ -7,6 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { getWorkspaceMembers } from "@/core/access/application/workspace-members";
 import { ROLE_LABELS } from "@/core/access/domain/role";
 import { requireMfaUser } from "@/core/auth/mfa";
@@ -49,11 +51,6 @@ export default async function WorkspaceUsersPage({
                 <CardDescription>
                   {member.primaryEmail ?? "No email recorded"}
                   {member.isCurrentUser ? " · You" : ""}
-                  {" · "}
-                  {member.status === "ACTIVE" ? "Active" : member.status} ·{" "}
-                  {member.scopeMode === "WORKSPACE"
-                    ? "Whole workspace"
-                    : `${member.branchCount} named branch${member.branchCount === 1 ? "" : "es"}`}
                 </CardDescription>
                 {result.canManageRoles && !member.isCurrentUser && (
                   <CardAction>
@@ -66,15 +63,41 @@ export default async function WorkspaceUsersPage({
                   </CardAction>
                 )}
               </CardHeader>
-              <CardContent className="flex flex-wrap gap-2">
-                {member.roles.map((role) => (
-                  <span
-                    key={role}
-                    className="rounded-md bg-muted px-2 py-1 text-xs font-medium"
+              <CardContent className="grid gap-3">
+                <div className="flex flex-wrap gap-2">
+                  <StatusBadge
+                    label={
+                      member.status === "ACTIVE"
+                        ? "Active"
+                        : member.status === "SUSPENDED"
+                          ? "Suspended"
+                          : "Ended"
+                    }
+                    tone={
+                      member.status === "ACTIVE"
+                        ? "active"
+                        : member.status === "SUSPENDED"
+                          ? "suspended"
+                          : "closed"
+                    }
+                  />
+                  <Badge
+                    variant={
+                      member.scopeMode === "WORKSPACE" ? "info" : "outline"
+                    }
                   >
-                    {ROLE_LABELS[role]}
-                  </span>
-                ))}
+                    {member.scopeMode === "WORKSPACE"
+                      ? "All branches"
+                      : `${member.branchCount} named branch${member.branchCount === 1 ? "" : "es"}`}
+                  </Badge>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {member.roles.map((role) => (
+                    <Badge key={role} variant="secondary">
+                      {ROLE_LABELS[role]}
+                    </Badge>
+                  ))}
+                </div>
               </CardContent>
             </Card>
           );

@@ -7,6 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { BranchUserList } from "@/components/workspace/branch-user-list";
 import { requireMfaUser } from "@/core/auth/mfa";
 import { getWorkspaceBranches } from "@/core/workspace/application/workspace-branches";
@@ -70,11 +71,14 @@ export default async function WorkspaceBranchesPage({
               <CardTitle>
                 <h3>{branch.name}</h3>
               </CardTitle>
-              <CardDescription>
-                {branch.status === "ACTIVE"
-                  ? "Active branch"
-                  : "Inactive branch"}
-              </CardDescription>
+              <StatusBadge
+                label={
+                  branch.status === "ACTIVE"
+                    ? "Active branch"
+                    : "Inactive branch"
+                }
+                tone={branch.status === "ACTIVE" ? "active" : "inactive"}
+              />
             </CardHeader>
             <CardContent className="grid gap-4">
               <dl className="grid gap-5 sm:grid-cols-2">

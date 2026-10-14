@@ -1,7 +1,9 @@
 "use client";
 
 import { useActionState } from "react";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { StatusBadge } from "@/components/ui/status-badge";
 import type { CustomerFeatureFlagSummary } from "@/core/platform/application/customer-feature-flags";
 import {
   updateCustomerFeatureFlagAction,
@@ -79,24 +81,25 @@ export function CustomerFeatureFlagForm({
       </fieldset>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm">
-          Effective for customer users:{" "}
-          <span className="font-semibold">
-            {flag.effectiveEnabled ? "On" : "Off"}
-          </span>
+        <div className="flex flex-wrap items-center gap-2 text-sm">
+          <span>Effective for customer users:</span>
+          <StatusBadge
+            label={flag.effectiveEnabled ? "On" : "Off"}
+            tone={flag.effectiveEnabled ? "active" : "inactive"}
+          />
           {flag.overrideMode === "inherit" && (
-            <span className="text-muted-foreground">
-              {` (global setting is ${flag.globalEnabled ? "on" : "off"})`}
-            </span>
+            <Badge variant="info">
+              Inherited · global {flag.globalEnabled ? "on" : "off"}
+            </Badge>
           )}
-        </p>
+        </div>
         <Button type="submit" disabled={pending}>
           {pending ? "Saving…" : "Save customer setting"}
         </Button>
       </div>
 
       {flag.releaseProtected && (
-        <p className="rounded-md bg-warning-soft px-3 py-2 text-xs text-warning-soft-foreground">
+        <p className="rounded-md bg-warning-soft px-3 py-2 text-xs text-warning">
           Release protection is active. Staff two-step verification cannot be
           forced off for this customer.
         </p>

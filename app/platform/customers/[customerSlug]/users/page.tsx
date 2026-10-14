@@ -1,5 +1,6 @@
 import { UsersRound } from "lucide-react";
 import { notFound } from "next/navigation";
+import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
@@ -15,6 +16,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { ROLE_LABELS } from "@/core/access/domain/role";
 import { requireMfaUser } from "@/core/auth/mfa";
 import {
@@ -22,7 +24,6 @@ import {
   type CustomerUserSummary,
 } from "@/core/platform/application/platform-directory";
 import { formatPersonName } from "@/core/platform/domain/user-profile";
-import { StatusPill } from "../../../status-pill";
 
 function membershipStatus(status: CustomerUserSummary["status"]) {
   if (status === "ACTIVE") return { label: "Active", tone: "active" as const };
@@ -36,30 +37,31 @@ function RoleSummary({ user }: { user: CustomerUserSummary }) {
   return (
     <div className="flex flex-wrap gap-2">
       {user.roles.map((role) => (
-        <span
-          key={role}
-          className="rounded-md bg-muted px-2 py-1 text-xs font-medium"
-        >
+        <Badge key={role} variant="secondary">
           {ROLE_LABELS[role]}
-        </span>
+        </Badge>
       ))}
     </div>
   );
 }
 
 function ScopeSummary({ user }: { user: CustomerUserSummary }) {
-  if (user.scopeMode === "WORKSPACE") return <>All branches</>;
+  if (user.scopeMode === "WORKSPACE") {
+    return <Badge variant="info">All branches</Badge>;
+  }
+
+  if (user.branches.length === 0) {
+    return <Badge variant="warning">No named branches</Badge>;
+  }
 
   return (
-    <span>
-      {user.branches.length > 0
-        ? user.branches
-            .map(
-              (branch) =>
-                `${branch.name}${branch.status === "INACTIVE" ? " (inactive)" : ""}`,
-            )
-            .join(", ")
-        : "No named branches"}
+    <span className="flex flex-wrap gap-1.5">
+      {user.branches.map((branch) => (
+        <Badge key={branch.id} variant="outline">
+          {branch.name}
+          {branch.status === "INACTIVE" ? " (inactive)" : ""}
+        </Badge>
+      ))}
     </span>
   );
 }
@@ -106,7 +108,7 @@ export default async function CustomerUsersPage({
               </CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4">
-              <StatusPill {...membershipStatus(customerUser.status)} />
+              <StatusBadge {...membershipStatus(customerUser.status)} />
               <div>
                 <p className="mb-2 text-xs font-medium text-muted-foreground">
                   Roles
@@ -151,7 +153,7 @@ export default async function CustomerUsersPage({
                     {customerUser.primaryEmail ?? "Not recorded"}
                   </TableCell>
                   <TableCell>
-                    <StatusPill {...membershipStatus(customerUser.status)} />
+                    <StatusBadge {...membershipStatus(customerUser.status)} />
                   </TableCell>
                   <TableCell>
                     <RoleSummary user={customerUser} />

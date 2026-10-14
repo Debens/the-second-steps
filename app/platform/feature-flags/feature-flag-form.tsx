@@ -55,7 +55,7 @@ export function FeatureFlagForm({ flag }: { flag: FeatureFlagSummary }) {
       </fieldset>
 
       {flag.releaseProtected && (
-        <p className="rounded-md bg-warning-soft px-3 py-2 text-xs text-warning-soft-foreground">
+        <p className="rounded-md bg-warning-soft px-3 py-2 text-xs text-warning">
           Release protection is active. Staff 2FA is forced on and cannot be
           disabled from this screen.
         </p>
