@@ -10,6 +10,18 @@ Implemented tables: `user_identities`, `authentication_provider_links`, `workspa
 
 Proposed IDs are UUIDs. Where practical, relationships use composite workspace-aware foreign keys such as `(workspaceId, propertyId)` so the database rejects cross-workspace links. Index `workspaceId`, foreign keys, and genuine search columns.
 
+## Import-ready modelling principles
+
+Future CRM entities must support customer migration without shaping the model around one legacy supplier:
+
+- Preserve meaningful external record identifiers with their workspace, source, entity type, and import context so related people, properties, tenancies, records, and documents can be reconnected safely. External identifiers do not replace Zayto IDs or prove access.
+- Represent current, ended, inactive, and archived states, with effective dates or relationship history where the domain requires them. Landlord/property, tenant/tenancy, party/case, and document/record associations must remain accurate historically rather than being overwritten by the latest state.
+- Keep source provenance and original source timestamps distinct from import timestamps, later corrections, and Zayto audit events.
+- Keep canonical validation strict. Incomplete or inconsistent legacy values are handled through a future staging, mapping, validation, and exception process rather than making normal Zayto records ambiguous or broadly nullable.
+- Give imported notes, documents, source-specific fields, and relevant history a classified mapped destination or a clearly labelled retained-source representation. Exact extension/custom-field structures remain unresolved and must not leak one vendor's schema into core entities.
+
+Exact import-support tables and fields are deferred until the first relevant CRM entities are designed. See ADR-028 and `.cursor/plans/customer-data-migration-and-onboarding.md`.
+
 ## Global identity and personal account
 
 ```text
@@ -121,3 +133,4 @@ Use foreign keys and workspace-scoped unique constraints. Cascade only true owne
 - Detailed accounting ledger design
 - Detailed referencing, AML, Right to Rent, insurance, and deposit rules
 - Sales entities and workflows
+- Import staging, source-reference, custom-field, duplicate-resolution, and rollback details

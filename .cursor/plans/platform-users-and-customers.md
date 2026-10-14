@@ -1,6 +1,6 @@
 # Platform users and customers
 
-**Status:** Implemented and verified on 2026-10-13. The shared Supabase migration is applied. Code-quality, disposable-database integration, production-build, and shared-sandbox browser checks pass. Commit and push remain pending.
+**Status:** Implemented, verified, committed, and pushed on 2026-10-13. The shared Supabase migration is applied. Code-quality, disposable-database integration, production-build, and shared-sandbox browser checks passed.
 
 ## Confirmed outcome
 

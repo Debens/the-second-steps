@@ -49,6 +49,7 @@ We will **not** implement every lifecycle area in the PoC. See `ROADMAP.md`.
 6. **Independent modules** — CRM, pre-tenancy, property management, accounting, referencing, AML, Right to Rent, and other modules can be subscribed to and used without buying unrelated modules.
 7. **One identity, explicit contexts** — business membership and personal participation are separate; access follows the current workspace, relationship, resource, and field.
 8. **Commercial independence** — Zayto does not assume access to Blinc software, data, documents, supplier credentials, or commercial arrangements.
+9. **Data portability** — established customers must be able to bring appropriate legacy CRM data into Zayto and later export their Zayto data in documented, usable formats. Core models must preserve provenance and history without becoming shaped around one supplier.
 
 ## Commercial model (confirmed shape; details unresolved)
 

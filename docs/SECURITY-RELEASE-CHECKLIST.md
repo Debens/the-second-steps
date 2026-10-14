@@ -33,6 +33,7 @@ Zayto is **not ready for real customer data or production release** until every 
 ## Data protection and operations
 
 - [ ] Data inventory, controller/processor roles, lawful bases, privacy information, retention, access, correction, export, and erasure processes are approved.
+- [ ] Any customer import/export process has approved authorisation, staging retention/deletion, error-report privacy, reconciliation, and audit controls.
 - [ ] Document storage is private, UK-hosted, malware/type/size checked, and uses short-lived authorised downloads.
 - [ ] Audit retention, access, monitoring, and incident-response procedures are approved.
 - [ ] No real landlord, applicant, tenant, guarantor, identity, banking, or financial data is loaded before this checklist is complete.

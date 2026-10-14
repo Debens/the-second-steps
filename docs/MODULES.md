@@ -55,6 +55,7 @@ These users are participants in named resources, not broad members of an agency 
 - Optional modules do not import another optional module's internals or require its entitlement.
 - Cross-module actions use an application contract or recorded event, not direct table manipulation.
 - External suppliers sit behind capability interfaces and do not define Zayto's domain model.
+- Import/export orchestration uses each owning module's application contract; it does not become a shortcut around module boundaries or validation.
 - Sales and lettings may share core people/property concepts but not one another's internals.
 
 ## Commercial access

@@ -79,6 +79,10 @@ Incrementally add tenancy documents, maintenance, communications, inspections, r
 
 Add versioned plans, free allowances, trials, add-ons, usage limits, pay-per-use checkout, billing reconciliation, downgrade behaviour, and abuse controls after pricing decisions. Free functionality must not create uncontrolled provider or storage costs.
 
+## Deferred commercial capability — customer migration and onboarding
+
+Do not build migration functionality now. Keep each relevant core CRM model import-ready under ADR-028, then schedule the controlled file/API import workflow before onboarding any established customer that depends on legacy data migration. Implementation depends on stable destination models plus approved production data-protection, document-storage, backup, recovery, support-access, and import-authorisation controls. See `.cursor/plans/customer-data-migration-and-onboarding.md`.
+
 ## Later
 
 - Accounting ledger and reconciliation after separate design approval

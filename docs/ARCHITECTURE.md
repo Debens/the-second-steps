@@ -71,6 +71,12 @@ We are **not** starting with microservices. That would add operational cost befo
 
 Presentation depends on application use-cases. Application code depends on domain rules and repository interfaces. Prisma adapters implement those interfaces; domain code never imports the data layer. Core must not import lettings or sales.
 
+## Customer migration and portability (confirmed requirement; deferred)
+
+Core people, property, tenancy, document, and relationship models must accommodate externally sourced records, meaningful source identifiers, historical/inactive states, and past associations without becoming coupled to a particular CRM. Source facts, source timestamps, import metadata, and later Zayto-authored activity must remain distinguishable.
+
+Future file or API adapters will translate source data at the application boundary and call the same owning-module contracts as other authorised use-cases. Imperfect legacy data belongs in an isolated validation/staging process; it must not weaken canonical record validation or bypass workspace, permission, privacy, audit, and RLS controls. Zayto must also support documented, usable customer exports rather than relying on proprietary database access. The deferred workflow and open decisions are in `.cursor/plans/customer-data-migration-and-onboarding.md` (ADR-028).
+
 ## Target folder shape (proposed)
 
 Partly created. `core/feature-flags/` now contains fixed keys, precedence, server evaluation, administration, and database access. Expand the remaining areas as feature work starts:

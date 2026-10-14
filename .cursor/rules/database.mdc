@@ -16,6 +16,7 @@ alwaysApply: false
 - Writes that must succeed together (e.g. tenancy + occupants) use a transaction.
 - Prevent N+1: `include`/`select` what the view needs, or batched queries. Do not loop `findUnique` per row.
 - Soft-delete only where the product needs history; otherwise hard-delete with FK rules. GDPR erasure is a planned process, not a silent overwrite.
+- When designing CRM records, allow for workspace-scoped external source references, original source timestamps where meaningful, historical/inactive states, and accurate past relationships. Keep import provenance separate from Zayto audit events. Legacy-data staging or exceptions must not relax canonical validation for records created in Zayto.
 - Application checks are mandatory. Add PostgreSQL RLS with the first workspace-owned records as defence in depth (ADR-023), never as a substitute for application scoping. Every data path needs cross-workspace tests; participant paths also need cross-participant privacy tests.
 
 Do not design the entire final schema in one change. Add tables for the current slice only.

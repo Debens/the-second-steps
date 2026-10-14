@@ -26,6 +26,12 @@ No third-party SDKs are installed. Do not call live providers unless the user en
 
 Vendor names above are **illustrative**, not selected.
 
+## Customer data migration and export (confirmed requirement; deferred)
+
+Structured files, including CSV and Excel, are the baseline future migration path. A named CRM's API may be supported through a source adapter only after its documented access, customer authority, and data-handling terms are confirmed; no supplier API is assumed.
+
+Source adapters must map into Zayto application contracts rather than define the domain model or write directly across module tables. The common process must provide mapping, validation, duplicate review, preview, error reporting, reconciliation, and idempotent safe retries while preserving workspace isolation and provenance. Exports should use documented, commonly usable formats and must not depend on a supplier-specific or Zayto-internal database shape. Detailed workflow and open decisions are deferred in `.cursor/plans/customer-data-migration-and-onboarding.md`.
+
 ## Webhooks (confirmed requirements when we add them)
 
 - Verify signatures (or equivalent) before processing.
@@ -42,3 +48,4 @@ Timeouts on outbound HTTP. Retries with backoff for transient errors. Give up wi
 - Invent REST paths for a portal
 - Hard-code a vendor in React components
 - Log ID scans, full account numbers, or raw webhook secrets
+- Treat a source CRM API as available without confirming its documented access

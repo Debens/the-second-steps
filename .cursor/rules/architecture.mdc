@@ -18,6 +18,8 @@ Lettings must not import sales internals. Sales (later) may reuse **core** (orga
 
 CRM, pre-tenancy, property management, accounting, referencing, AML, Right to Rent, and other optional modules must be independently entitled and usable. An optional module must not require another optional module or import its internal repositories. Core owns narrow shared platform concepts: workspace, identity, access, people, property, entitlements, documents, audit, and jobs.
 
+Core people, property, document, and relationship designs must remain suitable for customer data migration and export. Preserve meaningful external source identifiers and source provenance separately from Zayto-authored activity, support historical/inactive records and time-bounded relationships, and do not weaken normal validation to accept poor legacy data. Import orchestration belongs at the application boundary and must use each owning module's contracts rather than writing across module tables directly.
+
 Every protected operation separately checks workspace entitlement, user permission, and specific resource/field access (ADR-021). Membership is for business operators; applicants, tenants, guarantors, and invited landlords use participations and explicit grants (ADR-022).
 
 ## Direction
