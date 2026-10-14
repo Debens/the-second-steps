@@ -1,10 +1,5 @@
 import { createHmac, randomUUID } from "node:crypto";
-import {
-  expect,
-  test,
-  type APIRequestContext,
-  type Page,
-} from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { createClient } from "@supabase/supabase-js";
 import { Pool } from "pg";
 import {
@@ -13,22 +8,15 @@ import {
 } from "@/core/auth/env";
 import { databaseSsl, databaseUrl } from "@/core/db/connection";
 
-type MailpitMessageSummary = {
-  ID: string;
-  To: Array<{ Address: string }>;
-};
-
-type MailpitMessages = {
-  messages: MailpitMessageSummary[];
-};
-
-type MailpitMessage = {
-  Text: string;
-};
-
 const PERSONAS = [
   {
     email: "owner@zayto.local",
+    expectedUrl: /\/dashboard\/w\/oakfield-lettings-demo$/,
+    expectedHeading: "Dashboard",
+    deniedUrl: "/platform",
+  },
+  {
+    email: "branch.manager@zayto.local",
     expectedUrl: /\/dashboard\/w\/oakfield-lettings-demo$/,
     expectedHeading: "Dashboard",
     deniedUrl: "/platform",
@@ -292,67 +280,15 @@ async function restoreSandboxName(firstName: string, lastName: string) {
   }
 }
 
-async function latestMagicLink(
-  request: APIRequestContext,
-  email: string,
-): Promise<string> {
-  await expect
-    .poll(
-      async () => {
-        const response = await request.get(
-          "http://127.0.0.1:8025/api/v1/messages",
-        );
-        if (!response.ok()) return null;
-
-        const data = (await response.json()) as MailpitMessages;
-        return (
-          data.messages.find((message) =>
-            message.To.some(
-              (recipient) => recipient.Address.toLowerCase() === email,
-            ),
-          )?.ID ?? null
-        );
-      },
-      { timeout: 10_000 },
-    )
-    .not.toBeNull();
-
-  const summariesResponse = await request.get(
-    "http://127.0.0.1:8025/api/v1/messages",
-  );
-  const summaries = (await summariesResponse.json()) as MailpitMessages;
-  const messageId = summaries.messages.find((message) =>
-    message.To.some((recipient) => recipient.Address.toLowerCase() === email),
-  )?.ID;
-  if (!messageId) throw new Error("Mailpit message was not found.");
-
-  const messageResponse = await request.get(
-    `http://127.0.0.1:8025/api/v1/message/${messageId}`,
-  );
-  const message = (await messageResponse.json()) as MailpitMessage;
-  const link = message.Text.match(/https?:\/\/[^\s]+/)?.[0];
-  if (!link)
-    throw new Error("Magic link was not found in the Mailpit message.");
-
-  return link;
-}
-
-async function openMagicLink(
-  page: Page,
-  request: APIRequestContext,
-  email: string,
-) {
+async function signInAsSandboxUser(page: Page, email: string) {
   await page.goto("/login");
-  await page.getByLabel("Email").fill(email);
-  await page.getByRole("button", { name: "Email me a sign-in link" }).click();
-  await expect(
-    page.getByText(/sign-in link is now in the local mail sandbox/i),
-  ).toBeVisible();
-
-  const link = await latestMagicLink(request, email);
-  const callback = new URL(link);
-  const appOrigin = new URL(page.url()).origin;
-  await page.goto(`${appOrigin}${callback.pathname}${callback.search}`);
+  await page.getByLabel("Sandbox user").click();
+  await page
+    .getByRole("option")
+    .filter({ hasText: `· ${email}` })
+    .click();
+  await page.getByRole("button", { name: "Sign in as selected user" }).click();
+  await expect(page).not.toHaveURL(/\/login(?:[/?]|$)/, { timeout: 10_000 });
 }
 
 async function completeMfa(page: Page) {
@@ -369,9 +305,8 @@ test.describe("sandbox access personas", () => {
   for (const persona of PERSONAS) {
     test(`${persona.email} reaches only its authorised context`, async ({
       page,
-      request,
     }) => {
-      await openMagicLink(page, request, persona.email);
+      await signInAsSandboxUser(page, persona.email);
       await expect(page).toHaveURL(persona.expectedUrl);
       await expect(
         page.getByRole("heading", { name: persona.expectedHeading }),
@@ -421,20 +356,83 @@ test.describe("sandbox access personas", () => {
         await settingsNavigation
           .getByRole("link", { name: "Branches" })
           .click();
+        const mainBranchCard = page.locator('[data-slot="card"]').filter({
+          has: page.getByRole("heading", {
+            name: "Main Branch",
+            exact: true,
+          }),
+        });
+        const riversideBranchCard = page.locator('[data-slot="card"]').filter({
+          has: page.getByRole("heading", {
+            name: "Riverside Branch",
+            exact: true,
+          }),
+        });
         await expect(
-          page.getByRole("heading", { name: "Main Branch" }),
-        ).toBeVisible();
-        await expect(page.getByText("main@oakfield.test")).toBeVisible();
-        await expect(page.getByText("020 7946 0998")).toBeVisible();
-        await expect(
-          page.getByRole("heading", { name: "Users with access" }),
+          mainBranchCard.getByRole("heading", { name: "Main Branch" }),
         ).toBeVisible();
         await expect(
-          page.getByText("Olivia Hart", { exact: true }),
+          mainBranchCard.getByText("main@oakfield.test"),
+        ).toBeVisible();
+        await expect(mainBranchCard.getByText("020 7946 0998")).toBeVisible();
+        await expect(
+          mainBranchCard.getByRole("heading", { name: "Users with access" }),
         ).toBeVisible();
         await expect(
-          page.getByText("All branches", { exact: true }).first(),
+          mainBranchCard.getByText("Olivia Hart", { exact: true }),
         ).toBeVisible();
+        await expect(
+          mainBranchCard.getByText("All branches", { exact: true }).first(),
+        ).toBeVisible();
+        await expect(
+          riversideBranchCard.getByRole("heading", {
+            name: "Riverside Branch",
+          }),
+        ).toBeVisible();
+        await expect(
+          riversideBranchCard.getByText("Ruby Walker", { exact: true }),
+        ).toBeVisible();
+        await expect(
+          mainBranchCard.getByText("Ruby Walker", { exact: true }),
+        ).toHaveCount(0);
+      }
+
+      if (persona.email === "branch.manager@zayto.local") {
+        await page.goto(
+          "/dashboard/w/oakfield-lettings-demo/settings/branches",
+        );
+        await expect(
+          page.getByRole("heading", { name: "Main Branch", exact: true }),
+        ).toBeVisible();
+        await expect(
+          page.getByRole("heading", {
+            name: "Riverside Branch",
+            exact: true,
+          }),
+        ).toHaveCount(0);
+        await expect(
+          page.getByText("Amelia Stone", { exact: true }),
+        ).toBeVisible();
+        await expect(
+          page.getByText("Priya Shah", { exact: true }),
+        ).toBeVisible();
+        await expect(
+          page.getByText("Ruby Walker", { exact: true }),
+        ).toHaveCount(0);
+
+        await page.goto("/dashboard/w/oakfield-lettings-demo/settings/users");
+        await expect(
+          page.getByRole("heading", { name: "Users & access" }),
+        ).toBeVisible();
+        await expect(
+          page.getByText("Amelia Stone", { exact: true }),
+        ).toBeVisible();
+        await expect(
+          page.getByText("Priya Shah", { exact: true }),
+        ).toBeVisible();
+        await expect(
+          page.getByText("Ruby Walker", { exact: true }),
+        ).toHaveCount(0);
       }
 
       if (persona.email === "platform.owner@zayto.local") {
@@ -446,7 +444,10 @@ test.describe("sandbox access personas", () => {
 
       if (persona.email === "dual.owner@zayto.local") {
         await page.goto("/dashboard/w/oakfield-lettings-demo/settings/users");
-        await page.getByRole("button", { name: "Edit" }).click();
+        const accountOwnerCard = page
+          .locator('[data-slot="card"]')
+          .filter({ hasText: "Olivia Hart" });
+        await accountOwnerCard.getByRole("button", { name: "Edit" }).click();
         const roleDialog = page.getByRole("dialog");
         await expect(
           roleDialog.getByRole("heading", { name: "Edit Olivia Hart" }),
@@ -470,9 +471,8 @@ test.describe("sandbox access personas", () => {
 
   test("Platform Owner can browse the user and customer directories", async ({
     page,
-    request,
   }) => {
-    await openMagicLink(page, request, "platform.owner@zayto.local");
+    await signInAsSandboxUser(page, "platform.owner@zayto.local");
 
     await page.goto("/platform/users");
     await expect(page.getByRole("heading", { name: "Users" })).toBeVisible();
@@ -564,6 +564,22 @@ test.describe("sandbox access personas", () => {
     await expect(
       page.getByRole("cell", { name: "All branches", exact: true }).first(),
     ).toBeVisible();
+    const customerUsersTable = page.locator("table");
+    const priyaUserRow = customerUsersTable
+      .getByRole("row")
+      .filter({ hasText: "Priya Shah" });
+    await expect(
+      priyaUserRow.getByRole("cell", {
+        name: "Main Branch, Riverside Branch",
+        exact: true,
+      }),
+    ).toBeVisible();
+    const suspendedUserRow = customerUsersTable
+      .getByRole("row")
+      .filter({ hasText: "Jordan Reed" });
+    await expect(
+      suspendedUserRow.getByText("Suspended", { exact: true }),
+    ).toBeVisible();
 
     await page.setViewportSize({ width: 390, height: 844 });
     const currentOrigin = new URL(page.url()).origin;
@@ -584,9 +600,21 @@ test.describe("sandbox access personas", () => {
 
     await page.setViewportSize({ width: 1280, height: 720 });
     await customerNavigation.getByRole("link", { name: "Branches" }).click();
-    await expect(page.getByRole("cell", { name: "Main Branch" })).toBeVisible();
+    const branchTable = page.locator("table");
+    const mainBranchRow = branchTable
+      .getByRole("row")
+      .filter({ hasText: "main@oakfield.test" });
+    const riversideBranchRow = branchTable
+      .getByRole("row")
+      .filter({ hasText: "riverside@oakfield.test" });
     await expect(
-      page.getByRole("cell", { name: "main@oakfield.test" }),
+      mainBranchRow.getByRole("cell", { name: "Main Branch", exact: true }),
+    ).toBeVisible();
+    await expect(
+      mainBranchRow.getByRole("cell", {
+        name: "main@oakfield.test",
+        exact: true,
+      }),
     ).toBeVisible();
     await expect(
       page.getByRole("heading", { name: "Users with access" }).last(),
@@ -596,6 +624,18 @@ test.describe("sandbox access personas", () => {
     ).toBeVisible();
     await expect(
       page.getByText("All branches", { exact: true }).last(),
+    ).toBeVisible();
+    await expect(
+      mainBranchRow.getByText("Priya Shah", { exact: true }),
+    ).toBeVisible();
+    await expect(
+      mainBranchRow.getByText("Ruby Walker", { exact: true }),
+    ).toHaveCount(0);
+    await expect(
+      riversideBranchRow.getByText("Priya Shah", { exact: true }),
+    ).toBeVisible();
+    await expect(
+      riversideBranchRow.getByText("Ruby Walker", { exact: true }),
     ).toBeVisible();
 
     await customerNavigation
@@ -611,7 +651,6 @@ test.describe("sandbox access personas", () => {
 
   test("Platform Owner can update and restore a sandbox user name", async ({
     page,
-    request,
   }) => {
     test.skip(
       !RUN_PLATFORM_USER_MUTATION_E2E,
@@ -624,7 +663,7 @@ test.describe("sandbox access personas", () => {
     const editedFirstName = "Olivia-Test";
     const editedName = `${editedFirstName} ${originalLastName}`;
 
-    await openMagicLink(page, request, "platform.owner@zayto.local");
+    await signInAsSandboxUser(page, "platform.owner@zayto.local");
     try {
       await page.goto("/platform/users?q=Olivia");
       await page.getByRole("button", { name: `View ${originalName}` }).click();
@@ -657,7 +696,6 @@ test.describe("sandbox access personas", () => {
 
   test("the Zayto testing audience can require MFA independently", async ({
     page,
-    request,
   }) => {
     test.skip(
       !RUN_AUTH_MUTATION_E2E,
@@ -666,7 +704,7 @@ test.describe("sandbox access personas", () => {
     await deleteTestFactors("platform.owner@zayto.local");
     await setZaytoMfaAudience(true);
     try {
-      await openMagicLink(page, request, "platform.owner@zayto.local");
+      await signInAsSandboxUser(page, "platform.owner@zayto.local");
       await expect(page).toHaveURL(/\/mfa\?next=/);
       await expect(
         page.getByRole("heading", { name: "Two-step verification" }),

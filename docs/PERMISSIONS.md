@@ -40,7 +40,7 @@ A membership may hold several roles. `read_only` is exclusive and cannot be comb
 
 ## Local sandbox identities
 
-These fictional addresses work only in the approved local magic-link sandbox. Sign in at `/login` and open the latest message in Mailpit. The authenticator step appears only when `staff_mfa` is enabled for the effective audience. There are no passwords or bypass codes.
+These fictional addresses work only in the development sandbox. When `SANDBOX_QUICK_SIGN_IN` is enabled, `/login` shows a labelled persona selector and creates a normal Supabase session without a password. Setting the flag to `false` restores the Mailpit magic-link form. Quick sign-in is hard-disabled in production. The authenticator step appears when `staff_mfa` is enabled for the effective audience; there are no shared passwords or bypass codes.
 
 ## Feature flags
 
@@ -49,6 +49,7 @@ Feature flags control whether a capability is available; they do not grant membe
 | Email                        | Expected result                                     |
 | ---------------------------- | --------------------------------------------------- |
 | `owner@zayto.local`          | Oakfield Lettings (Demo) as Account Owner           |
+| `branch.manager@zayto.local` | Oakfield Main Branch as Branch Manager              |
 | `platform.owner@zayto.local` | Zayto Platform Owner shell only                     |
 | `dual.owner@zayto.local`     | Context chooser for platform and Oakfield workspace |
 | `no.access@zayto.local`      | Signed in safely, with no platform/workspace access |

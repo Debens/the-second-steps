@@ -34,7 +34,7 @@ Sanity-check significant decisions before implementing them, including accepted 
 - Checks: `npm run check` (typecheck, ESLint, Prettier, Vitest), `npm run test:e2e` (Playwright), `npm run build`
 
 - Database: PostgreSQL on Supabase (London) via Prisma 7.10 (`prisma/`, `core/db/`). The access foundation exists; no CRM tables exist. The app uses least-privilege `zayto_app` over verified TLS, while `zayto_migrator` owns schema objects and applies migrations. The shared role cutover and access-hardening migrations were applied and verified on 2026-10-13 (ADR-016 and ADR-027).
-- Authentication: Supabase Auth with server-verified cookie sessions. Public new-user sign-up is disabled. Local magic links are delivered to Mailpit for allow-listed fictional sandbox users. Workspaces, memberships, fixed roles, role-aware shells, and feature-flagged TOTP are implemented. Participations, entitlements, invitations, MFA recovery, Google sign-in, rate limiting, and production email delivery are not implemented (ADR-019 to ADR-026).
+- Authentication: Supabase Auth with server-verified cookie sessions. Public new-user sign-up is disabled. Allow-listed fictional users can use a development-only, feature-flagged quick sign-in; disabling it restores local magic links delivered to Mailpit. Production always disables quick sign-in. Workspaces, memberships, fixed roles, role-aware shells, and feature-flagged TOTP are implemented. Participations, entitlements, invitations, MFA recovery, Google sign-in, rate limiting, and production email delivery are not implemented (ADR-019 to ADR-026).
 
 Queues are **not installed**.
 

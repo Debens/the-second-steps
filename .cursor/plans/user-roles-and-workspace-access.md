@@ -1,6 +1,6 @@
 # User roles and workspace access foundation
 
-**Status:** Confirmed access-foundation slice with hardening implemented and verified. The fixed role matrix, role-aware routes, staged TOTP mechanism, four sandbox personas, branch visibility, last-owner concurrency, least-privilege database roles, and disposable integration tests are implemented. The shared role cutover and access-hardening migrations were applied and verified on 2026-10-13. Invitations, customer-defined roles, product-module permissions, MFA recovery, and production delivery remain deferred.
+**Status:** Confirmed access-foundation slice with hardening implemented and verified. The fixed role matrix, role-aware routes, staged TOTP mechanism, five sandbox personas, branch visibility, last-owner concurrency, least-privilege database roles, and disposable integration tests are implemented. The shared role cutover and access-hardening migrations were applied and verified on 2026-10-13; the Platform Owner branch-visibility policy was applied and verified on 2026-10-14. Invitations, customer-defined roles, product-module permissions, MFA recovery, and production delivery remain deferred.
 
 **Outcome:** Replace the authenticated-but-unrestricted dashboard sandbox with a secure business-workspace foundation. A signed-in staff user will only enter a workspace through an active membership, at the required MFA level, and every protected server operation will enforce the user's permission and workspace/branch scope. Workspace owners and authorised administrators will be able to view staff and manage permitted role assignments. No CRM, applicant, tenancy, landlord, accounting, or other customer records are introduced by this plan.
 
@@ -492,11 +492,12 @@ After owner approval, implement Phases 0–4 first: domain rules, minimal schema
 
 ## 11. Fictional sandbox login personas
 
-These are development/test identities only. They continue to use the existing local magic-link flow delivered to Mailpit; do not add shared passwords or a production login bypass.
+These are development/test identities only. The feature-flagged local selector creates a normal Supabase session from a server-generated one-time token; disabling it restores the Mailpit magic-link flow. Quick sign-in is hard-disabled in production. Do not add shared passwords or a production authentication bypass.
 
 | Persona            | Proposed sandbox email       | Access                                                            | Expected destination                                  |
 | ------------------ | ---------------------------- | ----------------------------------------------------------------- | ----------------------------------------------------- |
 | Account Owner      | `owner@zayto.local`          | `workspace_owner` membership in one fictional agency workspace    | That workspace's `/dashboard/w/[workspaceSlug]` shell |
+| Branch Manager     | `branch.manager@zayto.local` | `branch_manager` membership for Oakfield's Main Branch only       | That workspace's `/dashboard/w/[workspaceSlug]` shell |
 | Platform Owner     | `platform.owner@zayto.local` | Active `platform_owner`; no customer membership                   | `/platform` shell                                     |
 | Dual-context owner | `dual.owner@zayto.local`     | Active `platform_owner` plus an Account Owner membership          | Explicit platform-or-workspace chooser                |
 | No-access user     | `no.access@zayto.local`      | Authenticated identity with no platform role or active membership | Access-not-granted screen                             |
@@ -508,5 +509,5 @@ Implementation requirements:
 - Use an obviously fictional agency name and workspace slug.
 - Give each persona its own Supabase Auth identity; never switch effective roles through a client-side test toggle.
 - Browser tests may prepare authenticated sessions through a test fixture, but must exercise the same server authorisation and routing as a real login. Do not add an authentication bypass endpoint.
-- Test direct URL access in addition to the normal redirects, back/forward navigation, sign-out, and returning through a fresh magic link.
+- Test direct URL access in addition to the normal redirects, back/forward navigation, sign-out, and returning through a fresh quick sign-in or magic link.
 - Keep test identities and their role assignments out of production data.

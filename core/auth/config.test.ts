@@ -1,15 +1,22 @@
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   getSandboxAuthEmails,
   getSandboxPersona,
+  getSandboxQuickSignInOptions,
+  isSandboxQuickSignInEnabled,
   normaliseEmail,
 } from "./config";
 
 const originalEmails = process.env.SANDBOX_AUTH_EMAILS;
+const originalQuickSignIn = process.env.SANDBOX_QUICK_SIGN_IN;
 
 afterEach(() => {
   if (originalEmails === undefined) delete process.env.SANDBOX_AUTH_EMAILS;
   else process.env.SANDBOX_AUTH_EMAILS = originalEmails;
+  if (originalQuickSignIn === undefined)
+    delete process.env.SANDBOX_QUICK_SIGN_IN;
+  else process.env.SANDBOX_QUICK_SIGN_IN = originalQuickSignIn;
+  vi.unstubAllEnvs();
 });
 
 describe("sandbox auth configuration", () => {
@@ -32,11 +39,44 @@ describe("sandbox auth configuration", () => {
 
   it("maps approved local identities to sandbox personas", () => {
     expect(getSandboxPersona("OWNER@ZAYTO.LOCAL")).toBe("account_owner");
+    expect(getSandboxPersona("branch.manager@zayto.local")).toBe(
+      "branch_manager",
+    );
     expect(getSandboxPersona("platform.owner@zayto.local")).toBe(
       "platform_owner",
     );
     expect(getSandboxPersona("dual.owner@zayto.local")).toBe("dual_owner");
     expect(getSandboxPersona("no.access@zayto.local")).toBe("no_access");
     expect(getSandboxPersona("unknown@zayto.local")).toBeNull();
+  });
+
+  it("offers approved fictional personas for development quick sign-in", () => {
+    vi.stubEnv("NODE_ENV", "development");
+    process.env.SANDBOX_AUTH_EMAILS =
+      "owner@zayto.local,branch.manager@zayto.local";
+
+    expect(isSandboxQuickSignInEnabled()).toBe(true);
+    expect(getSandboxQuickSignInOptions()).toEqual([
+      expect.objectContaining({
+        email: "owner@zayto.local",
+        accessLabel: "Account Owner · all branches",
+      }),
+      expect.objectContaining({
+        email: "branch.manager@zayto.local",
+        accessLabel: "Branch Manager · Main Branch",
+      }),
+    ]);
+  });
+
+  it("allows quick sign-in to be disabled and always blocks it in production", () => {
+    vi.stubEnv("NODE_ENV", "development");
+    process.env.SANDBOX_QUICK_SIGN_IN = "false";
+    expect(isSandboxQuickSignInEnabled()).toBe(false);
+    expect(getSandboxQuickSignInOptions()).toEqual([]);
+
+    vi.stubEnv("NODE_ENV", "production");
+    process.env.SANDBOX_QUICK_SIGN_IN = "true";
+    expect(isSandboxQuickSignInEnabled()).toBe(false);
+    expect(getSandboxQuickSignInOptions()).toEqual([]);
   });
 });

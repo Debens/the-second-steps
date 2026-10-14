@@ -6,6 +6,7 @@ import { getSandboxPersona } from "@/core/auth/config";
 import { db } from "@/core/db/client";
 import { AuthenticationProvider } from "@/core/db/generated/enums";
 import {
+  type AccessTransaction,
   setSandboxProvisioningContext,
   setWorkspaceDatabaseContext,
 } from "./database-context";
@@ -28,27 +29,190 @@ const SANDBOX_PERSONA_NAMES: Readonly<
   Record<SandboxPersona, { firstName: string; lastName: string }>
 > = {
   account_owner: { firstName: "Olivia", lastName: "Hart" },
+  branch_manager: { firstName: "Ben", lastName: "Carter" },
   platform_owner: { firstName: "Theo", lastName: "Grant" },
   dual_owner: { firstName: "Maya", lastName: "Ellis" },
   no_access: { firstName: "Noah", lastName: "Reed" },
 };
 
-const SANDBOX_BRANCH = {
-  name: "Main Branch",
-  email: "main@oakfield.test",
-  telephone: "020 7946 0998",
-  address1: "1 Example Square",
-  townCity: "Demo Town",
-  county: "London",
-  postcode: "ZZ1 1ZZ",
-} as const;
+const SANDBOX_BRANCHES = [
+  {
+    name: "Main Branch",
+    email: "main@oakfield.test",
+    telephone: "020 7946 0998",
+    address1: "1 Example Square",
+    townCity: "Demo Town",
+    county: "London",
+    postcode: "ZZ1 1ZZ",
+  },
+  {
+    name: "Riverside Branch",
+    email: "riverside@oakfield.test",
+    telephone: "020 7946 0999",
+    address1: "24 Riverside Walk",
+    townCity: "Demo Town",
+    county: "London",
+    postcode: "ZZ1 2ZZ",
+  },
+] as const;
+
+type SandboxBranchName = (typeof SANDBOX_BRANCHES)[number]["name"];
+
+const SANDBOX_DIRECTORY_FIXTURES = [
+  {
+    identityId: "10000000-0000-4000-8000-000000000001",
+    firstName: "Amelia",
+    lastName: "Stone",
+    primaryEmail: "amelia.admin@oakfield.test",
+    status: "ACTIVE",
+    roleCode: "AGENCY_ADMIN",
+    branchNames: null,
+  },
+  {
+    identityId: "10000000-0000-4000-8000-000000000002",
+    firstName: "Priya",
+    lastName: "Shah",
+    primaryEmail: "priya.manager@oakfield.test",
+    status: "ACTIVE",
+    roleCode: "PROPERTY_MANAGER",
+    branchNames: ["Main Branch", "Riverside Branch"],
+  },
+  {
+    identityId: "10000000-0000-4000-8000-000000000003",
+    firstName: "Ruby",
+    lastName: "Walker",
+    primaryEmail: "ruby.negotiator@oakfield.test",
+    status: "ACTIVE",
+    roleCode: "NEGOTIATOR",
+    branchNames: ["Riverside Branch"],
+  },
+  {
+    identityId: "10000000-0000-4000-8000-000000000004",
+    firstName: "Jordan",
+    lastName: "Reed",
+    primaryEmail: "jordan.suspended@oakfield.test",
+    status: "SUSPENDED",
+    roleCode: "READ_ONLY",
+    branchNames: ["Main Branch"],
+  },
+] as const satisfies readonly {
+  identityId: string;
+  firstName: string;
+  lastName: string;
+  primaryEmail: string;
+  status: "ACTIVE" | "SUSPENDED";
+  roleCode: "AGENCY_ADMIN" | "PROPERTY_MANAGER" | "NEGOTIATOR" | "READ_ONLY";
+  branchNames: readonly SandboxBranchName[] | null;
+}[];
 
 function needsWorkspace(persona: SandboxPersona) {
-  return persona === "account_owner" || persona === "dual_owner";
+  return (
+    persona === "account_owner" ||
+    persona === "branch_manager" ||
+    persona === "dual_owner"
+  );
 }
 
 function needsPlatformRole(persona: SandboxPersona) {
   return persona === "platform_owner" || persona === "dual_owner";
+}
+
+function workspaceAccessFor(persona: SandboxPersona): {
+  roleCode: "WORKSPACE_OWNER" | "BRANCH_MANAGER";
+  branchNames: readonly SandboxBranchName[] | null;
+} | null {
+  if (persona === "account_owner" || persona === "dual_owner") {
+    return { roleCode: "WORKSPACE_OWNER", branchNames: null };
+  }
+  if (persona === "branch_manager") {
+    return { roleCode: "BRANCH_MANAGER", branchNames: ["Main Branch"] };
+  }
+  return null;
+}
+
+async function upsertSandboxMembership(
+  transaction: AccessTransaction,
+  input: {
+    workspaceId: string;
+    userIdentityId: string;
+    status: "ACTIVE" | "SUSPENDED";
+    roleCode:
+      | "WORKSPACE_OWNER"
+      | "AGENCY_ADMIN"
+      | "BRANCH_MANAGER"
+      | "PROPERTY_MANAGER"
+      | "NEGOTIATOR"
+      | "READ_ONLY";
+    branchIds: readonly string[] | null;
+    assignedByUserIdentityId: string;
+  },
+) {
+  const scopeMode = input.branchIds ? "NAMED_BRANCHES" : "WORKSPACE";
+  const membership = await transaction.membership.upsert({
+    where: {
+      workspaceId_userIdentityId: {
+        workspaceId: input.workspaceId,
+        userIdentityId: input.userIdentityId,
+      },
+    },
+    create: {
+      workspaceId: input.workspaceId,
+      userIdentityId: input.userIdentityId,
+      status: input.status,
+      scopeMode,
+    },
+    update: {
+      status: input.status,
+      scopeMode,
+      endedAt: null,
+    },
+  });
+
+  await transaction.membershipRole.deleteMany({
+    where: { membershipId: membership.id, roleCode: { not: input.roleCode } },
+  });
+  await transaction.membershipRole.upsert({
+    where: {
+      membershipId_roleCode: {
+        membershipId: membership.id,
+        roleCode: input.roleCode,
+      },
+    },
+    create: {
+      workspaceId: input.workspaceId,
+      membershipId: membership.id,
+      roleCode: input.roleCode,
+      assignedByUserIdentityId: input.assignedByUserIdentityId,
+    },
+    update: {},
+  });
+
+  await transaction.membershipBranchAccess.deleteMany({
+    where: { membershipId: membership.id },
+  });
+  if (input.branchIds) {
+    await transaction.membershipBranchAccess.createMany({
+      data: input.branchIds.map((branchId) => ({
+        workspaceId: input.workspaceId,
+        membershipId: membership.id,
+        branchId,
+        assignedByUserIdentityId: input.assignedByUserIdentityId,
+      })),
+    });
+  }
+}
+
+function branchIdsFor(
+  branches: ReadonlyMap<SandboxBranchName, string>,
+  names: readonly SandboxBranchName[] | null,
+) {
+  if (!names) return null;
+
+  return names.map((name) => {
+    const branchId = branches.get(name);
+    if (!branchId) throw new Error(`Sandbox branch ${name} was not created.`);
+    return branchId;
+  });
 }
 
 export async function provisionSandboxAccess(input: {
@@ -145,56 +309,61 @@ export async function provisionSandboxAccess(input: {
 
       await setWorkspaceDatabaseContext(transaction, workspace.id);
 
-      await transaction.branch.upsert({
-        where: {
-          workspaceId_name: {
-            workspaceId: workspace.id,
-            name: SANDBOX_BRANCH.name,
+      const branches = new Map<SandboxBranchName, string>();
+      for (const branchDetails of SANDBOX_BRANCHES) {
+        const branch = await transaction.branch.upsert({
+          where: {
+            workspaceId_name: {
+              workspaceId: workspace.id,
+              name: branchDetails.name,
+            },
           },
-        },
-        create: {
-          workspaceId: workspace.id,
-          ...SANDBOX_BRANCH,
-          status: "ACTIVE",
-        },
-        update: { ...SANDBOX_BRANCH, status: "ACTIVE" },
-      });
+          create: {
+            workspaceId: workspace.id,
+            ...branchDetails,
+            status: "ACTIVE",
+          },
+          update: { ...branchDetails, status: "ACTIVE" },
+        });
+        branches.set(branchDetails.name, branch.id);
+      }
 
-      const membership = await transaction.membership.upsert({
-        where: {
-          workspaceId_userIdentityId: {
-            workspaceId: workspace.id,
-            userIdentityId,
+      for (const fixture of SANDBOX_DIRECTORY_FIXTURES) {
+        await transaction.userIdentity.upsert({
+          where: { id: fixture.identityId },
+          create: {
+            id: fixture.identityId,
+            firstName: fixture.firstName,
+            lastName: fixture.lastName,
+            primaryEmail: fixture.primaryEmail,
           },
-        },
-        create: {
+          update: {
+            firstName: fixture.firstName,
+            lastName: fixture.lastName,
+            primaryEmail: fixture.primaryEmail,
+          },
+        });
+        await upsertSandboxMembership(transaction, {
+          workspaceId: workspace.id,
+          userIdentityId: fixture.identityId,
+          status: fixture.status,
+          roleCode: fixture.roleCode,
+          branchIds: branchIdsFor(branches, fixture.branchNames),
+          assignedByUserIdentityId: userIdentityId,
+        });
+      }
+
+      const access = workspaceAccessFor(persona);
+      if (access) {
+        await upsertSandboxMembership(transaction, {
           workspaceId: workspace.id,
           userIdentityId,
           status: "ACTIVE",
-          scopeMode: "WORKSPACE",
-        },
-        update: {
-          status: "ACTIVE",
-          scopeMode: "WORKSPACE",
-          endedAt: null,
-        },
-      });
-
-      await transaction.membershipRole.upsert({
-        where: {
-          membershipId_roleCode: {
-            membershipId: membership.id,
-            roleCode: "WORKSPACE_OWNER",
-          },
-        },
-        create: {
-          workspaceId: workspace.id,
-          membershipId: membership.id,
-          roleCode: "WORKSPACE_OWNER",
+          roleCode: access.roleCode,
+          branchIds: branchIdsFor(branches, access.branchNames),
           assignedByUserIdentityId: userIdentityId,
-        },
-        update: {},
-      });
+        });
+      }
     }
 
     await transaction.auditEvent.create({

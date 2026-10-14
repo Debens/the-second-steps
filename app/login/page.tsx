@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { ZaytoWordmark } from "@/components/brand/zayto-wordmark";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { LoginForm } from "./login-form";
+import { getSandboxQuickSignInOptions } from "@/core/auth/config";
 import { createSupabaseServerClient } from "@/core/auth/supabase-server";
 import { redirect } from "next/navigation";
 
@@ -49,7 +50,10 @@ export default async function LoginPage({
               be prepared. Try again or check the development server logs.
             </p>
           )}
-          <LoginForm invalidLink={error === "invalid-link"} />
+          <LoginForm
+            invalidLink={error === "invalid-link"}
+            quickSignInOptions={getSandboxQuickSignInOptions()}
+          />
         </div>
       </main>
     </div>

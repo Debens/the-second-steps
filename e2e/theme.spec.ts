@@ -47,8 +47,8 @@ test.describe("on a touchscreen phone", () => {
   test("controls are at least 44px tall", async ({ page }) => {
     await page.goto("/login");
     for (const control of [
-      page.getByLabel("Email"),
-      page.getByRole("button", { name: "Email me a sign-in link" }),
+      page.getByLabel("Sandbox user"),
+      page.getByRole("button", { name: "Sign in as selected user" }),
       page.getByRole("button", { name: "Dark theme" }),
     ]) {
       const box = await control.boundingBox();

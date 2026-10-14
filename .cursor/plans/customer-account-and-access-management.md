@@ -1,6 +1,6 @@
 # Customer account and access management
 
-**Status:** Confirmed product outcome and delivery sequence. The consolidated Settings structure, separate customer/contact card editing, customer user lists, read-only branch details, and branch-associated user views are implemented and locally verified. The user list shows branch-scoped names/emails and uses a role-edit modal with a multi-select dropdown. Branch scope editing and invitations remain to be built. The read-only Platform Owner branch-assignment policy migration is verified only in the disposable database and has not been applied to shared Supabase. A reversible shared-sandbox customer-detail save remains approval-gated.
+**Status:** Confirmed product outcome and delivery sequence. The consolidated Settings structure, separate customer/contact card editing, customer user lists, read-only branch details, Platform customer Users tab, and branch-associated user views are implemented and verified against shared Supabase. The user list shows branch-scoped names/emails and uses a role-edit modal with a multi-select dropdown. The read-only Platform Owner branch-assignment policy migration was applied and verified on shared Supabase on 2026-10-14. Branch scope editing and invitations remain to be built. A reversible shared-sandbox customer-detail save remains approval-gated.
 
 ## Outcome
 
