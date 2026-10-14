@@ -22,6 +22,7 @@ import {
   updatePlatformCustomerDetails,
   updateWorkspaceCustomerDetails,
 } from "@/core/workspace/application/workspace-details";
+import { getWorkspaceBranches } from "@/core/workspace/application/workspace-branches";
 
 const UPDATED_CUSTOMER_DETAILS = {
   displayName: "Workspace A Updated",
@@ -366,6 +367,26 @@ describe("database and workspace access hardening", () => {
         }),
       ]),
     );
+  });
+
+  it("shows only branches within the current membership scope", async () => {
+    const ownerBranches = await getWorkspaceBranches(
+      ids.ownerOneAuth,
+      "workspace-a",
+    );
+    expect(ownerBranches?.map(({ id }) => id)).toEqual([
+      ids.branchA,
+      ids.branchB,
+    ]);
+
+    const managerBranches = await getWorkspaceBranches(
+      ids.managerAuth,
+      "workspace-a",
+    );
+    expect(managerBranches?.map(({ id }) => id)).toEqual([ids.branchA]);
+    await expect(
+      getWorkspaceBranches(ids.ownerOneAuth, "workspace-b"),
+    ).resolves.toBeNull();
   });
 
   it("limits workspace identity details to permitted roles and branch-visible members", async () => {

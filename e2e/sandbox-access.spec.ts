@@ -421,7 +421,11 @@ test.describe("sandbox access personas", () => {
         await settingsNavigation
           .getByRole("link", { name: "Branches" })
           .click();
-        await expect(page.getByText("Branches", { exact: true })).toBeVisible();
+        await expect(
+          page.getByRole("heading", { name: "Main Branch" }),
+        ).toBeVisible();
+        await expect(page.getByText("main@oakfield.test")).toBeVisible();
+        await expect(page.getByText("020 7946 0998")).toBeVisible();
       }
 
       if (persona.email === "platform.owner@zayto.local") {

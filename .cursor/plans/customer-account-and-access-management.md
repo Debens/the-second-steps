@@ -1,6 +1,6 @@
 # Customer account and access management
 
-**Status:** Confirmed product outcome and delivery sequence. The consolidated Settings structure, separate customer/contact card editing, and customer user list are implemented and verified. The user list shows branch-scoped names/emails and uses a role-edit modal with a multi-select dropdown. Branch scope editing, branch user views, and invitations remain to be built. A reversible shared-sandbox customer-detail save remains approval-gated.
+**Status:** Confirmed product outcome and delivery sequence. The consolidated Settings structure, separate customer/contact card editing, customer user list, and read-only branch details are implemented and verified. The user list shows branch-scoped names/emails and uses a role-edit modal with a multi-select dropdown. Branch scope editing, users associated with each branch, and invitations remain to be built. A reversible shared-sandbox customer-detail save remains approval-gated.
 
 ## Outcome
 
@@ -78,7 +78,7 @@ Local Mailpit may support fictional development invites. Production invitations 
 ## Delivery sequence
 
 1. **Settings structure and customer detail editing — implemented locally:** customer administration is consolidated behind one sidebar Settings entry with Details, Users & access, and Branches secondary navigation. Shared validation and audited application services support read/Edit/Save/Cancel in the Platform profile and customer Settings > Details. Type, status, slug, and commercial controls remain separate.
-2. **Customer-centric access views — partly implemented:** Settings > Users & access now shows names, emails, roles, status, and scope summary. Its narrow identity-directory RLS policy is verified against cross-workspace, cross-branch, and role denial. Named branch details, the Platform customer Users tab, and users within Settings > Branches remain.
+2. **Customer-centric access views — partly implemented:** Settings > Users & access shows names, emails, roles, status, and scope summary. Settings > Branches shows read-only branch contact and address details within the actor's branch scope. The identity-directory policy and branch query are verified against cross-workspace, cross-branch, and role denial. The Platform customer Users tab and users associated with each branch remain.
 3. **Role and branch-scope editing:** update roles and scope atomically, preserve final-owner and self-change protections, reject inactive/cross-workspace branches, and audit old/new assignments.
 4. **Invitation foundation:** after separate schema and shared-migration approval, add invitation issue, resend, revoke, expire, and claim flows with transactional membership creation.
 5. **Lifecycle controls later:** user/customer suspension, reactivation, notifications, and readable audit history remain in the platform user-management roadmap and should not be smuggled into the first editing slice.
