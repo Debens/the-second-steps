@@ -11,7 +11,7 @@ Add small, clean Platform Owner administration areas without granting access to 
 - Customer profile tabs for Overview, Branches, and Feature flags.
 - Audited three-state customer feature controls: inherit, on, or off, with the effective result shown.
 
-The tables support simple search and responsive card layouts on smaller screens. Create/edit/suspend flows and detail modals are deliberately deferred.
+The tables support simple search and responsive card layouts on smaller screens. The next customer-detail and membership-administration work is planned in `.cursor/plans/customer-account-and-access-management.md`; suspension remains deferred.
 
 ## Security boundary
 
