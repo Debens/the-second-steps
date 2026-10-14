@@ -47,24 +47,8 @@ export default async function WorkspaceUsersPage({
           return (
             <Card key={member.id}>
               <CardHeader>
-                <CardTitle>{userLabel}</CardTitle>
-                <CardDescription>
-                  {member.primaryEmail ?? "No email recorded"}
-                  {member.isCurrentUser ? " · You" : ""}
-                </CardDescription>
-                {result.canManageRoles && !member.isCurrentUser && (
-                  <CardAction>
-                    <RoleForm
-                      membershipId={member.id}
-                      roles={member.roles}
-                      userLabel={userLabel}
-                      workspaceSlug={workspaceSlug}
-                    />
-                  </CardAction>
-                )}
-              </CardHeader>
-              <CardContent className="grid gap-3">
-                <div className="flex flex-wrap gap-2">
+                <CardTitle className="flex flex-wrap items-center gap-2">
+                  {userLabel}
                   <StatusBadge
                     label={
                       member.status === "ACTIVE"
@@ -81,23 +65,37 @@ export default async function WorkspaceUsersPage({
                           : "closed"
                     }
                   />
-                  <Badge
-                    variant={
-                      member.scopeMode === "WORKSPACE" ? "info" : "outline"
-                    }
-                  >
-                    {member.scopeMode === "WORKSPACE"
-                      ? "All branches"
-                      : `${member.branchCount} named branch${member.branchCount === 1 ? "" : "es"}`}
+                </CardTitle>
+                <CardDescription>
+                  {member.primaryEmail ?? "No email recorded"}
+                  {member.isCurrentUser ? " · You" : ""}
+                </CardDescription>
+                {result.canManageRoles && !member.isCurrentUser && (
+                  <CardAction>
+                    <RoleForm
+                      membershipId={member.id}
+                      roles={member.roles}
+                      userLabel={userLabel}
+                      workspaceSlug={workspaceSlug}
+                    />
+                  </CardAction>
+                )}
+              </CardHeader>
+              <CardContent className="flex flex-wrap gap-2">
+                <Badge
+                  variant={
+                    member.scopeMode === "WORKSPACE" ? "info" : "outline"
+                  }
+                >
+                  {member.scopeMode === "WORKSPACE"
+                    ? "All branches"
+                    : `${member.branchCount} named branch${member.branchCount === 1 ? "" : "es"}`}
+                </Badge>
+                {member.roles.map((role) => (
+                  <Badge key={role} variant="secondary">
+                    {ROLE_LABELS[role]}
                   </Badge>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {member.roles.map((role) => (
-                    <Badge key={role} variant="secondary">
-                      {ROLE_LABELS[role]}
-                    </Badge>
-                  ))}
-                </div>
+                ))}
               </CardContent>
             </Card>
           );

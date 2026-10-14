@@ -350,20 +350,27 @@ test.describe("sandbox access personas", () => {
           page.getByRole("heading", { name: "Users & access" }),
         ).toBeVisible();
         await expect(
-          page.getByText("Olivia Hart", { exact: true }),
+          page
+            .locator('[data-slot="card-title"]')
+            .filter({ hasText: "Olivia Hart" }),
         ).toBeVisible();
         await expect(page.getByText(/^owner@zayto\.local/)).toBeVisible();
         const ownerUserCard = page
           .locator('[data-slot="card"]')
           .filter({ hasText: "Olivia Hart" });
         await expect(
-          ownerUserCard.getByText("Active", { exact: true }),
+          ownerUserCard
+            .locator('[data-slot="card-title"]')
+            .getByText("Active", { exact: true }),
         ).toHaveClass(/bg-success-soft/);
+        const ownerBadgeRow = ownerUserCard.locator(
+          '[data-slot="card-content"]',
+        );
         await expect(
-          ownerUserCard.getByText("All branches", { exact: true }),
+          ownerBadgeRow.getByText("All branches", { exact: true }),
         ).toHaveClass(/bg-info-soft/);
         await expect(
-          ownerUserCard.getByText("Account Owner", { exact: true }),
+          ownerBadgeRow.getByText("Account Owner", { exact: true }),
         ).toHaveClass(/bg-secondary/);
         await settingsNavigation
           .getByRole("link", { name: "Branches" })
