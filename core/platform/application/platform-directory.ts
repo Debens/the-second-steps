@@ -13,7 +13,8 @@ function searchTerm(value: string | undefined) {
 
 export type PlatformUserSummary = {
   id: string;
-  displayName: string | null;
+  firstName: string | null;
+  lastName: string | null;
   primaryEmail: string | null;
   status: "ACTIVE" | "SUSPENDED";
   createdAt: Date;
@@ -43,14 +44,16 @@ export async function listPlatformUsers(
       where: query
         ? {
             OR: [
-              { displayName: { contains: query, mode: "insensitive" } },
+              { firstName: { contains: query, mode: "insensitive" } },
+              { lastName: { contains: query, mode: "insensitive" } },
               { primaryEmail: { contains: query, mode: "insensitive" } },
             ],
           }
         : undefined,
       select: {
         id: true,
-        displayName: true,
+        firstName: true,
+        lastName: true,
         primaryEmail: true,
         status: true,
         createdAt: true,
@@ -70,12 +73,17 @@ export async function listPlatformUsers(
           orderBy: { workspace: { displayName: "asc" } },
         },
       },
-      orderBy: [{ displayName: "asc" }, { primaryEmail: "asc" }],
+      orderBy: [
+        { firstName: "asc" },
+        { lastName: "asc" },
+        { primaryEmail: "asc" },
+      ],
     });
 
     return users.map((user) => ({
       id: user.id,
-      displayName: user.displayName,
+      firstName: user.firstName,
+      lastName: user.lastName,
       primaryEmail: user.primaryEmail,
       status: user.status,
       createdAt: user.createdAt,

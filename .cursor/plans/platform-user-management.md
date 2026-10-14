@@ -1,6 +1,6 @@
 # Platform user management
 
-**Status:** Confirmed plan. The responsive read-only user details modal is implemented and browser-tested; editing, suspension, notifications, and audit-history UI have not started. Branch access will be handled in the future edit form but is intentionally omitted from the concise read-only modal.
+**Status:** Confirmed plan. First-name/last-name editing is implemented and verified in code, unit tests, the disposable database, the production build, and browser coverage including a reversible shared-sandbox save. Its narrow Platform Owner update policy and split-name migration are applied to shared Supabase. Access editing, suspension, notifications, audit-history UI, and reliable sign-in email editing remain. Branch access will be handled in the future access form but is intentionally omitted from the concise details view.
 
 ## Outcome
 
@@ -8,14 +8,18 @@ Add an accessible view/edit modal to the Platform Users directory. Only a verifi
 
 The modal will show and edit:
 
-- Display name.
-- Sign-in email, updating Supabase Auth and the local identity record.
+- First name and last name through an explicit Edit, Save, and Cancel interaction. The read view remains the default.
+- Sign-in email, updating Supabase Auth and the local identity record through a reliable synchronisation and recovery process.
 - Active or suspended user status.
 - Platform Owner access.
 - Customer memberships and fixed customer roles.
 - Whole-workspace or selected-branch scope. A branch-limited membership requires at least one branch and may include several.
 
 Internal IDs and creation dates remain read-only. A Platform Owner cannot suspend themselves or remove their own Platform Owner access. Existing protections for the final active Platform Owner and final active Account Owner remain mandatory.
+
+## Sign-in email sequencing
+
+Sign-in email editing remains a confirmed requirement but is deferred from the first edit slice. Supabase Auth is the authentication authority while Zayto stores a local directory copy, and the two writes cannot share one database transaction. The development email allow-list and notifications to both the old and new addresses must also be handled. Implement email changes as a dedicated slice with explicit failure recovery and reconciliation; do not risk leaving the authentication and directory addresses inconsistent.
 
 ## Suspension behaviour
 
@@ -41,12 +45,12 @@ All email, status, platform access, membership, role, and branch-scope changes m
 
 ## Delivery sequence
 
-1. Add and review the minimal suspension-reason database migration.
-2. Add Platform Owner-only read/update services and preserve all existing final-owner and branch-scope invariants.
-3. Add the responsive view/edit modal with clear validation and confirmation for sensitive changes.
-4. Add restricted user and customer workspace screens.
-5. Add basic Mailpit development notifications.
-6. Add focused unit, database integration, and browser tests for successful changes and denied/unsafe cases.
-7. Update architecture, permissions, data-model, and roadmap documentation.
+1. Add audited Platform Owner-only first-name and last-name editing to the existing responsive user modal.
+2. Add access editing for platform role, customer memberships, fixed roles, and branch scope while preserving all final-owner and branch-scope invariants.
+3. Add and review the minimal suspension-reason database migration, suspension controls, and restricted user/customer screens.
+4. Add reliable sign-in email editing with Supabase/local reconciliation and development notifications to both addresses.
+5. Add the remaining basic Mailpit development notifications.
+6. Add focused unit, database integration, and browser tests for each successful change and denied/unsafe case.
+7. Update architecture, permissions, data-model, and roadmap documentation as each slice lands.
 
 Applying a shared database migration, adding secrets, committing, and pushing remain separate approval points.

@@ -1,8 +1,8 @@
 "use client";
 
-import { Check, Copy, Eye } from "lucide-react";
+import { Check, Copy, Eye, LoaderCircle, Pencil } from "lucide-react";
 import Link from "next/link";
-import { useEffect, useRef, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -13,9 +13,16 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { ROLE_LABELS } from "@/core/access/domain/role";
 import type { PlatformUserSummary } from "@/core/platform/application/platform-directory";
+import {
+  formatPersonName,
+  PERSON_NAME_PART_MAX_LENGTH,
+} from "@/core/platform/domain/user-profile";
 import { StatusPill } from "../status-pill";
+import { updateUserNameAction, type UpdateUserProfileState } from "./actions";
 import {
   COPY_EMAIL_FEEDBACK_MS,
   copyDisplayedEmail,
@@ -30,6 +37,11 @@ const MEMBERSHIP_STATUS_LABELS = {
   SUSPENDED: "Suspended access",
   ENDED: "Access ended",
 } as const;
+
+const INITIAL_UPDATE_USER_PROFILE_STATE: UpdateUserProfileState = {
+  status: "idle",
+  message: "",
+};
 
 function Detail({
   label,
@@ -110,6 +122,154 @@ function CopyEmailButton({ email }: { email: string }) {
   );
 }
 
+function NameEditForm({
+  user,
+  onCancel,
+  onSaved,
+}: {
+  user: PlatformUserSummary;
+  onCancel: () => void;
+  onSaved: (message: string) => void;
+}) {
+  const updateAction = updateUserNameAction.bind(null, user.id);
+  const [state, formAction, pending] = useActionState(
+    updateAction,
+    INITIAL_UPDATE_USER_PROFILE_STATE,
+  );
+  const firstNameError = state.fieldErrors?.firstName;
+  const lastNameError = state.fieldErrors?.lastName;
+
+  useEffect(() => {
+    if (state.status === "success") onSaved(state.message);
+  }, [onSaved, state.message, state.status]);
+
+  return (
+    <form action={formAction} className="grid gap-4 rounded-lg border p-4">
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-2">
+          <Label htmlFor={`first-name-${user.id}`}>First name</Label>
+          <Input
+            id={`first-name-${user.id}`}
+            name="firstName"
+            defaultValue={user.firstName ?? ""}
+            maxLength={PERSON_NAME_PART_MAX_LENGTH}
+            autoComplete="given-name"
+            aria-invalid={Boolean(firstNameError)}
+            aria-describedby={
+              firstNameError ? `first-name-error-${user.id}` : undefined
+            }
+            disabled={pending}
+            required
+          />
+          {firstNameError && (
+            <p
+              id={`first-name-error-${user.id}`}
+              className="text-xs text-destructive"
+            >
+              {firstNameError}
+            </p>
+          )}
+        </div>
+        <div className="grid gap-2">
+          <Label htmlFor={`last-name-${user.id}`}>Last name</Label>
+          <Input
+            id={`last-name-${user.id}`}
+            name="lastName"
+            defaultValue={user.lastName ?? ""}
+            maxLength={PERSON_NAME_PART_MAX_LENGTH}
+            autoComplete="family-name"
+            aria-invalid={Boolean(lastNameError)}
+            aria-describedby={
+              lastNameError ? `last-name-error-${user.id}` : undefined
+            }
+            disabled={pending}
+            required
+          />
+          {lastNameError && (
+            <p
+              id={`last-name-error-${user.id}`}
+              className="text-xs text-destructive"
+            >
+              {lastNameError}
+            </p>
+          )}
+        </div>
+      </div>
+      <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={onCancel}
+          disabled={pending}
+        >
+          Cancel
+        </Button>
+        <Button type="submit" size="sm" disabled={pending}>
+          {pending && (
+            <LoaderCircle
+              aria-hidden="true"
+              data-icon="inline-start"
+              className="animate-spin"
+            />
+          )}
+          {pending ? "Saving" : "Save name"}
+        </Button>
+      </div>
+      {state.status === "error" && (
+        <p className="text-xs text-destructive" role="status">
+          {state.message}
+        </p>
+      )}
+    </form>
+  );
+}
+
+function NameEditor({ user }: { user: PlatformUserSummary }) {
+  const [editing, setEditing] = useState(false);
+  const [message, setMessage] = useState("");
+  const name = formatPersonName(user.firstName, user.lastName);
+
+  if (editing) {
+    return (
+      <NameEditForm
+        user={user}
+        onCancel={() => setEditing(false)}
+        onSaved={(nextMessage) => {
+          setMessage(nextMessage);
+          setEditing(false);
+        }}
+      />
+    );
+  }
+
+  return (
+    <div className="grid gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-muted/20 p-4">
+        <div className="grid gap-1">
+          <p className="text-xs font-medium text-muted-foreground">Name</p>
+          <p className="font-medium">{name}</p>
+        </div>
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          onClick={() => {
+            setMessage("");
+            setEditing(true);
+          }}
+        >
+          <Pencil aria-hidden="true" data-icon="inline-start" />
+          Edit
+        </Button>
+      </div>
+      <p className="text-xs text-success" role="status">
+        {message}
+      </p>
+    </div>
+  );
+}
+
 export function UserDetailsDialog({
   user,
   createdAtLabel,
@@ -117,7 +277,7 @@ export function UserDetailsDialog({
   user: PlatformUserSummary;
   createdAtLabel: string;
 }) {
-  const displayName = user.displayName ?? "Unnamed user";
+  const displayName = formatPersonName(user.firstName, user.lastName);
   const signInEmail = signInEmailCopyValue(user.primaryEmail);
 
   return (
@@ -154,6 +314,7 @@ export function UserDetailsDialog({
               The user&apos;s overall account and internal platform role.
             </p>
           </div>
+          <NameEditor user={user} />
           <dl className="grid gap-x-6 gap-y-4 rounded-lg border bg-muted/20 p-4 sm:grid-cols-2">
             <Detail label="Sign-in email">
               {signInEmail ? (

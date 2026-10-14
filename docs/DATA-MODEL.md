@@ -31,7 +31,7 @@ UserIdentity 1──* Membership
 UserIdentity 1──* Participation
 ```
 
-`UserIdentity` represents one human login and initially references Supabase Auth. It holds no global customer role. Nullable display name and primary email fields support the internal user directory; Supabase remains the authentication authority.
+`UserIdentity` represents one human login and initially references Supabase Auth. It holds no global customer role. Nullable first-name, last-name, and primary-email fields support the internal user directory; Supabase remains the authentication authority. Human records use the same first-name/last-name baseline under ADR-029, without assuming either field contains only one word. Organisations retain separate organisation/trading/legal names.
 
 `PersonalProfile` is a small, user-controlled set of reusable details. It is not a globally shared CRM contact record. Sharing into an application, tenancy, or check is explicit and produces an auditable workspace/case record or snapshot.
 
@@ -63,6 +63,8 @@ Property *──* WorkspacePerson (via PropertyParty)
 ```
 
 Each workspace keeps its own operational person record and history. An identity link allows the person to use Zayto without exposing their record or other relationships to another workspace. A person may be a landlord, applicant, tenant, guarantor, contractor, or staff member in different contexts; those capacities are relationships and participations, not global identity roles.
+
+Human `WorkspacePerson` records will use first-name and last-name fields consistently with `UserIdentity`. Titles, preferred/former names, legal-name history, and mononyms remain deferred until a real workflow specifies them. Imports with only a full-name value must be mapped or reviewed rather than split on spaces automatically.
 
 ## Participation and external access
 

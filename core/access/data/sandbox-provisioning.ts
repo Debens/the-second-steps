@@ -24,11 +24,13 @@ const SANDBOX_WORKSPACE = {
   registeredPostcode: "ZZ1 1ZZ",
 } as const;
 
-const SANDBOX_PERSONA_NAMES: Readonly<Record<SandboxPersona, string>> = {
-  account_owner: "Olivia Hart",
-  platform_owner: "Theo Grant",
-  dual_owner: "Maya Ellis",
-  no_access: "Noah Reed",
+const SANDBOX_PERSONA_NAMES: Readonly<
+  Record<SandboxPersona, { firstName: string; lastName: string }>
+> = {
+  account_owner: { firstName: "Olivia", lastName: "Hart" },
+  platform_owner: { firstName: "Theo", lastName: "Grant" },
+  dual_owner: { firstName: "Maya", lastName: "Ellis" },
+  no_access: { firstName: "Noah", lastName: "Reed" },
 };
 
 const SANDBOX_BRANCH = {
@@ -88,7 +90,7 @@ export async function provisionSandboxAccess(input: {
       await transaction.userIdentity.create({
         data: {
           id: userIdentityId,
-          displayName: SANDBOX_PERSONA_NAMES[persona],
+          ...SANDBOX_PERSONA_NAMES[persona],
           primaryEmail: input.email.trim().toLowerCase(),
         },
       });
@@ -103,7 +105,7 @@ export async function provisionSandboxAccess(input: {
       await transaction.userIdentity.update({
         where: { id: userIdentityId },
         data: {
-          displayName: SANDBOX_PERSONA_NAMES[persona],
+          ...SANDBOX_PERSONA_NAMES[persona],
           primaryEmail: input.email.trim().toLowerCase(),
         },
       });

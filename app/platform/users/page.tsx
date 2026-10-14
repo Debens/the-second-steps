@@ -23,6 +23,7 @@ import {
   listPlatformUsers,
   type PlatformUserSummary,
 } from "@/core/platform/application/platform-directory";
+import { formatPersonName } from "@/core/platform/domain/user-profile";
 import { PlatformSearchForm } from "../search-form";
 import { StatusPill } from "../status-pill";
 import { UserDetailsDialog } from "./user-details-dialog";
@@ -100,8 +101,8 @@ export default async function PlatformUsersPage({
         <p className="text-sm font-medium text-primary">Platform access</p>
         <h1 className="text-2xl font-semibold tracking-tight">Users</h1>
         <p className="mt-1 max-w-3xl text-sm text-muted-foreground">
-          A read-only directory of Zayto identities and their current platform
-          or customer access.
+          View Zayto identities, update account details, and review their
+          current platform or customer access.
         </p>
       </div>
 
@@ -138,7 +139,10 @@ export default async function PlatformUsersPage({
               <Card key={directoryUser.id}>
                 <CardHeader>
                   <CardTitle>
-                    {directoryUser.displayName ?? "Unnamed user"}
+                    {formatPersonName(
+                      directoryUser.firstName,
+                      directoryUser.lastName,
+                    )}
                   </CardTitle>
                   <CardDescription>
                     {directoryUser.primaryEmail ?? "Email not recorded"}
@@ -197,7 +201,10 @@ export default async function PlatformUsersPage({
                   {users.map((directoryUser) => (
                     <TableRow key={directoryUser.id}>
                       <TableCell className="font-medium">
-                        {directoryUser.displayName ?? "Unnamed user"}
+                        {formatPersonName(
+                          directoryUser.firstName,
+                          directoryUser.lastName,
+                        )}
                       </TableCell>
                       <TableCell>
                         {directoryUser.primaryEmail ?? "Not recorded"}

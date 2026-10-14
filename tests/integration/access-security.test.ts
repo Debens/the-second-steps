@@ -16,6 +16,7 @@ import {
   listCustomers,
   listPlatformUsers,
 } from "@/core/platform/application/platform-directory";
+import { updatePlatformUserName } from "@/core/platform/application/platform-user-management";
 
 const runtimeUrl = process.env.DATABASE_URL;
 const adminUrl = process.env.TEST_ADMIN_DATABASE_URL;
@@ -61,13 +62,18 @@ async function addIdentity(
   client: PoolClient,
   identityId: string,
   authSubject = randomUUID(),
-  profile?: { displayName: string; primaryEmail: string },
+  profile?: { firstName: string; lastName: string; primaryEmail: string },
 ) {
   await client.query(
     `INSERT INTO "user_identities"
-      ("id", "display_name", "primary_email", "updated_at")
-     VALUES ($1::uuid, $2, $3, CURRENT_TIMESTAMP)`,
-    [identityId, profile?.displayName ?? null, profile?.primaryEmail ?? null],
+      ("id", "first_name", "last_name", "primary_email", "updated_at")
+     VALUES ($1::uuid, $2, $3, $4, CURRENT_TIMESTAMP)`,
+    [
+      identityId,
+      profile?.firstName ?? null,
+      profile?.lastName ?? null,
+      profile?.primaryEmail ?? null,
+    ],
   );
   await client.query(
     `INSERT INTO "authentication_provider_links"
@@ -143,7 +149,8 @@ async function seedAccessFoundation() {
     await addIdentity(client, ids.ownerOneIdentity, ids.ownerOneAuth);
     await addIdentity(client, ids.ownerTwoIdentity, ids.ownerTwoAuth);
     await addIdentity(client, ids.platformIdentity, ids.platformAuth, {
-      displayName: "Theo Grant",
+      firstName: "Theo",
+      lastName: "Grant",
       primaryEmail: "platform.owner@zayto.local",
     });
     await client.query(
@@ -376,7 +383,8 @@ describe("database and workspace access hardening", () => {
     expect(users).toHaveLength(1);
     expect(users?.[0]).toMatchObject({
       id: ids.platformIdentity,
-      displayName: "Theo Grant",
+      firstName: "Theo",
+      lastName: "Grant",
       primaryEmail: "platform.owner@zayto.local",
       isPlatformOwner: true,
     });
@@ -404,6 +412,71 @@ describe("database and workspace access hardening", () => {
     await expect(
       getCustomerProfile(ids.ownerOneAuth, "workspace-a"),
     ).resolves.toBeNull();
+  });
+
+  it("allows a Platform Owner to update a name and audits the change", async () => {
+    await expect(
+      updatePlatformUserName({
+        authSubject: ids.platformAuth,
+        targetUserIdentityId: ids.ownerOneIdentity,
+        firstName: "  Olivia Rose  ",
+        lastName: "  van Hart  ",
+      }),
+    ).resolves.toEqual({ ok: true });
+
+    const updated = await adminPool.query<{
+      first_name: string;
+      last_name: string;
+    }>(
+      `SELECT "first_name", "last_name"
+       FROM "user_identities" WHERE "id" = $1::uuid`,
+      [ids.ownerOneIdentity],
+    );
+    expect(updated.rows[0]).toEqual({
+      first_name: "Olivia Rose",
+      last_name: "van Hart",
+    });
+
+    const audit = await adminPool.query<{
+      actor_user_identity_id: string;
+      outcome: string;
+    }>(
+      `SELECT "actor_user_identity_id", "outcome"
+       FROM "audit_events"
+       WHERE "action" = 'user_identity.name.update'
+         AND "target_id" = $1`,
+      [ids.ownerOneIdentity],
+    );
+    expect(audit.rows).toEqual([
+      {
+        actor_user_identity_id: ids.platformIdentity,
+        outcome: "succeeded",
+      },
+    ]);
+  });
+
+  it("denies name editing to an ordinary workspace member", async () => {
+    await expect(
+      updatePlatformUserName({
+        authSubject: ids.ownerOneAuth,
+        targetUserIdentityId: ids.platformIdentity,
+        firstName: "Not",
+        lastName: "Allowed",
+      }),
+    ).resolves.toEqual({ ok: false, error: "access_denied" });
+
+    const unchanged = await adminPool.query<{
+      first_name: string;
+      last_name: string;
+    }>(
+      `SELECT "first_name", "last_name"
+       FROM "user_identities" WHERE "id" = $1::uuid`,
+      [ids.platformIdentity],
+    );
+    expect(unchanged.rows[0]).toEqual({
+      first_name: "Theo",
+      last_name: "Grant",
+    });
   });
 
   it("updates one customer feature-flag override and records its audit", async () => {
