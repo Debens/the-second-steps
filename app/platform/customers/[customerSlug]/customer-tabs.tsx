@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 
 const TABS = [
   { label: "Overview", segment: "" },
+  { label: "Users", segment: "/users" },
   { label: "Branches", segment: "/branches" },
   { label: "Feature flags", segment: "/feature-flags" },
 ] as const;

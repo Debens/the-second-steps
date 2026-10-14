@@ -222,7 +222,84 @@ export type CustomerBranchSummary = {
   townCity: string | null;
   county: string | null;
   postcode: string | null;
+  users: readonly {
+    membershipId: string;
+    firstName: string | null;
+    lastName: string | null;
+    primaryEmail: string | null;
+    status: "ACTIVE" | "SUSPENDED" | "ENDED";
+    scopeMode: "WORKSPACE" | "NAMED_BRANCHES";
+  }[];
 };
+
+export type CustomerUserSummary = {
+  id: string;
+  firstName: string | null;
+  lastName: string | null;
+  primaryEmail: string | null;
+  status: "ACTIVE" | "SUSPENDED" | "ENDED";
+  roles: readonly SystemRole[];
+  scopeMode: "WORKSPACE" | "NAMED_BRANCHES";
+  branches: readonly {
+    id: string;
+    name: string;
+    status: "ACTIVE" | "INACTIVE";
+  }[];
+};
+
+export async function listCustomerUsers(
+  authSubject: string,
+  customerSlug: string,
+): Promise<readonly CustomerUserSummary[] | null> {
+  return withVerifiedIdentity(authSubject, async (transaction, identity) => {
+    if (!identity.isPlatformOwner) return null;
+
+    const customer = await transaction.workspace.findFirst({
+      where: { slug: customerSlug, type: { not: "PLATFORM_INTERNAL" } },
+      select: {
+        memberships: {
+          select: {
+            id: true,
+            status: true,
+            scopeMode: true,
+            userIdentity: {
+              select: {
+                firstName: true,
+                lastName: true,
+                primaryEmail: true,
+              },
+            },
+            roles: { select: { roleCode: true } },
+            branchAccess: {
+              select: {
+                branch: {
+                  select: { id: true, name: true, status: true },
+                },
+              },
+              orderBy: { branch: { name: "asc" } },
+            },
+          },
+          orderBy: [{ status: "asc" }, { createdAt: "asc" }],
+        },
+      },
+    });
+
+    return (
+      customer?.memberships.map((membership) => ({
+        id: membership.id,
+        firstName: membership.userIdentity.firstName,
+        lastName: membership.userIdentity.lastName,
+        primaryEmail: membership.userIdentity.primaryEmail,
+        status: membership.status,
+        roles: membership.roles.map(
+          ({ roleCode }) => DATABASE_ROLE_TO_SYSTEM_ROLE[roleCode],
+        ),
+        scopeMode: membership.scopeMode,
+        branches: membership.branchAccess.map(({ branch }) => branch),
+      })) ?? null
+    );
+  });
+}
 
 export async function listCustomerBranches(
   authSubject: string,
@@ -249,9 +326,48 @@ export async function listCustomerBranches(
           },
           orderBy: { name: "asc" },
         },
+        memberships: {
+          select: {
+            id: true,
+            status: true,
+            scopeMode: true,
+            userIdentity: {
+              select: {
+                firstName: true,
+                lastName: true,
+                primaryEmail: true,
+              },
+            },
+            branchAccess: { select: { branchId: true } },
+          },
+          orderBy: [{ status: "asc" }, { createdAt: "asc" }],
+        },
       },
     });
 
-    return customer?.branches ?? null;
+    if (!customer) return null;
+
+    return customer.branches.map((branch) => ({
+      ...branch,
+      users: customer.memberships.flatMap((membership) => {
+        const hasAccess =
+          membership.scopeMode === "WORKSPACE" ||
+          membership.branchAccess.some(
+            ({ branchId }) => branchId === branch.id,
+          );
+        if (!hasAccess) return [];
+
+        return [
+          {
+            membershipId: membership.id,
+            firstName: membership.userIdentity.firstName,
+            lastName: membership.userIdentity.lastName,
+            primaryEmail: membership.userIdentity.primaryEmail,
+            status: membership.status,
+            scopeMode: membership.scopeMode,
+          },
+        ];
+      }),
+    }));
   });
 }

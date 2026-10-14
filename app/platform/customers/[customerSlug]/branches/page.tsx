@@ -15,6 +15,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { BranchUserList } from "@/components/workspace/branch-user-list";
 import { requireMfaUser } from "@/core/auth/mfa";
 import { listCustomerBranches } from "@/core/platform/application/platform-directory";
 import { StatusPill } from "../../../status-pill";
@@ -73,7 +74,7 @@ export default async function CustomerBranchesPage({
                 {addressFor(branch) || "Address not recorded"}
               </CardDescription>
             </CardHeader>
-            <CardContent className="grid gap-3">
+            <CardContent className="grid gap-4">
               <StatusPill
                 label={branch.status === "ACTIVE" ? "Active" : "Inactive"}
                 tone={branch.status === "ACTIVE" ? "active" : "inactive"}
@@ -82,6 +83,7 @@ export default async function CustomerBranchesPage({
                 <p>{branch.email ?? "Email not recorded"}</p>
                 <p>{branch.telephone ?? "Telephone not recorded"}</p>
               </div>
+              <BranchUserList users={branch.users} />
             </CardContent>
           </Card>
         ))}
@@ -97,6 +99,7 @@ export default async function CustomerBranchesPage({
                 <TableHead>Email</TableHead>
                 <TableHead>Telephone</TableHead>
                 <TableHead>Address</TableHead>
+                <TableHead>Users with access</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -112,6 +115,9 @@ export default async function CustomerBranchesPage({
                   <TableCell>{branch.email ?? "Not recorded"}</TableCell>
                   <TableCell>{branch.telephone ?? "Not recorded"}</TableCell>
                   <TableCell>{addressFor(branch) || "Not recorded"}</TableCell>
+                  <TableCell className="min-w-64">
+                    <BranchUserList users={branch.users} divided={false} />
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>

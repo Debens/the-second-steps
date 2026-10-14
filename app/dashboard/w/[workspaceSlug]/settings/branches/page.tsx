@@ -7,6 +7,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { BranchUserList } from "@/components/workspace/branch-user-list";
 import { requireMfaUser } from "@/core/auth/mfa";
 import { getWorkspaceBranches } from "@/core/workspace/application/workspace-branches";
 
@@ -75,7 +76,7 @@ export default async function WorkspaceBranchesPage({
                   : "Inactive branch"}
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="grid gap-4">
               <dl className="grid gap-5 sm:grid-cols-2">
                 <Detail label="Email" value={branch.email} />
                 <Detail label="Telephone" value={branch.telephone} />
@@ -83,6 +84,7 @@ export default async function WorkspaceBranchesPage({
                   <Detail label="Address" value={address || null} />
                 </div>
               </dl>
+              {branch.users && <BranchUserList users={branch.users} />}
             </CardContent>
           </Card>
         );

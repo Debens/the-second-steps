@@ -22,6 +22,16 @@ export type WorkspaceBranchSummary = {
   county: string | null;
   postcode: string | null;
   status: "ACTIVE" | "INACTIVE";
+  users: readonly WorkspaceBranchUserSummary[] | null;
+};
+
+export type WorkspaceBranchUserSummary = {
+  membershipId: string;
+  firstName: string | null;
+  lastName: string | null;
+  primaryEmail: string | null;
+  status: "ACTIVE" | "SUSPENDED" | "ENDED";
+  scopeMode: "WORKSPACE" | "NAMED_BRANCHES";
 };
 
 export async function getWorkspaceBranches(
@@ -65,26 +75,86 @@ export async function getWorkspaceBranches(
     const scope = validateMembershipScope(proposedScope);
     if (!scope.ok) return null;
 
-    return transaction.branch.findMany({
-      where: {
-        workspaceId: actor.workspaceId,
-        ...(scope.scope.kind === "named_branches"
-          ? { id: { in: [...scope.scope.branchIds] } }
-          : {}),
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        telephone: true,
-        address1: true,
-        address2: true,
-        townCity: true,
-        county: true,
-        postcode: true,
-        status: true,
-      },
-      orderBy: { name: "asc" },
-    });
+    const canReadMembers = hasPermission(roles, "membership.read");
+    const visibilityFilter =
+      scope.scope.kind === "workspace"
+        ? {}
+        : {
+            OR: [
+              { scopeMode: "WORKSPACE" as const },
+              {
+                branchAccess: {
+                  some: { branchId: { in: [...scope.scope.branchIds] } },
+                },
+              },
+            ],
+          };
+
+    const [branches, memberships] = await Promise.all([
+      transaction.branch.findMany({
+        where: {
+          workspaceId: actor.workspaceId,
+          ...(scope.scope.kind === "named_branches"
+            ? { id: { in: [...scope.scope.branchIds] } }
+            : {}),
+        },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          telephone: true,
+          address1: true,
+          address2: true,
+          townCity: true,
+          county: true,
+          postcode: true,
+          status: true,
+        },
+        orderBy: { name: "asc" },
+      }),
+      canReadMembers
+        ? transaction.membership.findMany({
+            where: { workspaceId: actor.workspaceId, ...visibilityFilter },
+            select: {
+              id: true,
+              status: true,
+              scopeMode: true,
+              userIdentity: {
+                select: {
+                  firstName: true,
+                  lastName: true,
+                  primaryEmail: true,
+                },
+              },
+              branchAccess: { select: { branchId: true } },
+            },
+            orderBy: [{ status: "asc" }, { createdAt: "asc" }],
+          })
+        : Promise.resolve(null),
+    ]);
+
+    return branches.map((branch) => ({
+      ...branch,
+      users:
+        memberships?.flatMap((membership) => {
+          const hasAccess =
+            membership.scopeMode === "WORKSPACE" ||
+            membership.branchAccess.some(
+              ({ branchId }) => branchId === branch.id,
+            );
+          if (!hasAccess) return [];
+
+          return [
+            {
+              membershipId: membership.id,
+              firstName: membership.userIdentity.firstName,
+              lastName: membership.userIdentity.lastName,
+              primaryEmail: membership.userIdentity.primaryEmail,
+              status: membership.status,
+              scopeMode: membership.scopeMode,
+            },
+          ];
+        }) ?? null,
+    }));
   });
 }

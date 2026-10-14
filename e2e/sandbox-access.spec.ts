@@ -426,6 +426,15 @@ test.describe("sandbox access personas", () => {
         ).toBeVisible();
         await expect(page.getByText("main@oakfield.test")).toBeVisible();
         await expect(page.getByText("020 7946 0998")).toBeVisible();
+        await expect(
+          page.getByRole("heading", { name: "Users with access" }),
+        ).toBeVisible();
+        await expect(
+          page.getByText("Olivia Hart", { exact: true }),
+        ).toBeVisible();
+        await expect(
+          page.getByText("All branches", { exact: true }).first(),
+        ).toBeVisible();
       }
 
       if (persona.email === "platform.owner@zayto.local") {
@@ -545,10 +554,48 @@ test.describe("sandbox access personas", () => {
     const customerNavigation = page.getByRole("navigation", {
       name: "Customer profile",
     });
+    await customerNavigation.getByRole("link", { name: "Users" }).click();
+    await expect(
+      page.getByRole("cell", { name: "Olivia Hart", exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("cell", { name: "owner@zayto.local", exact: true }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("cell", { name: "All branches", exact: true }).first(),
+    ).toBeVisible();
+
+    await page.setViewportSize({ width: 390, height: 844 });
+    const currentOrigin = new URL(page.url()).origin;
+    await page
+      .context()
+      .addCookies([{ name: "zayto-theme", value: "dark", url: currentOrigin }]);
+    await page.reload();
+    await expect(page.locator("html")).toHaveClass(/\bdark\b/);
+    await expect(page.locator("table")).toBeHidden();
+    await expect(
+      page.getByText("Olivia Hart", { exact: true }).first(),
+    ).toBeVisible();
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= window.innerWidth,
+      ),
+    ).toBe(true);
+
+    await page.setViewportSize({ width: 1280, height: 720 });
     await customerNavigation.getByRole("link", { name: "Branches" }).click();
     await expect(page.getByRole("cell", { name: "Main Branch" })).toBeVisible();
     await expect(
       page.getByRole("cell", { name: "main@oakfield.test" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Users with access" }).last(),
+    ).toBeVisible();
+    await expect(
+      page.getByText("Olivia Hart", { exact: true }).last(),
+    ).toBeVisible();
+    await expect(
+      page.getByText("All branches", { exact: true }).last(),
     ).toBeVisible();
 
     await customerNavigation

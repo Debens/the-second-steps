@@ -13,6 +13,7 @@ import {
 import {
   getCustomerProfile,
   listCustomerBranches,
+  listCustomerUsers,
   listCustomers,
   listPlatformUsers,
 } from "@/core/platform/application/platform-directory";
@@ -72,6 +73,7 @@ const ids = {
   platformIdentity: randomUUID(),
   platformAuth: randomUUID(),
   sameBranchIdentity: randomUUID(),
+  sameBranchAuth: randomUUID(),
   otherBranchIdentity: randomUUID(),
   overlappingIdentity: randomUUID(),
   workspaceWideIdentity: randomUUID(),
@@ -196,7 +198,7 @@ async function seedAccessFoundation() {
        VALUES ($1::uuid, 'platform_owner')`,
       [ids.platformIdentity],
     );
-    await addIdentity(client, ids.sameBranchIdentity, randomUUID(), {
+    await addIdentity(client, ids.sameBranchIdentity, ids.sameBranchAuth, {
       firstName: "Sam",
       lastName: "Samebranch",
       primaryEmail: "same@workspace-a.test",
@@ -378,12 +380,57 @@ describe("database and workspace access hardening", () => {
       ids.branchA,
       ids.branchB,
     ]);
+    expect(
+      ownerBranches
+        ?.find(({ id }) => id === ids.branchA)
+        ?.users?.map(({ membershipId }) => membershipId),
+    ).toEqual(
+      expect.arrayContaining([
+        ids.managerMembership,
+        ids.ownerOneMembership,
+        ids.ownerTwoMembership,
+        ids.sameBranchMembership,
+        ids.overlappingMembership,
+        ids.workspaceWideMembership,
+      ]),
+    );
+    expect(
+      ownerBranches?.find(({ id }) => id === ids.branchA)?.users,
+    ).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ membershipId: ids.otherBranchMembership }),
+      ]),
+    );
 
     const managerBranches = await getWorkspaceBranches(
       ids.managerAuth,
       "workspace-a",
     );
     expect(managerBranches?.map(({ id }) => id)).toEqual([ids.branchA]);
+    expect(managerBranches?.[0]?.users).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          membershipId: ids.workspaceWideMembership,
+          scopeMode: "WORKSPACE",
+        }),
+        expect.objectContaining({
+          membershipId: ids.sameBranchMembership,
+          scopeMode: "NAMED_BRANCHES",
+        }),
+      ]),
+    );
+    expect(managerBranches?.[0]?.users).not.toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ membershipId: ids.otherBranchMembership }),
+      ]),
+    );
+
+    const negotiatorBranches = await getWorkspaceBranches(
+      ids.sameBranchAuth,
+      "workspace-a",
+    );
+    expect(negotiatorBranches?.map(({ id }) => id)).toEqual([ids.branchA]);
+    expect(negotiatorBranches?.[0]?.users).toBeNull();
     await expect(
       getWorkspaceBranches(ids.ownerOneAuth, "workspace-b"),
     ).resolves.toBeNull();
@@ -536,11 +583,58 @@ describe("database and workspace access hardening", () => {
       "workspace-a",
     );
     expect(branches?.map(({ id }) => id)).toEqual([ids.branchA, ids.branchB]);
+    expect(branches?.find(({ id }) => id === ids.branchA)?.users).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          membershipId: ids.workspaceWideMembership,
+          scopeMode: "WORKSPACE",
+        }),
+        expect.objectContaining({
+          membershipId: ids.sameBranchMembership,
+          scopeMode: "NAMED_BRANCHES",
+        }),
+      ]),
+    );
+
+    const customerUsers = await listCustomerUsers(
+      ids.platformAuth,
+      "workspace-a",
+    );
+    expect(customerUsers).toHaveLength(7);
+    expect(customerUsers).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: ids.overlappingMembership,
+          firstName: "Alex",
+          lastName: "Overlap",
+          branches: [
+            expect.objectContaining({ id: ids.branchA, name: "Branch A" }),
+            expect.objectContaining({ id: ids.branchB, name: "Branch B" }),
+          ],
+        }),
+        expect.objectContaining({
+          id: ids.workspaceWideMembership,
+          scopeMode: "WORKSPACE",
+          branches: [],
+        }),
+      ]),
+    );
+
+    const otherCustomerUsers = await listCustomerUsers(
+      ids.platformAuth,
+      "workspace-b",
+    );
+    expect(otherCustomerUsers?.map(({ id }) => id)).toEqual([
+      ids.workspaceBOwnerMembership,
+    ]);
   });
 
   it("denies the platform directory to an ordinary workspace member", async () => {
     await expect(listPlatformUsers(ids.ownerOneAuth)).resolves.toBeNull();
     await expect(listCustomers(ids.ownerOneAuth)).resolves.toBeNull();
+    await expect(
+      listCustomerUsers(ids.ownerOneAuth, "workspace-a"),
+    ).resolves.toBeNull();
     await expect(
       getCustomerProfile(ids.ownerOneAuth, "workspace-a"),
     ).resolves.toBeNull();
