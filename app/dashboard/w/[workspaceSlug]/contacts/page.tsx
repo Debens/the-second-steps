@@ -79,10 +79,11 @@ export default async function ContactsPage({
     <div className="mx-auto grid max-w-7xl gap-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <p className="text-sm text-muted-foreground">
-            People and organisations
-          </p>
           <h1 className="text-2xl font-semibold tracking-tight">Contacts</h1>
+          <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
+            Shared people and organisations. A contact becomes a landlord when
+            linked to an enquiry, property or instruction.
+          </p>
         </div>
         {canCreate && (
           <Button render={<Link href={`${path}/new`} />} nativeButton={false}>

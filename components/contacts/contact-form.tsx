@@ -58,6 +58,11 @@ const EMPTY_POINT: Point = { label: "", value: "", isPreferred: false };
 const SELECT_CLASS =
   "h-9 w-full rounded-lg border border-input bg-transparent px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50";
 
+const CONTACT_POINT_LABELS = {
+  email: ["Personal", "Work", "Accounts", "Other"],
+  telephone: ["Mobile", "Home", "Work", "Other"],
+} as const;
+
 function Field({
   label,
   name,
@@ -121,6 +126,7 @@ function ContactPointFields({
     ? points.findIndex(({ isPreferred }) => isPreferred)
     : 0;
   const title = kind === "email" ? "Email addresses" : "Telephone numbers";
+  const labelOptions = CONTACT_POINT_LABELS[kind];
   return (
     <div className="grid gap-3">
       <div className="flex items-center justify-between gap-3">
@@ -143,12 +149,25 @@ function ContactPointFields({
           className="grid gap-3 rounded-lg border p-3 sm:grid-cols-[1fr_2fr_auto]"
         >
           <input type="hidden" name={`${kind}Id`} value={point.id ?? ""} />
-          <Field
-            label="Label"
-            name={`${kind}Label`}
-            id={`${kind}Label-${index}`}
-            defaultValue={point.label}
-          />
+          <div className="grid gap-2">
+            <Label htmlFor={`${kind}Label-${index}`}>Label</Label>
+            <select
+              className={SELECT_CLASS}
+              id={`${kind}Label-${index}`}
+              name={`${kind}Label`}
+              defaultValue={point.label || labelOptions[0]}
+            >
+              {point.label &&
+                !(labelOptions as readonly string[]).includes(point.label) && (
+                  <option value={point.label}>{point.label}</option>
+                )}
+              {labelOptions.map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
+          </div>
           <Field
             label={kind === "email" ? "Email" : "Telephone"}
             name={`${kind}Value`}
@@ -351,25 +370,28 @@ export function ContactForm({
           value={state.duplicateReviewToken}
         />
       )}
-      <Card>
-        <CardHeader>
-          <CardTitle>
+      <section className="grid gap-4 border-b border-border pb-6">
+        <div>
+          <h2 className="text-lg font-semibold">
             {kind === "person" ? "Person details" : "Organisation details"}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-4 lg:grid-cols-2">
+          </h2>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Basic identity and branch information for this contact.
+          </p>
+        </div>
+        <div className="grid gap-4 lg:grid-cols-2">
           {kind === "person" ? (
             <>
+              <input
+                type="hidden"
+                name="preferredName"
+                value={initial?.preferredName ?? ""}
+              />
               <Field
                 label="Title"
                 name="title"
                 defaultValue={initial?.title}
                 autoComplete="honorific-prefix"
-              />
-              <Field
-                label="Preferred name"
-                name="preferredName"
-                defaultValue={initial?.preferredName}
               />
               <Field
                 label="First name"
@@ -488,8 +510,8 @@ export function ContactForm({
               ))}
             </select>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </section>
       <Card>
         <CardHeader>
           <CardTitle>Contact methods</CardTitle>

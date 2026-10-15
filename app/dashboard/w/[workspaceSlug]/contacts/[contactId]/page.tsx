@@ -25,12 +25,15 @@ import { changeContactArchiveAction, updateContactAction } from "../actions";
 
 function displayName(contact: {
   kind: string;
+  title: string | null;
   firstName: string | null;
   lastName: string | null;
   legalName: string | null;
 }) {
   return contact.kind === "PERSON"
-    ? [contact.firstName, contact.lastName].filter(Boolean).join(" ")
+    ? [contact.title, contact.firstName, contact.lastName]
+        .filter(Boolean)
+        .join(" ")
     : (contact.legalName ?? "Unnamed organisation");
 }
 function addressLabel(address: {
@@ -269,38 +272,29 @@ export default async function ContactPage({
             )}
           </CardContent>
         </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>
-              {kind === "person" ? "Person details" : "Organisation details"}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-4 sm:grid-cols-2">
-            {kind === "person" ? (
-              <>
-                <Detail label="Title" value={contact.title} icon={UserRound} />
-                <Detail label="Preferred name" value={contact.preferredName} />
-              </>
-            ) : (
-              <>
-                <Detail
-                  label="Trading name"
-                  value={contact.tradingName}
-                  icon={Building2}
-                />
-                <Detail
-                  label="Organisation type"
-                  value={contact.organisationType?.replaceAll("_", " ")}
-                />
-                <Detail
-                  label="Registration number"
-                  value={contact.registrationNumber}
-                />
-                <Detail label="VAT number" value={contact.vatNumber} />
-              </>
-            )}
-          </CardContent>
-        </Card>
+        {kind === "organisation" && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Organisation details</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-4 sm:grid-cols-2">
+              <Detail
+                label="Trading name"
+                value={contact.tradingName}
+                icon={Building2}
+              />
+              <Detail
+                label="Organisation type"
+                value={contact.organisationType?.replaceAll("_", " ")}
+              />
+              <Detail
+                label="Registration number"
+                value={contact.registrationNumber}
+              />
+              <Detail label="VAT number" value={contact.vatNumber} />
+            </CardContent>
+          </Card>
+        )}
         <Card>
           <CardHeader>
             <CardTitle>Preferences and branch</CardTitle>

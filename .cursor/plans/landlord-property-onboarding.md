@@ -23,7 +23,7 @@ This milestone ends at **Ready to market**. Marketing content, photographs, floo
 
 - One workspace-specific person record can hold several roles over time, including landlord, applicant, tenant, guarantor, contractor, or staff relationship. Role-specific data and permissions remain separate.
 - Organisations support limited companies, LLPs, partnerships, trusts, charities, and an `other` category.
-- A person has structured title, first name, middle names, surname, and preferred name. First name and surname are initially required; the other fields are optional.
+- A person has structured title, first name, middle names, and surname. First name and surname are initially required; the other fields are optional. Preferred name is not collected in this slice.
 - An organisation has a legal name, optional trading name, applicable registration number, and optional VAT number. Registration details are required only where applicable to its type.
 - Organisations can link several people, with an optional primary contact. A person may be linked to several organisations.
 - People and organisations can hold several telephone numbers and email addresses, with preferred entries, a preferred communication channel, and channel-specific do-not-use restrictions. Marketing consent is separate.
