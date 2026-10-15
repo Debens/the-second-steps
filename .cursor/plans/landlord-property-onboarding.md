@@ -182,6 +182,7 @@ Memberships with several operational roles receive the union of those roles' per
 ### Chunk 2 — people and organisations
 
 - Approve exact schema, RLS policies, indexes, lifecycle states, audit actions, and permission names.
+- The technical proposal is maintained in `.cursor/plans/people-and-organisations.md` and must pass its owner approval gate before implementation.
 - Add people, organisations, contact points, addresses, organisation-person links, readable references, and focused migration provenance.
 - Build create/view/edit/archive paths with targeted unit and database isolation tests.
 - **Review:** responsive UI, light/dark themes, duplicate warnings, validation, permissions, cross-workspace and cross-branch denial.
