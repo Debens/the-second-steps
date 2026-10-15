@@ -80,7 +80,7 @@ export default async function NewContactPage({
     );
   const activeBranches = branches.filter(({ status }) => status === "ACTIVE");
   return (
-    <div className="grid max-w-4xl gap-6">
+    <div className="grid gap-6">
       <Button
         variant="ghost"
         size="sm"
@@ -104,6 +104,7 @@ export default async function NewContactPage({
           action={createContactAction.bind(null, workspaceSlug, kind)}
           branches={activeBranches}
           kind={kind}
+          wide
         />
       ) : (
         <Card>

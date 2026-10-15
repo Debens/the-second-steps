@@ -225,3 +225,20 @@
     min-width: 2.75rem;
   }
 }
+
+/*
+ * Base UI hides a Select's form input with an inline style. Our Content
+ * Security Policy blocks inline style attributes in server-rendered HTML, so
+ * hide it with a rule instead.
+ */
+[data-slot="select-trigger"] + input[aria-hidden="true"] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  border: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  clip-path: inset(50%);
+}

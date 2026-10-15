@@ -267,8 +267,8 @@ export function CustomerDetailsEditor({
 
   return (
     <div className="grid gap-3">
-      <div className="grid gap-8">
-        <section className="grid gap-4">
+      <div className="grid items-start gap-8 lg:grid-cols-2 lg:gap-0">
+        <section className="grid gap-4 lg:pr-12">
           <div className="flex items-start justify-between gap-4">
             <div>
               <h2 className="text-base font-semibold">Customer details</h2>
@@ -317,7 +317,7 @@ export function CustomerDetailsEditor({
           </div>
         </section>
 
-        <section className="grid gap-4 border-t pt-8">
+        <section className="grid gap-4 border-t pt-8 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-12">
           <div className="flex items-start justify-between gap-4">
             <div>
               <h2 className="text-base font-semibold">Contact details</h2>

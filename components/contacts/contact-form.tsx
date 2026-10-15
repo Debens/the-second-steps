@@ -285,6 +285,7 @@ export function ContactForm({
   submitLabel = "Create contact",
   canManageIdentity = false,
   inDialog = false,
+  wide = false,
 }: {
   action: FormAction;
   branches: readonly { id: string; name: string }[];
@@ -293,6 +294,8 @@ export function ContactForm({
   submitLabel?: string;
   canManageIdentity?: boolean;
   inDialog?: boolean;
+  /** Use two columns on extra-large screens (full pages, not dialogs). */
+  wide?: boolean;
 }) {
   const [state, formAction, pending] = useActionState(action, INITIAL_STATE);
   const duplicateConfirmed = state.status === "duplicates";
@@ -368,265 +371,287 @@ export function ContactForm({
           value={state.duplicateReviewToken}
         />
       )}
-      <section className="grid gap-4">
-        <div>
-          <h2 className="text-lg font-semibold">
-            {kind === "person" ? "Person details" : "Organisation details"}
-          </h2>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Basic identity and branch information for this contact.
-          </p>
-        </div>
-        <div className="grid gap-4 lg:grid-cols-2">
-          {kind === "person" ? (
-            <>
-              <input
-                type="hidden"
-                name="preferredName"
-                value={initial?.preferredName ?? ""}
-              />
-              <Field
-                label="Title"
-                name="title"
-                defaultValue={initial?.title}
-                autoComplete="honorific-prefix"
-              />
-              <Field
-                label="First name"
-                name="firstName"
-                defaultValue={initial?.firstName}
-                required
-                autoComplete="given-name"
-                error={state.fieldErrors?.firstName}
-              />
-              <Field
-                label="Middle names"
-                name="middleNames"
-                defaultValue={initial?.middleNames}
-                autoComplete="additional-name"
-              />
-              <Field
-                label="Surname"
-                name="lastName"
-                defaultValue={initial?.lastName}
-                required
-                autoComplete="family-name"
-                error={state.fieldErrors?.lastName}
-              />
-            </>
-          ) : (
-            <>
-              {initial && !canManageIdentity && (
+      {/* Wide pages use two columns; the edit dialog stays a single column. */}
+      <div
+        className={`grid gap-6 ${
+          wide ? "xl:grid-cols-2 xl:items-start xl:gap-x-14" : ""
+        }`}
+      >
+        <div className="grid content-start gap-6">
+          <section className="grid gap-4">
+            <div>
+              <h2 className="text-lg font-semibold">
+                {kind === "person" ? "Person details" : "Organisation details"}
+              </h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Basic identity and branch information for this contact.
+              </p>
+            </div>
+            <div className="grid gap-4 lg:grid-cols-2">
+              {kind === "person" ? (
                 <>
                   <input
                     type="hidden"
-                    name="organisationType"
-                    value={initial.organisationType ?? "other"}
+                    name="preferredName"
+                    value={initial?.preferredName ?? ""}
                   />
-                  <input
-                    type="hidden"
+                  <Field
+                    label="Title"
+                    name="title"
+                    defaultValue={initial?.title}
+                    autoComplete="honorific-prefix"
+                  />
+                  <Field
+                    label="First name"
+                    name="firstName"
+                    defaultValue={initial?.firstName}
+                    required
+                    autoComplete="given-name"
+                    error={state.fieldErrors?.firstName}
+                  />
+                  <Field
+                    label="Middle names"
+                    name="middleNames"
+                    defaultValue={initial?.middleNames}
+                    autoComplete="additional-name"
+                  />
+                  <Field
+                    label="Surname"
+                    name="lastName"
+                    defaultValue={initial?.lastName}
+                    required
+                    autoComplete="family-name"
+                    error={state.fieldErrors?.lastName}
+                  />
+                </>
+              ) : (
+                <>
+                  {initial && !canManageIdentity && (
+                    <>
+                      <input
+                        type="hidden"
+                        name="organisationType"
+                        value={initial.organisationType ?? "other"}
+                      />
+                      <input
+                        type="hidden"
+                        name="legalName"
+                        value={initial.legalName ?? ""}
+                      />
+                      <input
+                        type="hidden"
+                        name="registrationNumber"
+                        value={initial.registrationNumber ?? ""}
+                      />
+                      <input
+                        type="hidden"
+                        name="vatNumber"
+                        value={initial.vatNumber ?? ""}
+                      />
+                    </>
+                  )}
+                  <div className="grid gap-2">
+                    <Label htmlFor="organisationType">Organisation type</Label>
+                    <OptionSelect
+                      id="organisationType"
+                      name="organisationType"
+                      defaultValue={
+                        initial?.organisationType ?? "limited_company"
+                      }
+                      disabled={Boolean(initial) && !canManageIdentity}
+                      options={[
+                        { value: "limited_company", label: "Limited company" },
+                        { value: "llp", label: "LLP" },
+                        { value: "partnership", label: "Partnership" },
+                        { value: "trust", label: "Trust" },
+                        { value: "charity", label: "Charity" },
+                        { value: "other", label: "Other" },
+                      ]}
+                    />
+                  </div>
+                  <Field
+                    label="Legal name"
                     name="legalName"
-                    value={initial.legalName ?? ""}
+                    defaultValue={initial?.legalName}
+                    required
+                    autoComplete="organization"
+                    disabled={Boolean(initial) && !canManageIdentity}
+                    error={state.fieldErrors?.legalName}
                   />
-                  <input
-                    type="hidden"
+                  <Field
+                    label="Trading name"
+                    name="tradingName"
+                    defaultValue={initial?.tradingName}
+                  />
+                  <Field
+                    label="Registration number"
                     name="registrationNumber"
-                    value={initial.registrationNumber ?? ""}
+                    defaultValue={initial?.registrationNumber}
+                    disabled={Boolean(initial) && !canManageIdentity}
                   />
-                  <input
-                    type="hidden"
+                  <Field
+                    label="VAT number"
                     name="vatNumber"
-                    value={initial.vatNumber ?? ""}
+                    defaultValue={initial?.vatNumber}
+                    disabled={Boolean(initial) && !canManageIdentity}
                   />
                 </>
               )}
               <div className="grid gap-2">
-                <Label htmlFor="organisationType">Organisation type</Label>
+                <Label htmlFor="branchId">Responsible branch</Label>
                 <OptionSelect
-                  id="organisationType"
-                  name="organisationType"
-                  defaultValue={initial?.organisationType ?? "limited_company"}
-                  disabled={Boolean(initial) && !canManageIdentity}
+                  id="branchId"
+                  name="branchId"
+                  required
+                  placeholder="Select a branch"
+                  defaultValue={
+                    initial?.branchId ??
+                    (branches.length === 1 ? branches[0]?.id : "")
+                  }
+                  disabled={Boolean(initial)}
+                  options={branches.map((branch) => ({
+                    value: branch.id,
+                    label: branch.name,
+                  }))}
+                />
+              </div>
+            </div>
+          </section>
+          <section className="grid gap-4 border-t pt-6">
+            <h2 className="text-lg font-semibold">Contact methods</h2>
+            <div className="grid gap-6">
+              {state.fieldErrors?.contactMethods && (
+                <p className="text-sm text-destructive" role="alert">
+                  {state.fieldErrors.contactMethods}
+                </p>
+              )}
+              <ContactPointFields
+                kind="email"
+                initial={initial?.emails ?? []}
+              />
+              <ContactPointFields
+                kind="telephone"
+                initial={initial?.telephones ?? []}
+              />
+            </div>
+          </section>
+        </div>
+        <div className="grid content-start gap-6">
+          <section
+            className={`grid gap-4 border-t pt-6 ${
+              wide ? "xl:border-t-0 xl:pt-0" : ""
+            }`}
+          >
+            <h2 className="text-lg font-semibold">Address</h2>
+            <div className="grid gap-6">
+              {state.fieldErrors?.addresses && (
+                <p className="text-sm text-destructive" role="alert">
+                  {state.fieldErrors.addresses}
+                </p>
+              )}
+              {kind === "person" ? (
+                <AddressFields
+                  prefix="individualAddress"
+                  title="Individual address"
+                  initial={initial?.individualAddress}
+                />
+              ) : (
+                <>
+                  <AddressFields
+                    prefix="registeredAddress"
+                    title="Registered address"
+                    initial={initial?.registeredAddress}
+                  />
+                  <label className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      name="sameAsRegistered"
+                      checked={sameAsRegistered}
+                      onChange={(event) =>
+                        setSameAsRegistered(event.currentTarget.checked)
+                      }
+                    />
+                    Correspondence address is the same as the registered address
+                  </label>
+                  <AddressFields
+                    prefix="correspondenceAddress"
+                    title="Correspondence address (optional)"
+                    initial={initial?.correspondenceAddress}
+                    disabled={sameAsRegistered}
+                  />
+                </>
+              )}
+            </div>
+          </section>
+          <section className="grid gap-4 border-t pt-6">
+            <h2 className="text-lg font-semibold">Communication preferences</h2>
+            <div className="grid gap-4">
+              {state.fieldErrors?.communication && (
+                <p className="text-sm text-destructive" role="alert">
+                  {state.fieldErrors.communication}
+                </p>
+              )}
+              <div className="grid gap-2">
+                <Label htmlFor="preferredCommunication">
+                  Preferred contact method
+                </Label>
+                <OptionSelect
+                  id="preferredCommunication"
+                  name="preferredCommunication"
+                  placeholder="No preference"
+                  value={preferredCommunication}
+                  onValueChange={setPreferredCommunication}
                   options={[
-                    { value: "limited_company", label: "Limited company" },
-                    { value: "llp", label: "LLP" },
-                    { value: "partnership", label: "Partnership" },
-                    { value: "trust", label: "Trust" },
-                    { value: "charity", label: "Charity" },
-                    { value: "other", label: "Other" },
+                    { value: "", label: "No preference" },
+                    ...(availableMethods.email && !restrictions.doNotEmail
+                      ? [{ value: "email", label: "Email" }]
+                      : []),
+                    ...(availableMethods.telephone &&
+                    !restrictions.doNotTelephone
+                      ? [{ value: "telephone", label: "Telephone" }]
+                      : []),
+                    ...(availableMethods.telephone && !restrictions.doNotSms
+                      ? [{ value: "sms", label: "SMS" }]
+                      : []),
+                    ...(availableMethods.telephone &&
+                    !restrictions.doNotWhatsApp
+                      ? [{ value: "whatsapp", label: "WhatsApp" }]
+                      : []),
+                    ...(availableMethods.post && !restrictions.doNotPost
+                      ? [{ value: "post", label: "Post" }]
+                      : []),
                   ]}
                 />
               </div>
-              <Field
-                label="Legal name"
-                name="legalName"
-                defaultValue={initial?.legalName}
-                required
-                autoComplete="organization"
-                disabled={Boolean(initial) && !canManageIdentity}
-                error={state.fieldErrors?.legalName}
-              />
-              <Field
-                label="Trading name"
-                name="tradingName"
-                defaultValue={initial?.tradingName}
-              />
-              <Field
-                label="Registration number"
-                name="registrationNumber"
-                defaultValue={initial?.registrationNumber}
-                disabled={Boolean(initial) && !canManageIdentity}
-              />
-              <Field
-                label="VAT number"
-                name="vatNumber"
-                defaultValue={initial?.vatNumber}
-                disabled={Boolean(initial) && !canManageIdentity}
-              />
-            </>
-          )}
-          <div className="grid gap-2">
-            <Label htmlFor="branchId">Responsible branch</Label>
-            <OptionSelect
-              id="branchId"
-              name="branchId"
-              required
-              placeholder="Select a branch"
-              defaultValue={
-                initial?.branchId ??
-                (branches.length === 1 ? branches[0]?.id : "")
-              }
-              disabled={Boolean(initial)}
-              options={branches.map((branch) => ({
-                value: branch.id,
-                label: branch.name,
-              }))}
-            />
-          </div>
+              <fieldset className="grid gap-3 sm:grid-cols-2">
+                <legend className="mb-2 text-sm font-medium">Do not use</legend>
+                {[
+                  ["doNotEmail", "Email"],
+                  ["doNotTelephone", "Telephone"],
+                  ["doNotSms", "SMS"],
+                  ["doNotWhatsApp", "WhatsApp"],
+                  ["doNotPost", "Post"],
+                ].map(([name, label]) => (
+                  <label key={name} className="flex items-center gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      name={name}
+                      checked={restrictions[name as keyof typeof restrictions]}
+                      onChange={(event) =>
+                        updateRestriction(
+                          name as keyof typeof restrictions,
+                          event.currentTarget.checked,
+                        )
+                      }
+                    />
+                    {label}
+                  </label>
+                ))}
+              </fieldset>
+            </div>
+          </section>
         </div>
-      </section>
-      <section className="grid gap-4 border-t pt-6">
-        <h2 className="text-lg font-semibold">Contact methods</h2>
-        <div className="grid gap-6">
-          {state.fieldErrors?.contactMethods && (
-            <p className="text-sm text-destructive" role="alert">
-              {state.fieldErrors.contactMethods}
-            </p>
-          )}
-          <ContactPointFields kind="email" initial={initial?.emails ?? []} />
-          <ContactPointFields
-            kind="telephone"
-            initial={initial?.telephones ?? []}
-          />
-        </div>
-      </section>
-      <section className="grid gap-4 border-t pt-6">
-        <h2 className="text-lg font-semibold">Address</h2>
-        <div className="grid gap-6">
-          {state.fieldErrors?.addresses && (
-            <p className="text-sm text-destructive" role="alert">
-              {state.fieldErrors.addresses}
-            </p>
-          )}
-          {kind === "person" ? (
-            <AddressFields
-              prefix="individualAddress"
-              title="Individual address"
-              initial={initial?.individualAddress}
-            />
-          ) : (
-            <>
-              <AddressFields
-                prefix="registeredAddress"
-                title="Registered address"
-                initial={initial?.registeredAddress}
-              />
-              <label className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  name="sameAsRegistered"
-                  checked={sameAsRegistered}
-                  onChange={(event) =>
-                    setSameAsRegistered(event.currentTarget.checked)
-                  }
-                />
-                Correspondence address is the same as the registered address
-              </label>
-              <AddressFields
-                prefix="correspondenceAddress"
-                title="Correspondence address (optional)"
-                initial={initial?.correspondenceAddress}
-                disabled={sameAsRegistered}
-              />
-            </>
-          )}
-        </div>
-      </section>
-      <section className="grid gap-4 border-t pt-6">
-        <h2 className="text-lg font-semibold">Communication preferences</h2>
-        <div className="grid gap-4">
-          {state.fieldErrors?.communication && (
-            <p className="text-sm text-destructive" role="alert">
-              {state.fieldErrors.communication}
-            </p>
-          )}
-          <div className="grid gap-2">
-            <Label htmlFor="preferredCommunication">
-              Preferred contact method
-            </Label>
-            <OptionSelect
-              id="preferredCommunication"
-              name="preferredCommunication"
-              placeholder="No preference"
-              value={preferredCommunication}
-              onValueChange={setPreferredCommunication}
-              options={[
-                { value: "", label: "No preference" },
-                ...(availableMethods.email && !restrictions.doNotEmail
-                  ? [{ value: "email", label: "Email" }]
-                  : []),
-                ...(availableMethods.telephone && !restrictions.doNotTelephone
-                  ? [{ value: "telephone", label: "Telephone" }]
-                  : []),
-                ...(availableMethods.telephone && !restrictions.doNotSms
-                  ? [{ value: "sms", label: "SMS" }]
-                  : []),
-                ...(availableMethods.telephone && !restrictions.doNotWhatsApp
-                  ? [{ value: "whatsapp", label: "WhatsApp" }]
-                  : []),
-                ...(availableMethods.post && !restrictions.doNotPost
-                  ? [{ value: "post", label: "Post" }]
-                  : []),
-              ]}
-            />
-          </div>
-          <fieldset className="grid gap-3 sm:grid-cols-2">
-            <legend className="mb-2 text-sm font-medium">Do not use</legend>
-            {[
-              ["doNotEmail", "Email"],
-              ["doNotTelephone", "Telephone"],
-              ["doNotSms", "SMS"],
-              ["doNotWhatsApp", "WhatsApp"],
-              ["doNotPost", "Post"],
-            ].map(([name, label]) => (
-              <label key={name} className="flex items-center gap-2 text-sm">
-                <input
-                  type="checkbox"
-                  name={name}
-                  checked={restrictions[name as keyof typeof restrictions]}
-                  onChange={(event) =>
-                    updateRestriction(
-                      name as keyof typeof restrictions,
-                      event.currentTarget.checked,
-                    )
-                  }
-                />
-                {label}
-              </label>
-            ))}
-          </fieldset>
-        </div>
-      </section>
+      </div>
       {state.status === "duplicates" && (
         <div className="rounded-lg border border-warning bg-warning-soft p-4">
           <p className="font-medium text-warning">

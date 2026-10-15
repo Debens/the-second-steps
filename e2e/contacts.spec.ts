@@ -149,3 +149,18 @@ test("contact record shows the notes timeline and add form", async ({
     notes.getByRole("link", { name: "Show voided notes" }),
   ).toBeVisible();
 });
+
+test("dropdown form inputs stay hidden on a directly loaded page", async ({
+  page,
+}) => {
+  await signInAsOwner(page);
+  await page.goto(`${WORKSPACE}/contacts/new?kind=person`);
+  await expect(page.getByRole("heading", { name: "New person" })).toBeVisible();
+  const sizes = await page
+    .locator('input[aria-hidden="true"][name$="Label"]')
+    .evaluateAll((inputs) =>
+      inputs.map((input) => input.getBoundingClientRect().width),
+    );
+  expect(sizes.length).toBeGreaterThan(0);
+  for (const width of sizes) expect(width).toBeLessThanOrEqual(1);
+});

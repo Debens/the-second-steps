@@ -223,7 +223,7 @@ export default async function ContactPage({
       .join(", ") || "None";
 
   return (
-    <div className="grid max-w-7xl gap-6">
+    <div className="grid gap-6">
       <Button
         variant="ghost"
         size="sm"
@@ -243,8 +243,9 @@ export default async function ContactPage({
           again.
         </div>
       )}
-      {/* On phones the order is identity, working area, then details. */}
-      <div className="grid grid-cols-[minmax(0,1fr)] gap-x-10 gap-y-8 lg:grid-cols-[18rem_minmax(0,1fr)]">
+      {/* Phones: identity, working area, details. Large screens: a profile
+          column, the working area, and a details rail that use the width. */}
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-x-10 gap-y-8 lg:grid-cols-[18rem_minmax(0,1fr)] 2xl:grid-cols-[20rem_minmax(0,1fr)_22rem]">
         <header className="grid content-start gap-6 lg:col-start-1 lg:row-start-1">
           <div className="flex items-center gap-4 lg:flex-col lg:items-start">
             <span
@@ -461,62 +462,67 @@ export default async function ContactPage({
           </section>
         </div>
 
-        <dl className="grid content-start gap-5 border-t pt-6 lg:col-start-1 lg:row-start-2">
-          {kind === "person" ? (
-            <>
-              <Detail label="Title" value={contact.title} icon={Type} />
-              <Detail
-                label="First name"
-                value={contact.firstName}
-                icon={UserRound}
-              />
-              <Detail
-                label="Middle names"
-                value={contact.middleNames}
-                icon={Signature}
-              />
-              <Detail
-                label="Surname"
-                value={contact.lastName}
-                icon={Signature}
-              />
-            </>
-          ) : (
-            <>
-              <Detail
-                label="Trading name"
-                value={contact.tradingName}
-                icon={Building2}
-                keepCase
-              />
-              <Detail
-                label="Organisation type"
-                value={contact.organisationType
-                  ?.toLowerCase()
-                  .replaceAll("_", " ")}
-                icon={BriefcaseBusiness}
-              />
-              <Detail
-                label="Registration number"
-                value={contact.registrationNumber}
-                icon={Hash}
-                keepCase
-              />
-              <Detail
-                label="VAT number"
-                value={contact.vatNumber}
-                icon={ReceiptText}
-                keepCase
-              />
-            </>
-          )}
-          <Detail
-            label="Preferred contact"
-            value={preferredChannel}
-            icon={MessageCircle}
-          />
-          <Detail label="Do not use" value={doNotUse} icon={Ban} />
-        </dl>
+        <section className="grid content-start gap-5 border-t pt-6 lg:col-start-1 lg:row-start-2 2xl:col-start-3 2xl:row-start-1 2xl:border-t-0 2xl:border-l 2xl:pt-0 2xl:pl-10">
+          <h2 className="text-base font-semibold">
+            {kind === "person" ? "Person details" : "Organisation details"}
+          </h2>
+          <dl className="grid content-start gap-5">
+            {kind === "person" ? (
+              <>
+                <Detail label="Title" value={contact.title} icon={Type} />
+                <Detail
+                  label="First name"
+                  value={contact.firstName}
+                  icon={UserRound}
+                />
+                <Detail
+                  label="Middle names"
+                  value={contact.middleNames}
+                  icon={Signature}
+                />
+                <Detail
+                  label="Surname"
+                  value={contact.lastName}
+                  icon={Signature}
+                />
+              </>
+            ) : (
+              <>
+                <Detail
+                  label="Trading name"
+                  value={contact.tradingName}
+                  icon={Building2}
+                  keepCase
+                />
+                <Detail
+                  label="Organisation type"
+                  value={contact.organisationType
+                    ?.toLowerCase()
+                    .replaceAll("_", " ")}
+                  icon={BriefcaseBusiness}
+                />
+                <Detail
+                  label="Registration number"
+                  value={contact.registrationNumber}
+                  icon={Hash}
+                  keepCase
+                />
+                <Detail
+                  label="VAT number"
+                  value={contact.vatNumber}
+                  icon={ReceiptText}
+                  keepCase
+                />
+              </>
+            )}
+            <Detail
+              label="Preferred contact"
+              value={preferredChannel}
+              icon={MessageCircle}
+            />
+            <Detail label="Do not use" value={doNotUse} icon={Ban} />
+          </dl>
+        </section>
       </div>
     </div>
   );

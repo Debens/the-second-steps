@@ -10,7 +10,7 @@ export default async function WorkspaceSettingsLayout({
   const { workspaceSlug } = await params;
 
   return (
-    <div className="grid max-w-5xl gap-6">
+    <div className="grid gap-6">
       <div>
         <p className="text-sm text-muted-foreground">Customer workspace</p>
         <h1 className="text-2xl font-semibold tracking-tight">Settings</h1>

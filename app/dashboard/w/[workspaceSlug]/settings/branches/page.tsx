@@ -58,7 +58,7 @@ export default async function WorkspaceBranchesPage({
   }
 
   return (
-    <div className="grid divide-y border-t">
+    <div className="grid gap-x-12 xl:grid-cols-2">
       {branches.map((branch) => {
         const address = [
           branch.address1,
@@ -113,7 +113,10 @@ export default async function WorkspaceBranchesPage({
         });
 
         return (
-          <section key={branch.id} className="grid gap-4 py-6">
+          <section
+            key={branch.id}
+            className="grid content-start gap-4 border-t py-6"
+          >
             <div className="flex flex-wrap items-center justify-between gap-3">
               <h3 className="text-base font-semibold">{branch.name}</h3>
               <div>

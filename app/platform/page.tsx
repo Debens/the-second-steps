@@ -30,7 +30,7 @@ const areas = [
 
 export default function PlatformPage() {
   return (
-    <div className="grid max-w-6xl gap-6">
+    <div className="grid gap-6">
       <div>
         <p className="text-sm font-medium text-primary">Internal context</p>
         <h1 className="text-2xl font-semibold tracking-tight">
