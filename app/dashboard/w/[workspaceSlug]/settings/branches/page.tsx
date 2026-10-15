@@ -2,6 +2,7 @@ import { Building2 } from "lucide-react";
 import { redirect } from "next/navigation";
 import {
   Card,
+  CardAction,
   CardContent,
   CardDescription,
   CardHeader,
@@ -119,14 +120,16 @@ export default async function WorkspaceBranchesPage({
               <CardTitle>
                 <h3>{branch.name}</h3>
               </CardTitle>
-              <StatusBadge
-                label={
-                  branch.status === "ACTIVE"
-                    ? "Active branch"
-                    : "Inactive branch"
-                }
-                tone={branch.status === "ACTIVE" ? "active" : "inactive"}
-              />
+              <CardAction>
+                <StatusBadge
+                  label={
+                    branch.status === "ACTIVE"
+                      ? "Active branch"
+                      : "Inactive branch"
+                  }
+                  tone={branch.status === "ACTIVE" ? "active" : "inactive"}
+                />
+              </CardAction>
             </CardHeader>
             <CardContent className="grid gap-4">
               <dl className="grid gap-5 sm:grid-cols-2">
