@@ -346,3 +346,11 @@ export function validateContactAddresses(
 
   return { ok: true, addresses } as const;
 }
+
+export function validateRelationshipLabel(value: string) {
+  const label = optionalValue(value);
+  if (label !== null && label.length > 100) {
+    return { ok: false, error: "Use 100 characters or fewer." } as const;
+  }
+  return { ok: true, label } as const;
+}

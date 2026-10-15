@@ -166,7 +166,7 @@ function validateCreateDetails(
     : { ok: false as const };
 }
 
-async function audit(
+export async function audit(
   transaction: Parameters<typeof resolveContactActor>[0],
   actor: ContactActor,
   input: {
@@ -191,7 +191,7 @@ async function audit(
   });
 }
 
-async function deny(
+export async function deny(
   transaction: Parameters<typeof resolveContactActor>[0],
   actor: ContactActor,
   action: string,
@@ -282,17 +282,46 @@ export async function getContact(input: {
         workspaceSlug: input.workspaceSlug,
       });
       if (!actor || !hasPermission(actor.roles, "contact.read")) return null;
+      // RLS hides links unless the member can see both contacts.
       return transaction.contact.findFirst({
         where: { id: input.contactId, workspaceId: actor.workspaceId },
-        include: CONTACT_INCLUDE,
+        include: {
+          ...CONTACT_INCLUDE,
+          organisationLinks: {
+            where: { endedAt: null },
+            orderBy: [{ isPrimary: "desc" }, { startedAt: "asc" }],
+            include: {
+              personContact: {
+                select: {
+                  id: true,
+                  reference: true,
+                  title: true,
+                  firstName: true,
+                  lastName: true,
+                  contactPoints: {
+                    where: { archivedAt: null, isPreferred: true },
+                    select: { kind: true, value: true },
+                  },
+                },
+              },
+            },
+          },
+          personLinks: {
+            where: { endedAt: null },
+            orderBy: [{ startedAt: "asc" }],
+            include: {
+              organisationContact: {
+                select: { id: true, reference: true, legalName: true },
+              },
+            },
+          },
+        },
       });
     },
   );
 }
 
-type CreateContactInput = {
-  authSubject: string;
-  workspaceSlug: string;
+export type NewContactInput = {
   branchId: string;
   communication: CommunicationPreferencesInput;
   contactPoints: readonly ContactPointInput[];
@@ -302,14 +331,14 @@ type CreateContactInput = {
   | { kind: "organisation"; details: OrganisationDetailsInput }
 );
 
+type CreateContactInput = {
+  authSubject: string;
+  workspaceSlug: string;
+} & NewContactInput;
+
 export async function createContact(
   input: CreateContactInput,
 ): Promise<ContactWriteResult> {
-  const points = validateContactPoints(input.contactPoints);
-  const addresses = validateContactAddresses(input.kind, input.addresses);
-  const communication = communicationData(input.communication);
-  const details = validateCreateDetails(input);
-
   const result = await withVerifiedIdentity(
     input.authSubject,
     async (transaction, identity): Promise<ContactWriteResult> => {
@@ -318,78 +347,89 @@ export async function createContact(
         workspaceSlug: input.workspaceSlug,
       });
       if (!actor) return { ok: false, error: "access_denied" };
-      if (!hasPermission(actor.roles, "contact.create")) {
-        return deny(transaction, actor, "contact.create", "access_denied");
-      }
-      if (!points.ok || !addresses.ok || !communication || !details.ok) {
-        return deny(transaction, actor, "contact.create", "invalid_input");
-      }
-      if (!hasBranchAccess(actor.scope, input.branchId)) {
-        return deny(transaction, actor, "contact.create", "access_denied");
-      }
-      const branch = await transaction.branch.findFirst({
-        where: {
-          id: input.branchId,
-          workspaceId: actor.workspaceId,
-          status: "ACTIVE",
-        },
-        select: { id: true },
-      });
-      if (!branch) {
-        return deny(transaction, actor, "contact.create", "invalid_input");
-      }
-
-      const contact = await transaction.contact.create({
-        data: {
-          workspaceId: actor.workspaceId,
-          kind:
-            input.kind === "person"
-              ? ContactKind.PERSON
-              : ContactKind.ORGANISATION,
-          reference: createContactReference(input.kind),
-          createdByMembershipId: actor.membershipId,
-          ...communication,
-          ...details.data,
-        },
-        select: { id: true },
-      });
-      await transaction.contactBranchLink.create({
-        data: {
-          workspaceId: actor.workspaceId,
-          contactId: contact.id,
-          branchId: branch.id,
-          isPrimary: true,
-          createdByMembershipId: actor.membershipId,
-        },
-      });
-      if (points.points.length) {
-        await transaction.contactPoint.createMany({
-          data: points.points.map((point) => ({
-            workspaceId: actor.workspaceId,
-            contactId: contact.id,
-            ...pointData(point),
-          })),
-        });
-      }
-      if (addresses.addresses.length) {
-        await transaction.contactAddress.createMany({
-          data: addresses.addresses.map((address) => ({
-            workspaceId: actor.workspaceId,
-            contactId: contact.id,
-            ...addressData(address),
-          })),
-        });
-      }
-      await audit(transaction, actor, {
-        action: "contact.create",
-        outcome: "SUCCEEDED",
-        targetId: contact.id,
-        metadata: { kind: input.kind, branchId: branch.id },
-      });
-      return { ok: true, contactId: contact.id };
+      return createContactInTransaction(transaction, actor, input);
     },
   );
   return result ?? { ok: false, error: "access_denied" };
+}
+
+/** Creates a contact inside an existing verified transaction, with audit. */
+export async function createContactInTransaction(
+  transaction: Parameters<typeof resolveContactActor>[0],
+  actor: ContactActor,
+  input: NewContactInput,
+): Promise<ContactWriteResult> {
+  const points = validateContactPoints(input.contactPoints);
+  const addresses = validateContactAddresses(input.kind, input.addresses);
+  const communication = communicationData(input.communication);
+  const details = validateCreateDetails(input);
+  if (!hasPermission(actor.roles, "contact.create")) {
+    return deny(transaction, actor, "contact.create", "access_denied");
+  }
+  if (!points.ok || !addresses.ok || !communication || !details.ok) {
+    return deny(transaction, actor, "contact.create", "invalid_input");
+  }
+  if (!hasBranchAccess(actor.scope, input.branchId)) {
+    return deny(transaction, actor, "contact.create", "access_denied");
+  }
+  const branch = await transaction.branch.findFirst({
+    where: {
+      id: input.branchId,
+      workspaceId: actor.workspaceId,
+      status: "ACTIVE",
+    },
+    select: { id: true },
+  });
+  if (!branch) {
+    return deny(transaction, actor, "contact.create", "invalid_input");
+  }
+
+  const contact = await transaction.contact.create({
+    data: {
+      workspaceId: actor.workspaceId,
+      kind:
+        input.kind === "person" ? ContactKind.PERSON : ContactKind.ORGANISATION,
+      reference: createContactReference(input.kind),
+      createdByMembershipId: actor.membershipId,
+      ...communication,
+      ...details.data,
+    },
+    select: { id: true },
+  });
+  await transaction.contactBranchLink.create({
+    data: {
+      workspaceId: actor.workspaceId,
+      contactId: contact.id,
+      branchId: branch.id,
+      isPrimary: true,
+      createdByMembershipId: actor.membershipId,
+    },
+  });
+  if (points.points.length) {
+    await transaction.contactPoint.createMany({
+      data: points.points.map((point) => ({
+        workspaceId: actor.workspaceId,
+        contactId: contact.id,
+        ...pointData(point),
+      })),
+    });
+  }
+  if (addresses.addresses.length) {
+    await transaction.contactAddress.createMany({
+      data: addresses.addresses.map((address) => ({
+        workspaceId: actor.workspaceId,
+        contactId: contact.id,
+        ...addressData(address),
+      })),
+    });
+  }
+  await audit(transaction, actor, {
+    action: "contact.create",
+    outcome: "SUCCEEDED",
+    targetId: contact.id,
+    metadata: { kind: input.kind, branchId: branch.id },
+  });
+  return { ok: true, contactId: contact.id };
 }
 
 type UpdateContactInput = {

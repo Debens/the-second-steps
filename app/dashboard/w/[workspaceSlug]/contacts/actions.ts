@@ -10,8 +10,15 @@ import {
   findDuplicateContacts,
   reactivateContact,
   updateContact,
+  listContacts,
   type CommunicationPreferencesInput,
 } from "@/core/contacts/application/contacts";
+import {
+  createAndLinkOrganisationPerson,
+  endOrganisationPersonLink,
+  linkOrganisationPerson,
+  updateOrganisationPersonLink,
+} from "@/core/contacts/application/organisation-people";
 import type {
   ContactAddressInput,
   ContactPointInput,
@@ -417,4 +424,228 @@ export async function changeContactArchiveAction(
   revalidatePath(path);
   revalidatePath(`/dashboard/w/${workspaceSlug}/contacts`);
   redirect(path);
+}
+
+export type PersonLinkFormState = {
+  status: "idle" | "error" | "saved" | "duplicates";
+  message: string;
+  duplicates?: ContactFormState["duplicates"];
+  duplicateReviewToken?: string;
+  fieldErrors?: Partial<Record<string, string>>;
+};
+
+export async function searchPeopleAction(workspaceSlug: string, query: string) {
+  const user = await requireMfaUser(`/dashboard/w/${workspaceSlug}/contacts`, {
+    workspaceSlug,
+  });
+  const people = await listContacts({
+    authSubject: user.id,
+    workspaceSlug,
+    kind: "person",
+    query,
+  });
+  return (people ?? []).slice(0, 20).map((person) => ({
+    id: person.id,
+    label: contactLabel(person),
+    reference: person.reference,
+  }));
+}
+
+export async function linkPersonAction(
+  workspaceSlug: string,
+  organisationContactId: string,
+  _previousState: PersonLinkFormState,
+  formData: FormData,
+): Promise<PersonLinkFormState> {
+  const path = `/dashboard/w/${workspaceSlug}/contacts/${organisationContactId}`;
+  const user = await requireMfaUser(path, { workspaceSlug });
+  const personContactId = text(formData, "personContactId");
+  if (!personContactId) {
+    return { status: "error", message: "Choose a person to link." };
+  }
+  const result = await linkOrganisationPerson({
+    authSubject: user.id,
+    workspaceSlug,
+    organisationContactId,
+    personContactId,
+    relationshipLabel: text(formData, "relationshipLabel"),
+    isPrimary: checked(formData, "isPrimary"),
+  });
+  if (!result.ok) {
+    return {
+      status: "error",
+      message:
+        result.error === "invalid_state"
+          ? "This person is already linked to the organisation."
+          : result.error === "invalid_input"
+            ? "Use a relationship of 100 characters or fewer."
+            : "The person could not be linked. Check your access and try again.",
+    };
+  }
+  revalidatePath(`/dashboard/w/${workspaceSlug}/contacts`, "layout");
+  return { status: "saved", message: "Person linked." };
+}
+
+export async function updatePersonLinkAction(
+  workspaceSlug: string,
+  organisationContactId: string,
+  linkId: string,
+  _previousState: PersonLinkFormState,
+  formData: FormData,
+): Promise<PersonLinkFormState> {
+  const path = `/dashboard/w/${workspaceSlug}/contacts/${organisationContactId}`;
+  const user = await requireMfaUser(path, { workspaceSlug });
+  const result = await updateOrganisationPersonLink({
+    authSubject: user.id,
+    workspaceSlug,
+    organisationContactId,
+    linkId,
+    relationshipLabel: text(formData, "relationshipLabel"),
+    isPrimary: checked(formData, "isPrimary"),
+  });
+  if (!result.ok) {
+    return {
+      status: "error",
+      message:
+        result.error === "invalid_input"
+          ? "Use a relationship of 100 characters or fewer."
+          : "The link could not be saved. Check your access and try again.",
+    };
+  }
+  revalidatePath(`/dashboard/w/${workspaceSlug}/contacts`, "layout");
+  return { status: "saved", message: "Link saved." };
+}
+
+export async function endPersonLinkAction(
+  workspaceSlug: string,
+  organisationContactId: string,
+  linkId: string,
+): Promise<PersonLinkFormState> {
+  const path = `/dashboard/w/${workspaceSlug}/contacts/${organisationContactId}`;
+  const user = await requireMfaUser(path, { workspaceSlug });
+  const result = await endOrganisationPersonLink({
+    authSubject: user.id,
+    workspaceSlug,
+    organisationContactId,
+    linkId,
+  });
+  if (!result.ok) {
+    return {
+      status: "error",
+      message: "The link could not be ended. Check your access and try again.",
+    };
+  }
+  revalidatePath(`/dashboard/w/${workspaceSlug}/contacts`, "layout");
+  return { status: "saved", message: "Link ended." };
+}
+
+export async function createAndLinkPersonAction(
+  workspaceSlug: string,
+  organisationContactId: string,
+  _previousState: PersonLinkFormState,
+  formData: FormData,
+): Promise<PersonLinkFormState> {
+  const path = `/dashboard/w/${workspaceSlug}/contacts/${organisationContactId}`;
+  const user = await requireMfaUser(path, { workspaceSlug });
+  const details: PersonDetailsInput = {
+    title: "",
+    firstName: text(formData, "firstName"),
+    middleNames: "",
+    lastName: text(formData, "lastName"),
+    preferredName: "",
+  };
+  const email = text(formData, "email").trim();
+  const telephone = text(formData, "telephone").trim();
+  const points: ContactPointInput[] = [
+    ...(email
+      ? [
+          {
+            kind: "email" as const,
+            value: email,
+            label: "Work",
+            isPreferred: true,
+          },
+        ]
+      : []),
+    ...(telephone
+      ? [
+          {
+            kind: "telephone" as const,
+            value: telephone,
+            label: "Mobile",
+            isPreferred: true,
+          },
+        ]
+      : []),
+  ];
+  const fieldErrors: Partial<Record<string, string>> = {};
+  const validation = validatePersonDetails(details);
+  if (!validation.ok) Object.assign(fieldErrors, validation.fieldErrors);
+  if (!points.length) {
+    fieldErrors.contactMethods = "Add an email or telephone.";
+  } else if (!validateContactPoints(points).ok) {
+    fieldErrors.contactMethods =
+      "Check the email address and telephone number.";
+  }
+  if (Object.keys(fieldErrors).length) {
+    return {
+      status: "error",
+      message: "Review the highlighted details.",
+      fieldErrors,
+    };
+  }
+
+  const reviewToken = duplicateReviewToken({
+    kind: "person",
+    points,
+    addresses: [],
+    details,
+  });
+  if (text(formData, "duplicateReviewToken") !== reviewToken) {
+    const candidates = await findDuplicateContacts({
+      authSubject: user.id,
+      workspaceSlug,
+      email: email || undefined,
+      telephone: telephone || undefined,
+      name: `${details.firstName} ${details.lastName}`,
+    });
+    const people = candidates?.filter(
+      ({ contact }) => contact.kind === "PERSON",
+    );
+    if (people?.length) {
+      return {
+        status: "duplicates",
+        message: "This person may already exist. Link them instead?",
+        duplicates: people.map(({ contact, strength, matchedFields }) => ({
+          id: contact.id,
+          label: contactLabel(contact),
+          reference: contact.reference,
+          strength,
+          matchedFields,
+        })),
+        duplicateReviewToken: reviewToken,
+      };
+    }
+  }
+
+  const result = await createAndLinkOrganisationPerson({
+    authSubject: user.id,
+    workspaceSlug,
+    organisationContactId,
+    details,
+    contactPoints: points,
+    relationshipLabel: text(formData, "relationshipLabel"),
+    isPrimary: checked(formData, "isPrimary"),
+  });
+  if (!result.ok) {
+    return {
+      status: "error",
+      message:
+        result.error === "invalid_input"
+          ? "Review the details and try again."
+          : "The person could not be added. Check your access and try again.",
+    };
+  }
+  revalidatePath(`/dashboard/w/${workspaceSlug}/contacts`, "layout");
+  return { status: "saved", message: "Person added and linked." };
 }

@@ -22,6 +22,7 @@ import {
   ContactEditor,
 } from "@/components/contacts/contact-record-actions";
 import type { InitialContact } from "@/components/contacts/contact-form";
+import { OrganisationPeople } from "@/components/contacts/organisation-people";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,7 +31,15 @@ import { getWorkspaceAccessContext } from "@/core/access/application/access-cont
 import { requireMfaUser } from "@/core/auth/mfa";
 import { getContact } from "@/core/contacts/application/contacts";
 import { getWorkspaceBranches } from "@/core/workspace/application/workspace-branches";
-import { changeContactArchiveAction, updateContactAction } from "../actions";
+import {
+  changeContactArchiveAction,
+  createAndLinkPersonAction,
+  endPersonLinkAction,
+  linkPersonAction,
+  searchPeopleAction,
+  updateContactAction,
+  updatePersonLinkAction,
+} from "../actions";
 
 function displayName(contact: {
   kind: string;
@@ -146,6 +155,38 @@ export default async function ContactPage({
   const preferredChannel =
     contact.preferredCommunicationChannel?.toLowerCase() ?? "No preference";
   const archiveFailed = (await searchParams).error === "archive";
+  const canManageLinks =
+    context.permissions.has("contact.sensitive.manage") &&
+    contact.status === "ACTIVE";
+  const linkedPeople = contact.organisationLinks.map((link) => ({
+    linkId: link.id,
+    personId: link.personContact.id,
+    name: displayName({
+      kind: "PERSON",
+      legalName: null,
+      ...link.personContact,
+    }),
+    reference: link.personContact.reference,
+    relationshipLabel: link.relationshipLabel ?? "",
+    isPrimary: link.isPrimary,
+    preferredContact:
+      link.personContact.contactPoints.find(({ kind }) => kind === "EMAIL")
+        ?.value ??
+      link.personContact.contactPoints[0]?.value ??
+      null,
+    updateAction: updatePersonLinkAction.bind(
+      null,
+      workspaceSlug,
+      contactId,
+      link.id,
+    ),
+    endAction: endPersonLinkAction.bind(
+      null,
+      workspaceSlug,
+      contactId,
+      link.id,
+    ),
+  }));
 
   return (
     <div className="mx-auto grid max-w-6xl gap-6">
@@ -332,6 +373,72 @@ export default async function ContactPage({
                 value={contact.vatNumber}
                 icon={ReceiptText}
               />
+            </CardContent>
+          </Card>
+        )}
+        {kind === "organisation" && (
+          <Card>
+            <CardHeader>
+              <CardTitle>People</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <OrganisationPeople
+                basePath={listPath}
+                canManage={canManageLinks}
+                createAction={createAndLinkPersonAction.bind(
+                  null,
+                  workspaceSlug,
+                  contactId,
+                )}
+                linkAction={linkPersonAction.bind(
+                  null,
+                  workspaceSlug,
+                  contactId,
+                )}
+                people={linkedPeople}
+                search={searchPeopleAction.bind(null, workspaceSlug)}
+              />
+            </CardContent>
+          </Card>
+        )}
+        {kind === "person" && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Organisations</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-3">
+              {contact.personLinks.length ? (
+                contact.personLinks.map((link) => (
+                  <div key={link.id} className="flex gap-3">
+                    <Building2
+                      className="mt-0.5 size-4 shrink-0 text-muted-foreground"
+                      aria-hidden="true"
+                    />
+                    <div>
+                      <Link
+                        href={`${listPath}/${link.organisationContact.id}`}
+                        className="text-sm font-medium underline-offset-4 hover:underline"
+                      >
+                        {link.organisationContact.legalName ??
+                          "Unnamed organisation"}
+                      </Link>
+                      <p className="text-xs text-muted-foreground">
+                        {[
+                          link.relationshipLabel || "Linked person",
+                          link.isPrimary && "Main contact",
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </p>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Not linked to any organisation. Link people from the
+                  organisation&apos;s record.
+                </p>
+              )}
             </CardContent>
           </Card>
         )}

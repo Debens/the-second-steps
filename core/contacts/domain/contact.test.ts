@@ -9,6 +9,7 @@ import {
   validateContactPoints,
   validateOrganisationDetails,
   validatePersonDetails,
+  validateRelationshipLabel,
 } from "./contact";
 import { createContactReference } from "./contact-reference";
 
@@ -157,5 +158,16 @@ describe("contact domain", () => {
     expect(createContactReference("organisation")).toMatch(
       /^ORG-[2-9A-HJ-NP-Z]{8}$/,
     );
+  });
+
+  it("trims optional organisation relationship labels", () => {
+    expect(validateRelationshipLabel("  Director ")).toEqual({
+      ok: true,
+      label: "Director",
+    });
+    expect(validateRelationshipLabel("   ")).toEqual({ ok: true, label: null });
+    expect(validateRelationshipLabel("x".repeat(101))).toMatchObject({
+      ok: false,
+    });
   });
 });

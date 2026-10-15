@@ -206,10 +206,13 @@ export default async function ContactsPage({
                 </TableHeader>
                 <TableBody>
                   {contacts.map((contact) => (
-                    <TableRow key={contact.id}>
-                      <TableCell className="sticky left-0 bg-card font-medium">
+                    <TableRow
+                      key={contact.id}
+                      className="group relative cursor-pointer hover:bg-muted"
+                    >
+                      <TableCell className="font-medium">
                         <Link
-                          className="text-primary hover:underline"
+                          className="text-primary group-hover:underline after:absolute after:inset-0"
                           href={`${path}/${contact.id}`}
                         >
                           {label(contact)}
@@ -222,7 +225,10 @@ export default async function ContactsPage({
                         {contact.status === "ARCHIVED" ? (
                           <StatusBadge label="Archived" tone="inactive" />
                         ) : (
-                          <Badge variant="secondary">
+                          <Badge
+                            variant="secondary"
+                            className="group-hover:bg-card"
+                          >
                             {contact.kind === "PERSON"
                               ? "Person"
                               : "Organisation"}

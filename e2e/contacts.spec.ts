@@ -85,3 +85,45 @@ test("organisation form is usable on mobile and in dark mode", async ({
     fullPage: true,
   });
 });
+
+test("organisation record lets a manager search for people to link", async ({
+  page,
+}) => {
+  await signInAsOwner(page);
+  await page.getByRole("link", { name: "Contacts" }).click();
+  await page
+    .getByRole("link", { name: /Hawthorne Property Holdings/ })
+    .first()
+    .click();
+  const people = page
+    .locator('[data-slot="card"]')
+    .filter({ hasText: "People" });
+  await expect(people).toBeVisible();
+  await people.getByRole("button", { name: "Link person" }).click();
+  await page.getByRole("button", { name: "Search" }).click();
+  await expect(page.getByRole("radio").first()).toBeVisible();
+  await expect(
+    page.getByLabel("Main contact for this organisation"),
+  ).toBeVisible();
+
+  await page.getByRole("button", { name: "New person" }).click();
+  await expect(page.getByLabel("First name")).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Add and link person" }),
+  ).toBeVisible();
+});
+
+test("the whole contact row opens the record", async ({ page }) => {
+  await signInAsOwner(page);
+  await page.getByRole("link", { name: "Contacts" }).click();
+  const cell = page
+    .getByRole("row")
+    .filter({ hasText: "Eleanor Price" })
+    .getByRole("cell")
+    .last();
+  const box = await cell.boundingBox();
+  await page.mouse.click(box!.x + box!.width / 2, box!.y + box!.height / 2);
+  await expect(
+    page.getByRole("heading", { name: /Eleanor Price/ }),
+  ).toBeVisible();
+});

@@ -11,6 +11,12 @@ import {
   updateContact,
   updateOrganisationIdentity,
 } from "@/core/contacts/application/contacts";
+import {
+  createAndLinkOrganisationPerson,
+  endOrganisationPersonLink,
+  linkOrganisationPerson,
+  updateOrganisationPersonLink,
+} from "@/core/contacts/application/organisation-people";
 import { db } from "@/core/db/client";
 
 const runtimeUrl = process.env.DATABASE_URL;
@@ -30,6 +36,7 @@ const ids = {
   workspace: randomUUID(),
   ownerIdentity: randomUUID(),
   ownerMembership: randomUUID(),
+  ownerAuth: randomUUID(),
   branchA: randomUUID(),
   branchB: randomUUID(),
   managerIdentity: randomUUID(),
@@ -120,6 +127,12 @@ async function seed() {
       [ids.ownerMembership, ids.workspace, ids.ownerIdentity],
     );
     await client.query(
+      `INSERT INTO "authentication_provider_links"
+        ("user_identity_id", "provider", "provider_subject")
+       VALUES ($1::uuid, 'supabase', $2::uuid)`,
+      [ids.ownerIdentity, ids.ownerAuth],
+    );
+    await client.query(
       `INSERT INTO "membership_roles"
         ("workspace_id", "membership_id", "role_code")
        VALUES ($1::uuid, $2::uuid, 'workspace_owner')`,
@@ -164,7 +177,7 @@ const communication = {
   doNotPost: false,
 };
 
-async function createPerson() {
+async function createPerson(email = "owner@example.test") {
   const result = await createContact({
     authSubject: ids.managerAuth,
     workspaceSlug: "contact-app",
@@ -182,7 +195,7 @@ async function createPerson() {
       {
         kind: "email",
         label: "Personal",
-        value: "owner@example.test",
+        value: email,
         isPreferred: true,
       },
     ],
@@ -200,6 +213,29 @@ async function createPerson() {
     ],
   });
   if (!result.ok) throw new Error(`Contact creation failed: ${result.error}`);
+  return result.contactId;
+}
+
+async function createOrganisation(authSubject: string, branchId: string) {
+  const result = await createContact({
+    authSubject,
+    workspaceSlug: "contact-app",
+    branchId,
+    kind: "organisation",
+    details: {
+      type: "limited_company",
+      legalName: "Linked Lettings Limited",
+      tradingName: "",
+      registrationNumber: "",
+      vatNumber: "",
+    },
+    communication: { ...communication, preferred: null },
+    contactPoints: [],
+    addresses: [],
+  });
+  if (!result.ok) {
+    throw new Error(`Organisation creation failed: ${result.error}`);
+  }
   return result.contactId;
 }
 
@@ -408,5 +444,269 @@ describe("contact application layer", () => {
         },
       }),
     ).resolves.toEqual({ ok: false, error: "access_denied" });
+  });
+
+  it("reserves organisation-person links for managers with access to both contacts", async () => {
+    const personId = await createPerson();
+    const organisationId = await createOrganisation(
+      ids.managerAuth,
+      ids.branchA,
+    );
+    const link = {
+      workspaceSlug: "contact-app",
+      organisationContactId: organisationId,
+      personContactId: personId,
+      relationshipLabel: " Director ",
+      isPrimary: true,
+    };
+    await expect(
+      linkOrganisationPerson({ ...link, authSubject: ids.negotiatorAAuth }),
+    ).resolves.toEqual({ ok: false, error: "access_denied" });
+    await expect(
+      linkOrganisationPerson({ ...link, authSubject: ids.managerAuth }),
+    ).resolves.toEqual({ ok: true, contactId: organisationId });
+    await expect(
+      linkOrganisationPerson({ ...link, authSubject: ids.managerAuth }),
+    ).resolves.toEqual({ ok: false, error: "invalid_state" });
+
+    const organisation = await getContact({
+      authSubject: ids.negotiatorAAuth,
+      workspaceSlug: "contact-app",
+      contactId: organisationId,
+    });
+    expect(organisation?.organisationLinks).toMatchObject([
+      {
+        relationshipLabel: "Director",
+        isPrimary: true,
+        personContact: { id: personId },
+      },
+    ]);
+    const person = await getContact({
+      authSubject: ids.negotiatorAAuth,
+      workspaceSlug: "contact-app",
+      contactId: personId,
+    });
+    expect(person?.personLinks).toMatchObject([
+      { organisationContact: { id: organisationId } },
+    ]);
+
+    const hiddenOrganisationId = await createOrganisation(
+      ids.ownerAuth,
+      ids.branchB,
+    );
+    await expect(
+      linkOrganisationPerson({
+        ...link,
+        organisationContactId: hiddenOrganisationId,
+        authSubject: ids.managerAuth,
+      }),
+    ).resolves.toEqual({ ok: false, error: "contact_not_found" });
+  });
+
+  it("shares a linked person with the organisation's branch", async () => {
+    const personId = await createPerson();
+    const organisationId = await createOrganisation(ids.ownerAuth, ids.branchB);
+    await expect(
+      getContact({
+        authSubject: ids.negotiatorBAuth,
+        workspaceSlug: "contact-app",
+        contactId: personId,
+      }),
+    ).resolves.toBeNull();
+    await expect(
+      linkOrganisationPerson({
+        authSubject: ids.ownerAuth,
+        workspaceSlug: "contact-app",
+        organisationContactId: organisationId,
+        personContactId: personId,
+        relationshipLabel: "",
+        isPrimary: false,
+      }),
+    ).resolves.toEqual({ ok: true, contactId: organisationId });
+    const shared = await getContact({
+      authSubject: ids.negotiatorBAuth,
+      workspaceSlug: "contact-app",
+      contactId: personId,
+    });
+    expect(shared?.branchLinks.map(({ branchId }) => branchId)).toEqual([
+      ids.branchB,
+    ]);
+    const allBranches = await getContact({
+      authSubject: ids.ownerAuth,
+      workspaceSlug: "contact-app",
+      contactId: personId,
+    });
+    expect(
+      allBranches?.branchLinks.map(({ branchId, isPrimary }) => [
+        branchId,
+        isPrimary,
+      ]),
+    ).toEqual([
+      [ids.branchA, true],
+      [ids.branchB, false],
+    ]);
+    const audit = await adminPool.query(
+      `SELECT "metadata" FROM "audit_events"
+       WHERE "action" = 'contact.organisation_person.link'
+         AND "outcome" = 'succeeded'`,
+    );
+    expect(audit.rows[0].metadata).toMatchObject({
+      personContactId: personId,
+      addedBranchIds: [ids.branchB],
+    });
+  });
+
+  it("keeps one main contact and preserves ended links as history", async () => {
+    const firstId = await createPerson("first@example.test");
+    const secondId = await createPerson("second@example.test");
+    const organisationId = await createOrganisation(
+      ids.managerAuth,
+      ids.branchA,
+    );
+    for (const personContactId of [firstId, secondId]) {
+      const result = await linkOrganisationPerson({
+        authSubject: ids.managerAuth,
+        workspaceSlug: "contact-app",
+        organisationContactId: organisationId,
+        personContactId,
+        relationshipLabel: "",
+        isPrimary: true,
+      });
+      expect(result.ok).toBe(true);
+    }
+    const links = await getContact({
+      authSubject: ids.managerAuth,
+      workspaceSlug: "contact-app",
+      contactId: organisationId,
+    });
+    expect(
+      links?.organisationLinks.map(({ personContact, isPrimary }) => [
+        personContact.id,
+        isPrimary,
+      ]),
+    ).toEqual([
+      [secondId, true],
+      [firstId, false],
+    ]);
+    const firstLink = links!.organisationLinks.find(
+      ({ personContact }) => personContact.id === firstId,
+    )!;
+    const update = {
+      workspaceSlug: "contact-app",
+      organisationContactId: organisationId,
+      linkId: firstLink.id,
+      relationshipLabel: "Director",
+      isPrimary: true,
+    };
+    await expect(
+      updateOrganisationPersonLink({
+        ...update,
+        authSubject: ids.negotiatorAAuth,
+      }),
+    ).resolves.toEqual({ ok: false, error: "access_denied" });
+    await expect(
+      updateOrganisationPersonLink({ ...update, authSubject: ids.managerAuth }),
+    ).resolves.toEqual({ ok: true, contactId: organisationId });
+    await expect(
+      endOrganisationPersonLink({
+        authSubject: ids.managerAuth,
+        workspaceSlug: "contact-app",
+        organisationContactId: organisationId,
+        linkId: firstLink.id,
+      }),
+    ).resolves.toEqual({ ok: true, contactId: organisationId });
+    const after = await getContact({
+      authSubject: ids.managerAuth,
+      workspaceSlug: "contact-app",
+      contactId: organisationId,
+    });
+    expect(
+      after?.organisationLinks.map(({ personContact, isPrimary }) => [
+        personContact.id,
+        isPrimary,
+      ]),
+    ).toEqual([[secondId, false]]);
+    const history = await adminPool.query(
+      `SELECT "ended_at" IS NOT NULL AS "ended", "is_primary"
+       FROM "organisation_person_links" WHERE "id" = $1`,
+      [firstLink.id],
+    );
+    expect(history.rows).toEqual([{ ended: true, is_primary: false }]);
+  });
+
+  it("creates and links a new person in the organisation's branch in one step", async () => {
+    const organisationId = await createOrganisation(
+      ids.managerAuth,
+      ids.branchA,
+    );
+    const input = {
+      workspaceSlug: "contact-app",
+      organisationContactId: organisationId,
+      details: {
+        title: "",
+        firstName: "Nadia",
+        middleNames: "",
+        lastName: "Director",
+        preferredName: "",
+      },
+      contactPoints: [
+        {
+          kind: "email" as const,
+          label: "Work",
+          value: "nadia@example.test",
+          isPreferred: true,
+        },
+      ],
+      relationshipLabel: "Director",
+      isPrimary: true,
+    };
+    await expect(
+      createAndLinkOrganisationPerson({
+        ...input,
+        authSubject: ids.negotiatorAAuth,
+      }),
+    ).resolves.toEqual({ ok: false, error: "access_denied" });
+    await expect(
+      createAndLinkOrganisationPerson({
+        ...input,
+        contactPoints: [],
+        authSubject: ids.managerAuth,
+      }),
+    ).resolves.toEqual({ ok: false, error: "invalid_input" });
+    await expect(
+      createAndLinkOrganisationPerson({
+        ...input,
+        authSubject: ids.managerAuth,
+      }),
+    ).resolves.toEqual({ ok: true, contactId: organisationId });
+
+    const organisation = await getContact({
+      authSubject: ids.negotiatorAAuth,
+      workspaceSlug: "contact-app",
+      contactId: organisationId,
+    });
+    expect(organisation?.organisationLinks).toMatchObject([
+      {
+        relationshipLabel: "Director",
+        isPrimary: true,
+        personContact: { firstName: "Nadia", lastName: "Director" },
+      },
+    ]);
+    const personId = organisation!.organisationLinks[0]!.personContact.id;
+    const person = await getContact({
+      authSubject: ids.negotiatorAAuth,
+      workspaceSlug: "contact-app",
+      contactId: personId,
+    });
+    expect(
+      person?.branchLinks.map(({ branchId, isPrimary }) => [
+        branchId,
+        isPrimary,
+      ]),
+    ).toEqual([[ids.branchA, true]]);
+    const people = await adminPool.query(
+      `SELECT count(*)::int AS "count" FROM "contacts" WHERE "kind" = 'person'`,
+    );
+    expect(people.rows).toEqual([{ count: 1 }]);
   });
 });
