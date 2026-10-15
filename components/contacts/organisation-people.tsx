@@ -353,7 +353,9 @@ function LinkPersonDialog({
         if (next) setMode("existing");
       }}
     >
-      <DialogTrigger render={<Button variant="outline" size="sm" />}>
+      <DialogTrigger
+        render={<Button variant="outline" size="sm" className="w-fit" />}
+      >
         <UserPlus aria-hidden="true" />
         Link person
       </DialogTrigger>
@@ -521,13 +523,25 @@ export function OrganisationPeople({
   return (
     <div className="grid gap-4">
       {people.length ? (
-        <ul className="grid gap-3">
+        <ul className="grid grid-cols-[minmax(0,1fr)] divide-y">
           {people.map((person) => (
             <li
               key={person.linkId}
-              className="flex items-start justify-between gap-3"
+              className="flex items-center gap-3 py-3 first:pt-0 last:pb-0"
             >
-              <div className="min-w-0">
+              <span
+                aria-hidden="true"
+                className="inline-flex size-9 shrink-0 items-center justify-center rounded-full bg-accent text-sm font-semibold text-primary"
+              >
+                {person.name
+                  .replace(/^(Mr|Ms|Mrs|Miss|Mx|Dr)\s/, "")
+                  .split(" ")
+                  .slice(0, 2)
+                  .map((part) => part[0])
+                  .join("")
+                  .toUpperCase()}
+              </span>
+              <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
                   <Link
                     href={`${basePath}/${person.personId}`}

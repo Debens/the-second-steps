@@ -2,6 +2,15 @@
 
 Newest first. Status: **Accepted** | **Proposed** | **Superseded** | **Unresolved**.
 
+## ADR-030 — Record pages use a profile sidebar and flat sections
+
+- **Status:** Accepted (owner decision, 2026-10-15)
+- **Context:** The first contact record put every group of details in its own bordered card (eight on one page), which the owner found boxy and hard to scan. Five alternatives were compared in the Design Lab (`/design-lab/contact`); the owner chose the **profile sidebar**.
+- **Decision:** A record page (a single person, organisation, and later property, instruction, or tenancy) has a left **profile column** and a wide **working area**. The profile column holds identity (avatar, name, type, reference, primary actions), then the key contact lines, then the remaining details as icon-led label/value pairs separated by hairlines. The working area holds related records (for example People, Organisations, and later Properties) and Notes as plain sections with a heading, separated by dividers. On phones the order is identity, working area, then details.
+- **Surfaces:** Cards are for self-contained items: metric tiles, a list or table, sign-in and error panels, and choice tiles. Do not wrap each group of fields on a record, or each timeline entry, in its own card. Forms inside a dialog use flat sections with headings and dividers, not nested cards.
+- **Scope:** Applied to the contact record, its edit form, notes, and people. Other screens move to the same pattern when they are next substantially changed; settings and platform administration screens are not being redesigned solely for this decision.
+- **Date:** 2026-10-15
+
 ## ADR-029 — Human names use first-name and last-name fields
 
 - **Status:** Accepted; first implementation is the user identity/profile (owner decision, 2026-10-14)

@@ -55,6 +55,7 @@ export function ContactEditor({
           initial={initial}
           kind={kind}
           submitLabel="Save contact"
+          inDialog
           canManageIdentity={canManageIdentity}
         />
       </DialogContent>

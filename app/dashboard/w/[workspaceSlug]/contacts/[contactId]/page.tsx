@@ -26,7 +26,6 @@ import { ContactNotes } from "@/components/contacts/contact-notes";
 import { OrganisationPeople } from "@/components/contacts/organisation-people";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { getWorkspaceAccessContext } from "@/core/access/application/access-context";
 import { requireMfaUser } from "@/core/auth/mfa";
@@ -201,6 +200,28 @@ export default async function ContactPage({
     ),
   }));
 
+  const primaryBranch = contact.branchLinks.find(({ isPrimary }) => isPrimary)
+    ?.branch.name;
+  const otherBranches = contact.branchLinks
+    .filter(({ isPrimary }) => !isPrimary)
+    .map(({ branch }) => branch.name);
+  const emailPoints = contact.contactPoints.filter(
+    ({ kind: pointKind }) => pointKind === "EMAIL",
+  );
+  const telephonePoints = contact.contactPoints.filter(
+    ({ kind: pointKind }) => pointKind === "TELEPHONE",
+  );
+  const doNotUse =
+    [
+      contact.doNotEmail && "Email",
+      contact.doNotTelephone && "Telephone",
+      contact.doNotSms && "SMS",
+      contact.doNotWhatsApp && "WhatsApp",
+      contact.doNotPost && "Post",
+    ]
+      .filter(Boolean)
+      .join(", ") || "None";
+
   return (
     <div className="mx-auto grid max-w-6xl gap-6">
       <Button
@@ -222,179 +243,117 @@ export default async function ContactPage({
           again.
         </div>
       )}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-        <div>
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-2xl font-semibold tracking-tight">
-              {displayName(contact)}
-            </h1>
-            <Badge variant="secondary">
-              {kind === "person" ? "Person" : "Organisation"}
-            </Badge>
-            {contact.status === "ARCHIVED" && (
-              <StatusBadge label="Archived" tone="inactive" />
+      {/* On phones the order is identity, working area, then details. */}
+      <div className="grid grid-cols-[minmax(0,1fr)] gap-x-10 gap-y-8 lg:grid-cols-[18rem_minmax(0,1fr)]">
+        <header className="grid content-start gap-6 lg:col-start-1 lg:row-start-1">
+          <div className="flex items-center gap-4 lg:flex-col lg:items-start">
+            <span
+              aria-hidden="true"
+              className="inline-flex size-14 shrink-0 items-center justify-center rounded-full bg-accent text-lg font-semibold text-primary"
+            >
+              {initials(contact)}
+            </span>
+            <div className="min-w-0">
+              <h1 className="text-xl font-semibold tracking-tight [overflow-wrap:anywhere]">
+                {displayName(contact)}
+              </h1>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <Badge variant="secondary">
+                  {kind === "person" ? "Person" : "Organisation"}
+                </Badge>
+                {contact.status === "ARCHIVED" && (
+                  <StatusBadge label="Archived" tone="inactive" />
+                )}
+                <span className="text-xs text-muted-foreground">
+                  {contact.reference}
+                </span>
+              </div>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {canEdit && (
+              <ContactEditor
+                action={updateContactAction.bind(
+                  null,
+                  workspaceSlug,
+                  contactId,
+                  kind,
+                )}
+                branches={activeBranches}
+                initial={initial}
+                kind={kind}
+                canManageIdentity={context.permissions.has(
+                  "contact.sensitive.manage",
+                )}
+              />
+            )}
+            {canArchive && (
+              <ContactArchiveControl
+                action={changeContactArchiveAction.bind(
+                  null,
+                  workspaceSlug,
+                  contactId,
+                  contact.status === "ARCHIVED",
+                )}
+                archived={contact.status === "ARCHIVED"}
+              />
             )}
           </div>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {contact.reference}
-          </p>
-        </div>
-        <div className="flex flex-wrap gap-2">
-          {canEdit && (
-            <ContactEditor
-              action={updateContactAction.bind(
-                null,
-                workspaceSlug,
-                contactId,
-                kind,
-              )}
-              branches={activeBranches}
-              initial={initial}
-              kind={kind}
-              canManageIdentity={context.permissions.has(
-                "contact.sensitive.manage",
-              )}
-            />
-          )}
-          {canArchive && (
-            <ContactArchiveControl
-              action={changeContactArchiveAction.bind(
-                null,
-                workspaceSlug,
-                contactId,
-                contact.status === "ARCHIVED",
-              )}
-              archived={contact.status === "ARCHIVED"}
-            />
-          )}
-        </div>
-      </div>
-      <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Contact methods</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-4">
-            {contact.contactPoints.length ? (
-              contact.contactPoints.map((point) => (
-                <div key={point.id} className="flex gap-3">
-                  {point.kind === "EMAIL" ? (
-                    <Mail
-                      className="mt-0.5 size-4 text-muted-foreground"
-                      aria-hidden="true"
-                    />
-                  ) : (
-                    <Phone
-                      className="mt-0.5 size-4 text-muted-foreground"
-                      aria-hidden="true"
-                    />
-                  )}
-                  <div>
-                    <p className="text-sm font-medium">{point.value}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {point.label ??
-                        (point.kind === "EMAIL" ? "Email" : "Telephone")}
-                      {point.isPreferred ? " · Preferred" : ""}
-                    </p>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                No contact methods recorded.
-              </p>
+          <dl className="grid gap-5 border-t pt-6">
+            {emailPoints.map((point) => (
+              <Detail
+                key={point.id}
+                label={pointLabel(point.label, "Email", point.isPreferred)}
+                value={point.value}
+                icon={Mail}
+                keepCase
+              />
+            ))}
+            {telephonePoints.map((point) => (
+              <Detail
+                key={point.id}
+                label={pointLabel(point.label, "Telephone", point.isPreferred)}
+                value={point.value}
+                icon={Phone}
+                keepCase
+              />
+            ))}
+            {!emailPoints.length && !telephonePoints.length && (
+              <Detail label="Contact methods" value={null} icon={Mail} />
             )}
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle>Address details</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-4">
-            {activeAddresses.length ? (
-              activeAddresses.map((address) => (
-                <div key={address.id} className="flex gap-3">
-                  <MapPin
-                    className="mt-0.5 size-4 shrink-0 text-muted-foreground"
-                    aria-hidden="true"
-                  />
-                  <div>
-                    <p className="text-sm font-medium">
-                      {addressLabel(address)}
-                    </p>
-                    <p className="text-xs capitalize text-muted-foreground">
-                      {address.kind.toLowerCase()}
-                    </p>
-                  </div>
-                </div>
-              ))
-            ) : (
-              <p className="text-sm text-muted-foreground">
-                No address recorded.
-              </p>
+            {activeAddresses.map((address) => (
+              <Detail
+                key={address.id}
+                label={`${address.kind.charAt(0)}${address.kind.slice(1).toLowerCase()} address`}
+                value={addressLabel(address)}
+                icon={MapPin}
+                keepCase
+              />
+            ))}
+            {!activeAddresses.length && (
+              <Detail label="Address" value={null} icon={MapPin} />
             )}
-          </CardContent>
-        </Card>
-        {kind === "person" && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Person details</CardTitle>
-            </CardHeader>
-            <CardContent className="grid gap-4 sm:grid-cols-2">
-              <Detail label="Title" value={contact.title} icon={Type} />
+            <Detail
+              label="Responsible branch"
+              value={primaryBranch}
+              icon={GitBranch}
+              keepCase
+            />
+            {otherBranches.length > 0 && (
               <Detail
-                label="First name"
-                value={contact.firstName}
-                icon={UserRound}
+                label="Also visible to"
+                value={otherBranches.join(", ")}
+                icon={GitBranch}
+                keepCase
               />
-              <Detail
-                label="Middle names"
-                value={contact.middleNames}
-                icon={Signature}
-              />
-              <Detail
-                label="Surname"
-                value={contact.lastName}
-                icon={Signature}
-              />
-            </CardContent>
-          </Card>
-        )}
-        {kind === "organisation" && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Organisation details</CardTitle>
-            </CardHeader>
-            <CardContent className="grid gap-4 sm:grid-cols-2">
-              <Detail
-                label="Trading name"
-                value={contact.tradingName}
-                icon={Building2}
-              />
-              <Detail
-                label="Organisation type"
-                value={contact.organisationType?.replaceAll("_", " ")}
-                icon={BriefcaseBusiness}
-              />
-              <Detail
-                label="Registration number"
-                value={contact.registrationNumber}
-                icon={Hash}
-              />
-              <Detail
-                label="VAT number"
-                value={contact.vatNumber}
-                icon={ReceiptText}
-              />
-            </CardContent>
-          </Card>
-        )}
-        {kind === "organisation" && (
-          <Card>
-            <CardHeader>
-              <CardTitle>People</CardTitle>
-            </CardHeader>
-            <CardContent>
+            )}
+          </dl>
+        </header>
+
+        <div className="grid min-w-0 content-start gap-10 lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:border-l lg:pl-10">
+          {kind === "organisation" ? (
+            <section className="grid gap-4">
+              <h2 className="text-base font-semibold">People</h2>
               <OrganisationPeople
                 basePath={listPath}
                 canManage={canManageLinks}
@@ -411,90 +370,51 @@ export default async function ContactPage({
                 people={linkedPeople}
                 search={searchPeopleAction.bind(null, workspaceSlug)}
               />
-            </CardContent>
-          </Card>
-        )}
-        {kind === "person" && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Organisations</CardTitle>
-            </CardHeader>
-            <CardContent className="grid gap-3">
+            </section>
+          ) : (
+            <section className="grid gap-4">
+              <h2 className="text-base font-semibold">Organisations</h2>
               {contact.personLinks.length ? (
-                contact.personLinks.map((link) => (
-                  <div key={link.id} className="flex gap-3">
-                    <Building2
-                      className="mt-0.5 size-4 shrink-0 text-muted-foreground"
-                      aria-hidden="true"
-                    />
-                    <div>
-                      <Link
-                        href={`${listPath}/${link.organisationContact.id}`}
-                        className="text-sm font-medium underline-offset-4 hover:underline"
-                      >
-                        {link.organisationContact.legalName ??
-                          "Unnamed organisation"}
-                      </Link>
-                      <p className="text-xs text-muted-foreground">
-                        {[
-                          link.relationshipLabel || "Linked person",
-                          link.isPrimary && "Main contact",
-                        ]
-                          .filter(Boolean)
-                          .join(" · ")}
-                      </p>
-                    </div>
-                  </div>
-                ))
+                <ul className="grid divide-y">
+                  {contact.personLinks.map((link) => (
+                    <li
+                      key={link.id}
+                      className="flex items-center gap-3 py-3 first:pt-0 last:pb-0"
+                    >
+                      <Building2
+                        className="size-4 shrink-0 text-muted-foreground"
+                        aria-hidden="true"
+                      />
+                      <div className="min-w-0">
+                        <Link
+                          href={`${listPath}/${link.organisationContact.id}`}
+                          className="text-sm font-medium underline-offset-4 hover:underline"
+                        >
+                          {link.organisationContact.legalName ??
+                            "Unnamed organisation"}
+                        </Link>
+                        <p className="text-xs text-muted-foreground">
+                          {[
+                            link.relationshipLabel || "Linked person",
+                            link.isPrimary && "Main contact",
+                          ]
+                            .filter(Boolean)
+                            .join(" · ")}
+                        </p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
               ) : (
                 <p className="text-sm text-muted-foreground">
                   Not linked to any organisation. Link people from the
                   organisation&apos;s record.
                 </p>
               )}
-            </CardContent>
-          </Card>
-        )}
-        <Card>
-          <CardHeader>
-            <CardTitle>Preferences and branch</CardTitle>
-          </CardHeader>
-          <CardContent className="grid gap-4 sm:grid-cols-2">
-            <Detail
-              label="Preferred contact"
-              value={preferredChannel}
-              icon={MessageCircle}
-            />
-            <Detail
-              label="Responsible branch"
-              value={
-                contact.branchLinks.find(({ isPrimary }) => isPrimary)?.branch
-                  .name
-              }
-              icon={GitBranch}
-            />
-            <Detail
-              label="Do not use"
-              value={
-                [
-                  contact.doNotEmail && "Email",
-                  contact.doNotTelephone && "Telephone",
-                  contact.doNotSms && "SMS",
-                  contact.doNotWhatsApp && "WhatsApp",
-                  contact.doNotPost && "Post",
-                ]
-                  .filter(Boolean)
-                  .join(", ") || "None"
-              }
-              icon={Ban}
-            />
-          </CardContent>
-        </Card>
-        <Card className="lg:col-span-2">
-          <CardHeader>
-            <CardTitle>Notes</CardTitle>
-          </CardHeader>
-          <CardContent>
+            </section>
+          )}
+          <section className="grid gap-4">
+            <h2 className="text-base font-semibold">Notes</h2>
             <ContactNotes
               addAction={addContactNoteAction.bind(
                 null,
@@ -538,35 +458,126 @@ export default async function ContactPage({
                   : null,
               }))}
             />
-          </CardContent>
-        </Card>
+          </section>
+        </div>
+
+        <dl className="grid content-start gap-5 border-t pt-6 lg:col-start-1 lg:row-start-2">
+          {kind === "person" ? (
+            <>
+              <Detail label="Title" value={contact.title} icon={Type} />
+              <Detail
+                label="First name"
+                value={contact.firstName}
+                icon={UserRound}
+              />
+              <Detail
+                label="Middle names"
+                value={contact.middleNames}
+                icon={Signature}
+              />
+              <Detail
+                label="Surname"
+                value={contact.lastName}
+                icon={Signature}
+              />
+            </>
+          ) : (
+            <>
+              <Detail
+                label="Trading name"
+                value={contact.tradingName}
+                icon={Building2}
+                keepCase
+              />
+              <Detail
+                label="Organisation type"
+                value={contact.organisationType
+                  ?.toLowerCase()
+                  .replaceAll("_", " ")}
+                icon={BriefcaseBusiness}
+              />
+              <Detail
+                label="Registration number"
+                value={contact.registrationNumber}
+                icon={Hash}
+                keepCase
+              />
+              <Detail
+                label="VAT number"
+                value={contact.vatNumber}
+                icon={ReceiptText}
+                keepCase
+              />
+            </>
+          )}
+          <Detail
+            label="Preferred contact"
+            value={preferredChannel}
+            icon={MessageCircle}
+          />
+          <Detail label="Do not use" value={doNotUse} icon={Ban} />
+        </dl>
       </div>
     </div>
   );
+}
+
+function initials(contact: {
+  kind: string;
+  firstName: string | null;
+  lastName: string | null;
+  legalName: string | null;
+}) {
+  const parts =
+    contact.kind === "PERSON"
+      ? [contact.firstName, contact.lastName]
+      : (contact.legalName ?? "").split(/\s+/);
+  return (
+    parts
+      .filter(Boolean)
+      .slice(0, 2)
+      .map((part) => part![0])
+      .join("")
+      .toUpperCase() || "?"
+  );
+}
+
+function pointLabel(
+  label: string | null,
+  fallback: string,
+  preferred: boolean,
+) {
+  return `${label ?? fallback}${preferred ? " · Preferred" : ""}`;
 }
 
 function Detail({
   label,
   value,
   icon: Icon,
+  keepCase = false,
 }: {
   label: string;
   value: string | null | undefined;
   icon?: LucideIcon;
+  keepCase?: boolean;
 }) {
   return (
     <div className="flex gap-3">
       {Icon && (
         <Icon
-          className="mt-0.5 size-4 text-muted-foreground"
+          className="mt-0.5 size-4 shrink-0 text-muted-foreground"
           aria-hidden="true"
         />
       )}
-      <div>
-        <p className="text-xs text-muted-foreground">{label}</p>
-        <p className="mt-1 text-sm font-medium capitalize">
+      <div className="min-w-0">
+        <dt className="text-xs text-muted-foreground">{label}</dt>
+        <dd
+          className={`mt-0.5 text-sm font-medium [overflow-wrap:anywhere] ${
+            keepCase ? "" : "capitalize"
+          }`}
+        >
           {value || "Not recorded"}
-        </p>
+        </dd>
       </div>
     </div>
   );

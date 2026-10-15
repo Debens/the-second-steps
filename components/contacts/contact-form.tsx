@@ -3,7 +3,6 @@
 import { LoaderCircle, Plus, Trash2 } from "lucide-react";
 import { useActionState, useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { OptionSelect } from "@/components/ui/option-select";
@@ -285,6 +284,7 @@ export function ContactForm({
   initial,
   submitLabel = "Create contact",
   canManageIdentity = false,
+  inDialog = false,
 }: {
   action: FormAction;
   branches: readonly { id: string; name: string }[];
@@ -292,6 +292,7 @@ export function ContactForm({
   initial?: InitialContact;
   submitLabel?: string;
   canManageIdentity?: boolean;
+  inDialog?: boolean;
 }) {
   const [state, formAction, pending] = useActionState(action, INITIAL_STATE);
   const duplicateConfirmed = state.status === "duplicates";
@@ -367,7 +368,7 @@ export function ContactForm({
           value={state.duplicateReviewToken}
         />
       )}
-      <section className="grid gap-4 rounded-xl bg-card p-4 shadow-sm shadow-foreground/5 ring-1 ring-foreground/8">
+      <section className="grid gap-4">
         <div>
           <h2 className="text-lg font-semibold">
             {kind === "person" ? "Person details" : "Organisation details"}
@@ -504,11 +505,9 @@ export function ContactForm({
           </div>
         </div>
       </section>
-      <Card>
-        <CardHeader>
-          <CardTitle>Contact methods</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-6">
+      <section className="grid gap-4 border-t pt-6">
+        <h2 className="text-lg font-semibold">Contact methods</h2>
+        <div className="grid gap-6">
           {state.fieldErrors?.contactMethods && (
             <p className="text-sm text-destructive" role="alert">
               {state.fieldErrors.contactMethods}
@@ -519,13 +518,11 @@ export function ContactForm({
             kind="telephone"
             initial={initial?.telephones ?? []}
           />
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>Address</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-6">
+        </div>
+      </section>
+      <section className="grid gap-4 border-t pt-6">
+        <h2 className="text-lg font-semibold">Address</h2>
+        <div className="grid gap-6">
           {state.fieldErrors?.addresses && (
             <p className="text-sm text-destructive" role="alert">
               {state.fieldErrors.addresses}
@@ -563,13 +560,11 @@ export function ContactForm({
               />
             </>
           )}
-        </CardContent>
-      </Card>
-      <Card>
-        <CardHeader>
-          <CardTitle>Communication preferences</CardTitle>
-        </CardHeader>
-        <CardContent className="grid gap-4">
+        </div>
+      </section>
+      <section className="grid gap-4 border-t pt-6">
+        <h2 className="text-lg font-semibold">Communication preferences</h2>
+        <div className="grid gap-4">
           {state.fieldErrors?.communication && (
             <p className="text-sm text-destructive" role="alert">
               {state.fieldErrors.communication}
@@ -630,8 +625,8 @@ export function ContactForm({
               </label>
             ))}
           </fieldset>
-        </CardContent>
-      </Card>
+        </div>
+      </section>
       {state.status === "duplicates" && (
         <div className="rounded-lg border border-warning bg-warning-soft p-4">
           <p className="font-medium text-warning">
@@ -667,7 +662,11 @@ export function ContactForm({
           {state.message}
         </p>
       )}
-      <div className="sticky bottom-0 flex justify-end border-t bg-background py-4">
+      <div
+        className={`sticky bottom-0 flex justify-end border-t py-4 ${
+          inDialog ? "bg-popover" : "bg-background"
+        }`}
+      >
         <Button type="submit" disabled={pending}>
           {pending && (
             <LoaderCircle aria-hidden="true" className="animate-spin" />

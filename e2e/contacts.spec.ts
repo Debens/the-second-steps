@@ -41,23 +41,28 @@ test("contact list and person creation path are available", async ({
   });
 });
 
-test("person record keeps its detail card and consistent summary icons", async ({
+test("person record uses the profile sidebar with an icon on every detail", async ({
   page,
 }) => {
   await signInAsOwner(page);
   await page.getByRole("link", { name: "Contacts" }).click();
   await page.getByRole("link", { name: "Eleanor Price" }).click();
 
-  const personDetails = page
-    .locator('[data-slot="card"]')
-    .filter({ hasText: "Person details" });
-  await expect(personDetails).toBeVisible();
-  await expect(personDetails.locator("svg")).toHaveCount(4);
-
-  const preferences = page
-    .locator('[data-slot="card"]')
-    .filter({ hasText: "Preferences and branch" });
-  await expect(preferences.locator("svg")).toHaveCount(3);
+  await expect(
+    page.getByRole("heading", { name: /Eleanor Price/ }),
+  ).toBeVisible();
+  await expect(page.locator('[data-slot="card"]')).toHaveCount(0);
+  await expect(
+    page.getByRole("heading", { name: "Organisations", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Notes", exact: true }),
+  ).toBeVisible();
+  for (const list of await page.locator("dl").all()) {
+    const rows = await list.locator(":scope > div").count();
+    expect(rows).toBeGreaterThan(0);
+    await expect(list.locator(":scope > div > svg")).toHaveCount(rows);
+  }
 });
 
 test("organisation form is usable on mobile and in dark mode", async ({
@@ -95,9 +100,9 @@ test("organisation record lets a manager search for people to link", async ({
     .getByRole("link", { name: /Hawthorne Property Holdings/ })
     .first()
     .click();
-  const people = page
-    .locator('[data-slot="card"]')
-    .filter({ hasText: "People" });
+  const people = page.locator("section").filter({
+    has: page.getByRole("heading", { name: "People", exact: true }),
+  });
   await expect(people).toBeVisible();
   await people.getByRole("button", { name: "Link person" }).click();
   await page.getByRole("button", { name: "Search" }).click();
@@ -134,7 +139,9 @@ test("contact record shows the notes timeline and add form", async ({
   await signInAsOwner(page);
   await page.getByRole("link", { name: "Contacts" }).click();
   await page.getByRole("link", { name: "Eleanor Price" }).first().click();
-  const notes = page.locator('[data-slot="card"]').filter({ hasText: "Notes" });
+  const notes = page.locator("section").filter({
+    has: page.getByRole("heading", { name: "Notes", exact: true }),
+  });
   await expect(notes.getByLabel("Note", { exact: true })).toBeVisible();
   await expect(notes.getByLabel("Share with all branches")).toBeVisible();
   await expect(notes.getByRole("button", { name: "Add note" })).toBeVisible();

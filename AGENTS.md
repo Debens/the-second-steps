@@ -45,6 +45,7 @@ This project is developed on a limited personal AI budget. Maximise completed, r
 - Next.js 16.4, **App Router** (`app/`). The Pages Router has been removed; do not add `pages/`.
 - React 19.3, TypeScript (strict), Tailwind CSS 4, shadcn/ui (Nova, Base UI, `rsc: true`)
 - Light/dark/system themes and responsive conventions: every new screen and component must support both themes and mobile, tablet and desktop from the start (`.cursor/rules/ui-design.mdc`, ADR-018)
+- Record pages (a person, organisation, property, and so on) use the profile-sidebar layout with flat sections, not a card per group of fields (`.cursor/rules/ui-design.mdc`, ADR-030).
 - Interfaces must be visually coherent and task-led. Prefer one clear entry point and one reviewed save for related edits; do not scatter several buttons across a card when one well-structured modal or page can handle the task more clearly (`.cursor/rules/ui-design.mdc`, ADR-018).
 - Checks: `npm run check` (typecheck, ESLint, Prettier, Vitest), `npm run test:e2e` (Playwright), `npm run build`
 

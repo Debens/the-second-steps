@@ -318,7 +318,7 @@ export function ContactNotes({
   toggleHref: string;
 }) {
   return (
-    <div className="grid gap-6">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-6">
       {canAdd && <AddNoteForm action={addAction} />}
       {canSeeVoided && (
         <Link
@@ -329,11 +329,11 @@ export function ContactNotes({
         </Link>
       )}
       {notes.length ? (
-        <ul className="grid gap-4">
+        <ul className="grid grid-cols-[minmax(0,1fr)] divide-y border-t">
           {notes.map((note) => (
             <li
               key={note.id}
-              className="grid gap-2 rounded-xl border p-4"
+              className="grid gap-2 py-4"
               data-voided={note.voided || undefined}
             >
               <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
