@@ -1,99 +1,287 @@
-# Roadmap
+# Zayto product roadmap
 
-Dates are not committed. Phases are sequences, not promises. Pricing, named plans, and the first commercial product slice remain unresolved.
+This roadmap is the main source of truth for product direction, priority, sequencing, and current delivery status. Detailed architecture, permissions, data concepts, and workflows remain in their focused documents and must not be duplicated here.
 
-## Phase 0 — Existing proof-of-concept foundation
+Dates are not delivery promises. Phases express dependencies and useful outcomes. Status key: **Implemented**, **Partial**, **Next**, **Planned**, **Discovery**, **Deferred**, **Blocked**, **Unresolved**.
 
-Implemented:
+Priority key: **P0** security/integrity foundation or immediate blocker; **P1** essential to the chosen commercial MVP; **P2** important operational/commercial capability; **P3** later enhancement. Relative complexity is **Small**, **Medium**, **Large**, **Very large**, or **Unknown**; these labels compare scope and risk rather than estimating hours.
 
-1. Next.js 16 / React 19 App Router application shell
-2. Light, dark, and system themes with responsive conventions
-3. ESLint, Prettier, Vitest, and Playwright tooling
-4. Supabase Auth local magic-link sandbox, feature-flagged TOTP mechanism, and protected role-aware shells
-5. Prisma/PostgreSQL connection plumbing with verified TLS in code
-6. Workspace, membership, branch-scope, fixed-role, RLS, and audit-event foundation
-7. Separate customer workspace and Zayto Platform Owner shells
-8. Server-evaluated global, Zayto-user, and workspace feature-flag foundation
-9. Read-only Platform Owner user/customer directories and customer feature-flag controls
-10. CI checks for code quality, production build, and database integration
-11. Product, architecture, security, and decision documentation
+## Product direction
 
-Not implemented: CRM records, participants, entitlements, invitations, MFA recovery operations, production delivery, rate limiting, backups suitable for real data, browser/dependency-audit CI gates, or product modules. Public Supabase sign-up is disabled and independently verified.
+Zayto is intended to become a connected, cloud-based CRM for UK residential letting agents and property-management businesses. England is the first supported jurisdiction. The initial target is independent and small-to-medium agencies with straightforward residential lettings, including let-only and managed portfolios. Larger groups, specialist housing, devolved jurisdictions, commercial property, and residential sales remain later expansion areas.
 
-## Phase 1 — Workspace and security foundation (confirmed direction)
+The long-term journey is:
 
-Before customer data:
+```text
+Landlord lead → valuation → instruction → property onboarding → listing
+  → enquiry → viewing → offer → application → pre-tenancy → tenancy
+  → rent / compliance / maintenance → ending → remarketing
+```
 
-1. Workspace boundary and Account Owner role - **foundation implemented**
-2. Operator memberships, minimal roles, and branch scope - **implemented and verified, including shared hardening migrations**
-3. Explicit active business-workspace context - **implemented**
-4. Staff/Account Owner MFA mechanism - **implemented behind a development flag**; release enforcement and recovery remain
-5. Server-side entitlement, permission, resource, and field checks
-6. Audit-event foundation - **implemented for feature flags and role changes; broader access audit remains**
-7. Application `workspaceId` scoping plus PostgreSQL RLS - **implemented and verified for foundation tables**
-8. Cross-workspace and cross-role tests - **browser and disposable Docker database coverage pass**
-9. Least-privilege runtime/migration role split - **implemented and verified on shared Supabase**
-10. CI gates - **code quality, production build, and database integration implemented**; browser tests and dependency audit remain
-11. Platform Owner and customer account administration: first-name/last-name editing, the consolidated customer Settings area, Platform customer Users tab, branch-associated user views, and the read-only Platform Owner branch-assignment policy are verified on shared Supabase. Branch-scope management, invitations, and suspension controls remain pending as recorded in `.cursor/plans/customer-account-and-access-management.md`
-12. Human-readable audit history on the relevant user and customer administration screens
-13. Production-ready account notifications with durable delivery, retries, templates, recipient rules, and communication preferences; local Mailpit messages may be used during development only
+People, organisations, properties, instructions, listings, applications, and tenancies remain distinct connected records. Information should progress through the lifecycle without creating disconnected duplicates, while preserving history and access boundaries.
 
-## Phase 2 — Participant and personal-portal foundation (confirmed direction)
+### Recommended first commercial proposition
 
-1. Workspace-scoped people and controlled identity links
-2. Small user-controlled personal profile
-3. Participations, invitations, claims, and resource grants
-4. Participant-private versus shared data classification
-5. Personal portal shell aggregating authorised cross-workspace journeys
-6. Cross-participant privacy tests, including joint applicants
+The first paid proposition should be a **lettings pipeline and tenancy-progression product for selected small English agencies**, not yet a full replacement property-management CRM. It should take an agency from landlord/property onboarding through marketing, offer, application, and tenancy creation, with clear limitations.
 
-## Phase 3 — Minimal commercial foundation (confirmed shape)
+This route can reach useful value earlier, but it is commercially credible only when it includes practical onboarding/import, useful communications, document handling, and a realistic publishing approach. Zayto must not claim to replace an agency's existing CRM until it can migrate required data, publish properties, support essential daily operations, export customer data, and meet production safeguards.
 
-1. Module/product registry
-2. Manually assigned workspace entitlements
-3. Service orders and append-only usage events
-4. Operator-seat versus external-participant distinction
+## Current position — 15 October 2026
 
-Full pricing, billing provider, checkout, discounts, invoicing, plan catalogue, trials, and free allowances can wait until a product slice demonstrates value.
+### Implemented and verified
 
-## Phase 4 — First vertical product slice (unresolved)
+- Next.js App Router application with responsive light, dark, and system themes.
+- Supabase Auth cookie sessions, development-only fictional quick sign-in, local Mailpit magic links, and a feature-flagged TOTP gate.
+- Explicit workspace context, fixed staff roles, role-aware customer and Platform Owner shells.
+- PostgreSQL/Prisma access foundation with verified TLS, least-privilege runtime/migration roles, forced RLS, workspace-aware constraints, and disposable-database security tests.
+- Workspace, branch, membership, role, and branch-scope administration, including atomic combined role/scope changes and protected Account Owner rules.
+- Customer details, Platform Owner customer/user directories, feature flags, and audited administration mutations.
+- TypeScript, linting, formatting, unit tests, Playwright, production builds, and CI checks for code, build, and disposable-database integration.
+- Import-ready modelling and data-portability principles recorded in ADR-028.
 
-Candidates:
+### Partial foundations
 
-- Thin pre-tenancy applicant-to-tenant journey (current recommendation)
-- Agency CRM property/landlord slice
-- Independent-landlord management slice
-- Standalone tenant referencing
+- MFA works but production enforcement, recovery, lost-device, and support procedures remain release work.
+- Audit events exist for foundation mutations, but customer-facing audit-history screens and broader business-event coverage do not.
+- Local email delivery exists; approved production email, durable delivery, templates, retries, and rate limits do not.
+- CI does not yet run browser tests or a scheduled dependency audit.
+- Customer users can be managed after they exist; invitation, claim, suspension/reactivation, and production notification flows remain incomplete.
 
-Select one before designing module tables. Do not build every candidate together.
+### Not implemented
 
-## Phase 5 — Standalone services and provider integrations
+- CRM contacts, landlords, organisations, properties, ownership, instructions, listings, applicants, viewings, offers, applications, tenancies, maintenance, compliance, or accounting records.
+- Participant access, personal portal, resource grants, product entitlements, subscriptions, billing, or usage metering.
+- Private document storage, job processing, production monitoring, suitable backups/recovery, data-retention operations, or real customer migration.
+- Live provider integrations or confirmed access to property portal APIs and testing facilities.
 
-Native Zayto referencing, AML, identity, or Right to Rent case workflows may be added after the relevant product/legal rules, privacy disclosures, storage, jobs, and provider contracts are approved. External specialists remain adapters.
+No real landlord, applicant, tenant, guarantor, banking, or financial data may be used until the relevant release controls in `SECURITY-RELEASE-CHECKLIST.md` are complete.
 
-## Phase 6 — Tenant operations and property management
+## Commercial milestones
 
-Incrementally add tenancy documents, maintenance, communications, inspections, renewals, compliance records, and move-out. Financial views must wait for an approved accounting boundary.
+| Stage                                    | Meaningful exit condition                                                                                                                                                                             |
+| ---------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Technical proof of concept — current** | The secure multi-tenant foundation and fictional staff administration work; no real customer data or paid use.                                                                                        |
+| **Private alpha**                        | Internal users can complete landlord/property/instruction onboarding and the connected records are usable on desktop and mobile with fictional data.                                                  |
+| **Controlled pilot**                     | Selected agencies can use a defined instruction-to-tenancy-progression workflow with approved security, support, migration, publishing, communications, documents, backup, and recovery arrangements. |
+| **Commercial MVP**                       | The lettings pipeline and tenancy-progression proposition is stable, supportable, exportable, billable, and honest about excluded property-management/accounting functions.                           |
+| **Full-service CRM**                     | Zayto can replace an established lettings and property-management CRM for its supported customer segment, including essential operational management and proven migration.                            |
 
-## Phase 7 — Commercial plans and freemium
+## Delivery principles
 
-Add versioned plans, free allowances, trials, add-ons, usage limits, pay-per-use checkout, billing reconciliation, downgrade behaviour, and abuse controls after pricing decisions. Free functionality must not create uncontrolled provider or storage costs.
+- Deliver usable end-to-end milestones rather than many unfinished modules.
+- Use the modular monolith and existing access patterns; do not introduce microservices, a generic workflow engine, or speculative integration infrastructure.
+- Build the smallest maintainable capability needed by the current journey, with targeted testing proportionate to risk.
+- Every workspace-owned repository and mutation must enforce verified workspace scope in application code and RLS, with cross-workspace tests. Branch and participant restrictions require their own denial tests.
+- Preserve history, source provenance, and meaningful external identifiers from the first CRM tables. Add import functionality only after each destination model is stable.
+- Do not invent legal, referencing, AML, Right to Rent, insurance, deposit, notice, or accounting rules. Verify current official requirements immediately before building the affected feature.
+- Do not describe an external integration as available until access, commercial terms, implementation, failure handling, and reconciliation are verified.
+- Keep financial record-keeping separate from a future client-money ledger. Do not handle real client funds through an unproven system.
 
-## Deferred commercial capability — customer migration and onboarding
+## Development phases
 
-Do not build migration functionality now. Keep each relevant core CRM model import-ready under ADR-028, then schedule the controlled file/API import workflow before onboarding any established customer that depends on legacy data migration. Implementation depends on stable destination models plus approved production data-protection, document-storage, backup, recovery, support-access, and import-authorisation controls. See `.cursor/plans/customer-data-migration-and-onboarding.md`.
+### Phase 0 — Foundation checkpoint
 
-## Later
+**Status:** substantially implemented for fictional proof-of-concept data.
 
-- Accounting ledger and reconciliation after separate design approval
-- Richer agency CRM and property management
-- Sales using shared neutral people/property concepts
-- Landlord/tenant mobile experiences if justified
-- Franchise/group structures and consolidated billing
+Do not extend this into another infrastructure programme. Invitations, production email, recovery, rate limiting, backups, monitoring, support access, browser CI, and readable audit history should be delivered when they become dependencies or pilot-readiness gates. They do not block starting an internal staff-only CRM slice with fictional data.
 
-## Explicitly blocked
+**Exit for product development:** achieved. **Exit for real customer data:** not achieved.
 
-- Real customer data before isolation, MFA, audit, backups, and recovery controls
-- Invented referencing, AML, Right to Rent, insurance, deposit, or notice rules
-- Assuming access to Blinc software, data, documents, credentials, or supplier arrangements
-- Microservices without a demonstrated operational or regulatory need
+### Phase 1 — Landlords, properties, ownership, and instructions
+
+**Status:** **Next**. This is the first genuine product milestone.
+
+An authorised agency user can create and manage an individual or organisation landlord, add a property, record time-aware ownership, create an agency instruction, record the selected service and agreed commercial summary, and navigate/search the connected history.
+
+Minimum scope:
+
+- Individual and organisation contact records with practical contact details.
+- Landlord capacity expressed through relationships, not a duplicated global person type.
+- UK property record, address, core characteristics, status, and responsible branch.
+- Multiple owners and historical/effective ownership relationships.
+- Agency instruction separate from legal ownership and separate from a future listing.
+- Let-only and managed service selection, instruction status, key dates, and agreed fee summary without creating accounting entries.
+- Basic notes/activity history and useful contact/property search.
+- Source provenance and external identifiers needed for later migration.
+- Narrow permissions, audit, workspace/branch scoping, and cross-tenant tests.
+- A document register; private file upload joins the milestone only after the storage decision and safeguards are approved.
+
+Deliberately excluded:
+
+- Lead/valuation automation beyond the minimum instruction history.
+- Listings, portals, applicants, viewings, offers, tenancies, rent, accounting, participant portals, custom workflows, and regulated AML outcomes.
+- A full data-import tool; only migration-ready destination models are required now.
+
+Acceptance criteria:
+
+- A fictional agency can complete the connected landlord → ownership → property → instruction journey without re-entering the same party or property.
+- Joint and organisation ownership are supported without conflating the legal owner with the instructing contact.
+- Records can be found, viewed, edited, archived where appropriate, and followed through related-record links.
+- Another workspace and an out-of-scope branch cannot read or mutate the records by changing identifiers.
+- Important mutations are audited and concurrent updates do not silently overwrite protected state.
+- Relevant unit, disposable-database isolation/invariant, browser, and production-build checks pass at the milestone checkpoint.
+
+### Phase 2 — Marketing, applicants, viewings, and offers
+
+**Status:** Planned.
+
+Add listings that are separate from properties/instructions, ordered media, asking rent and availability, internal publication states, applicants/households, enquiries, matching, an internal appointment calendar, viewings/feedback, offers, and landlord decisions.
+
+The milestone is an instructed property progressing from listing preparation to an accepted offer. Website-feed and property-portal feasibility discovery must be complete before promising external publishing. Marketing and offer behaviour must reflect current England rental-bidding, advertised-rent, fees, and rent-in-advance rules.
+
+Basic CSV import/export for stable Phase 1 records should begin during this phase so pilot agencies are not forced to recreate core data manually.
+
+### Phase 3 — Applications, pre-tenancy, and tenancy creation
+
+**Status:** Planned.
+
+Add application households, applicant/guarantor/occupant relationships, purpose-bound invitations and participations, private submissions, task/checklist progression, provider-neutral referencing/identity/Right to Rent status placeholders, documents, agreement/signature integration, deposit-arrangement records, move-in tasks, and tenancy activation.
+
+The milestone is an accepted offer becoming an active tenancy without recreating people or property data. Sensitive information remains private to the relevant participant by default. Detailed regulated decisions require separate approved specifications.
+
+### Phase 4 — Core property management
+
+**Status:** Planned.
+
+Add active tenancy operations, rent schedules and recorded-payment views, compliance records/reminders, inspections, maintenance, contractors, rent-review workflows, tenancy changes, notices/endings, check-out, keys, and remarketing. Introduce limited tenant and landlord portal capabilities where they complete a real workflow.
+
+The milestone is reliable day-to-day management of an active tenancy. Basic rent administration must name its authoritative source and must not be represented as full client accounting.
+
+### Phase 5 — Controlled pilot and commercial readiness
+
+**Status:** Planned checkpoint; prerequisites are delivered throughout earlier phases.
+
+Complete approved production email, invitations, MFA enforcement/recovery, rate limiting, private UK document storage, backups and restore rehearsal, monitoring, support processes, retention/export/erasure operations, customer onboarding, proven import/reconciliation, operational reporting, browser/dependency CI, billing/entitlements appropriate to the proposition, and user/support documentation.
+
+The milestone is a supported, narrowly defined pilot using real agency data under agreed operational and security safeguards.
+
+### Phase 6 — Expanded commercial capability
+
+**Status:** Deferred until pilot evidence.
+
+Potential work includes broader portal publishing, richer landlord/tenant portals, communications, shared inbox, automation, reporting, migration adapters, calendar integrations, advanced maintenance, contractor access, multi-branch controls, and accounting/payment integrations. Prioritise demonstrated customer demand rather than competitor feature parity.
+
+### Phase 7 — Full client accounting and advanced management
+
+**Status:** Deferred and separately approval-gated.
+
+Assess integration before deciding to build a native ledger. A native solution would require independently validated double-entry design, reconciliation, corrections, opening balances, accounting periods, landlord/contractor payments and statements, financial audit controls, client-money protection requirements, and operational assurance. Zayto must not hold or move real client funds before this boundary is approved and proven.
+
+## Product module register
+
+Each identifier is stable for roadmap discussions; it is not a database or ticket identifier.
+
+### Core records and lettings CRM
+
+| ID        | Module and business purpose                                                                                         | First useful milestone / acceptance                                                                                                                                                     | Later capability                                                                                       | Phase / status / priority / complexity | Dependencies and principal risks                                                                   |
+| --------- | ------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | -------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| `CRM-01`  | **Landlord prospecting and instructions** — win and onboard landlord business.                                      | Record an instruction, service, responsible branch, status, dates, agreed commercial summary, and linked parties/property with history.                                                 | Lead sources, valuations, follow-ups, negotiations, won/lost reporting, onboarding automation.         | Phase 1 / Next / P1 / Large            | People, property, tasks, documents; do not invent AML or agency-specific workflows.                |
+| `CORE-01` | **People, organisations, and contacts** — one workspace-specific contact foundation for several roles.              | Create/search/edit individuals and organisations; hold multiple practical contacts and historical relationships without cross-workspace leakage.                                        | Duplicate resolution, richer preferences, representatives, custom fields, identity links.              | Phase 1 / Next / P1 / Large            | Privacy, history, import mapping; avoid both role duplication and an over-general universal model. |
+| `CORE-02` | **Property and ownership** — preserve the physical property independently of instructions, listings, and tenancies. | Manage a UK property, responsible branch, status, characteristics, multiple owners, shares where specified, and effective ownership history.                                            | Keys, meters, amenities, condition history, richer licensing and portfolio structures.                 | Phase 1 / Next / P1 / Large            | People/organisations, branch scope, migration; property identity and duplicate-address handling.   |
+| `CRM-02`  | **Marketing and advertising** — prepare and publish accurate rental listings.                                       | Create a listing from an instruction, manage rent, availability, description, ordered media, approval and internal publication status; never claim an unconfirmed external publication. | Website feeds, portals, retries, per-channel IDs/status/history, brochures.                            | Phase 2 / Planned / P1 / Large         | Documents/media, legal review, provider access, durable jobs; external commercial blocker.         |
+| `CRM-03`  | **Applicants and enquiries** — manage demand without duplicating people.                                            | One applicant/household can enquire about several listings, hold preferences, progress status, source and communication history.                                                        | Saved searches, richer matching, self-service enquiry and marketing preferences.                       | Phase 2 / Planned / P1 / Large         | People, listings, communications, privacy; collect only necessary sensitive data.                  |
+| `CRM-04`  | **Viewings and internal calendar** — coordinate appointments and follow-up.                                         | Staff can schedule/reschedule/cancel viewings and valuations, record attendance/feedback, and see authorised team calendars.                                                            | Self-booking, block viewings, reminders, Google/Microsoft two-way sync.                                | Phase 2 / Planned / P1 / Medium        | Listings, applicants, tasks, communications; time zones, concurrency, external sync.               |
+| `CRM-05`  | **Offers and negotiation** — reach a documented landlord decision.                                                  | Record conditions, proposed rent/date, household, recommendation and accepted/rejected/withdrawn history; accepted offer remains distinct from tenancy.                                 | Comparisons, portal decisions, richer notifications and analytics.                                     | Phase 2 / Planned / P1 / Medium        | Applicants, listings, landlord access; current rental-bidding and advertised-rent rules.           |
+| `PRE-01`  | **Application and pre-tenancy** — progress an accepted offer safely into occupation.                                | Build a household application, invite each party, track private tasks/documents/statuses, prepare agreement/deposit/move-in records, and activate a tenancy without duplicate people.   | Configurable workflows and approved referencing, identity, e-sign, deposit and inventory integrations. | Phase 3 / Planned / P1 / Very large    | Participants/grants, documents, communications, providers, written regulated rules.                |
+
+### Property management and money
+
+| ID       | Module and business purpose                                                                            | First useful milestone / acceptance                                                                                                                    | Later capability                                                                                  | Phase / status / priority / complexity | Dependencies and principal risks                                                                  |
+| -------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------- | -------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| `PM-01`  | **Active tenancy management** — preserve the tenancy, parties, terms, changes and operational history. | View and manage active/historic tenancies, parties, rent terms, permitted documents, status and audited changes under the applicable tenancy regime.   | Variations, tenant changes, specialised tenancy types and richer workflow.                        | Phase 4 / Planned / P2 / Very large    | Pre-tenancy, people/property, legal verification, documents; avoid fixed-term assumptions.        |
+| `FIN-01` | **Basic rent administration** — show expected and recorded payments without pretending to be a ledger. | Produce rent schedules, record/import payments, show balances/arrears and identify the authoritative source.                                           | Automated reminders, payment provider feeds and reconciliation hand-off.                          | Phase 4 / Planned / P2 / Large         | Tenancy, communications, financial accuracy; must remain clearly separate from client accounting. |
+| `FIN-02` | **Full client accounting** — account for money held and owed to clients.                               | No MVP commitment. Proceed only after a separately approved build-versus-integrate decision and validated financial design.                            | Ledger, allocation, bank reconciliation, fees, invoices, statements, disbursements and reporting. | Phase 7 / Deferred / P3 / Very large   | Client-money rules, banking, specialists, reconciliation, security and operational controls.      |
+| `PM-02`  | **Maintenance and contractors** — manage property issues to completion.                                | Log a tenant/staff issue, assess urgency, obtain approval, assign a contractor, track appointment/work/completion and keep property/tenancy history.   | Quotes, approval limits, recurring work, invoices, performance reporting and contractor portal.   | Phase 4 / Planned / P2 / Large         | Portals, communications, files, tasks; emergency wording and financial approval rules.            |
+| `PM-03`  | **Compliance and inspections** — track evidence, dates, responsibility and follow-up.                  | Record configurable requirement types, documents, expiry/reminders, inspections, findings and actions without claiming legal compliance automatically. | Dashboards, provider data, mobile inspection reports and jurisdiction packs.                      | Phase 4 / Planned / P2 / Large         | Property, tasks, files, current official rules; legal versus agency-policy distinction.           |
+| `PM-04`  | **Notices, endings, and remarketing** — close tenancies without losing history.                        | Record the applicable ending route, dates/documents, check-out, keys, final operational tasks and return the property to a remarketing-ready state.    | Deposit dispute and possession-case integrations, richer final accounting.                        | Phase 4 / Planned / P2 / Large         | Tenancy, compliance, maintenance, finance; current legislation and prescribed forms.              |
+
+### External experiences
+
+| ID          | Module and business purpose                                                      | First useful milestone / acceptance                                                                                | Later capability                                                             | Phase / status / priority / complexity | Dependencies and principal risks                                                  |
+| ----------- | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------- | -------------------------------------- | --------------------------------------------------------------------------------- |
+| `PORTAL-01` | **Landlord portal** — give owners only explicitly permitted information/actions. | A named landlord can securely view selected property/offer/document information and complete one approval journey. | Portfolio, statements, maintenance, inspections, messages and notifications. | Phase 3–4 / Planned / P2 / Large       | Participations/grants, identity, documents; joint-owner field-level permissions.  |
+| `PORTAL-02` | **Tenant portal** — provide a mobile-first tenancy service channel.              | A tenant can securely view their tenancy/documents and submit/track a maintenance request.                         | Rent/payment views, appointments, messages, notices and move-out.            | Phase 4 / Planned / P2 / Large         | Participations, tenancy, maintenance, documents; continuing access and retention. |
+| `PORTAL-03` | **Contractor access** — let contractors service only assigned work.              | A contractor can view an assigned work order and submit status, appointment and completion evidence.               | Quotes, invoices, performance history and richer scheduling.                 | Phase 6 / Deferred / P3 / Medium       | Maintenance, invitations, files; least-privilege and commercially sensitive data. |
+
+## Shared capability register
+
+| ID          | Capability                    | First useful milestone / acceptance                                                                                                               | Phase / status / priority / complexity  | Notes and risks                                                                              |
+| ----------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `SHARED-01` | Tasks and activity            | Assign basic dated tasks and retain record activity history in Phase 1.                                                                           | Phase 1 / Next / P1 / Medium            | No visual automation builder; add recurrence/escalation only when needed.                    |
+| `SHARED-02` | Communications                | Send approved transactional messages and retain safe communication history before pilot.                                                          | Phase 2–5 / Planned / P1 / Large        | Production provider, consent/preferences, delivery/retry and data residency remain blockers. |
+| `SHARED-03` | Documents and signatures      | Private, classified, authorised upload/download with record links and audit; e-sign later through an approved provider.                           | Phase 1–3 / Discovery / P1 / Large      | UK storage, malware/type/size checks, retention and short-lived delivery must be decided.    |
+| `SHARED-04` | Search and navigation         | Search contacts/properties/instructions with useful filters and connected navigation in Phase 1.                                                  | Phase 1 / Next / P1 / Medium            | Begin with indexed database search; do not add search infrastructure prematurely.            |
+| `SHARED-05` | Reporting                     | Provide simple operational counts/pipelines for delivered modules.                                                                                | Phase 2 onward / Planned / P2 / Medium  | Reports inherit the same workspace/branch/field access as source records.                    |
+| `SHARED-06` | Agency configuration          | Manage account, branches, users/access, service offerings and essential preferences.                                                              | Phase 1–5 / Partial / P1 / Medium       | Access foundation exists; invitations, lifecycle and module preferences remain.              |
+| `SHARED-07` | SaaS billing and entitlements | Manually grant modules for alpha; add supportable subscriptions/limits before commercial MVP.                                                     | Phase 3–5 / Planned / P1 / Large        | Prices/provider unresolved; roles never substitute for entitlements.                         |
+| `SHARED-08` | Security and operations       | Meet the release checklist appropriate to each milestone.                                                                                         | Continuous / Partial / P0 / Large       | MFA/recovery, rate limits, backups, monitoring, privacy operations and incident response.    |
+| `SHARED-09` | Migration and export          | Import stable core records from mapped CSV with preview/errors/reconciliation and export usable customer data before pilot dependency demands it. | Phase 2–5 / Planned / P1 / Very large   | Customer authority, duplicate handling, provenance, documents and source quality.            |
+| `SHARED-10` | Integrations and durable jobs | Implement one approved capability adapter with idempotent attempts, visible failures and safe retry when the first real integration requires it.  | Phase 2 onward / Discovery / P1 / Large | Queue choice remains unresolved; avoid a generic framework without a provider.               |
+
+## Parallel discovery workstreams
+
+These are short investigations producing a recorded recommendation, dependency list, and next action. They do not authorise implementation or provider spending.
+
+1. **Property portals:** confirm Rightmove, Zoopla, and OnTheMarket access, specifications, certification/testing, commercial terms, and whether early customers can supply credentials.
+2. **Agency website publishing:** define a secure, documented listing feed/API so Zayto need not build a website CMS.
+3. **Private files and signing:** decide UK-hosted storage, scanning, retention, authorised download, and likely e-sign providers before Phase 1 documents become uploads.
+4. **Data migration:** collect representative authorised export samples and define the minimum CSV templates, identifiers, relationship mapping, preview, correction, and reconciliation needed for the target segment.
+5. **Referencing and compliance providers:** record provider-neutral data/status needs and commercial blockers without designing pass/fail rules.
+6. **Payments and accounting:** decide whether the initial product records external payment facts, integrates a provider, or later builds a ledger; keep client money outside Zayto until approved.
+
+## England regulatory guardrails
+
+The roadmap records dependencies, not legal advice. Before implementing a regulated workflow, verify legislation and current official guidance and record what is law, guidance, announced future change, or optional agency policy.
+
+The current planning baseline is:
+
+- Phase 1 of the Renters' Rights Act 2025 came into force on 1 May 2026, including the assured-periodic tenancy framework, abolition of Section 21 for the relevant private rented sector, possession-ground reforms, rental-bidding restrictions, and related enforcement changes. Later phases remain staged. See the [official implementation roadmap](https://www.gov.uk/government/publications/renters-rights-act-2025-implementation-roadmap/implementing-the-renters-rights-act-2025-our-roadmap-for-reforming-the-private-rented-sector).
+- Current official guidance also affects written tenancy information, advertised rent/rental bidding, and when/how much rent in advance may be requested. These rules must be verified when listings, offers, applications, agreements, rent, and notices are designed.
+- An English letting/property-management agent that holds client money must belong to an approved client-money protection scheme. This is one reason full accounting remains separately gated. See [GOV.UK client money protection guidance](https://www.gov.uk/client-money-protection-scheme-property-agents).
+- Tenant Fees Act, Right to Rent, deposit protection, housing safety, licensing, data protection, AML where applicable, advertising, redress, and local-authority requirements each need focused verification at the relevant feature.
+
+Do not hard-code one tenancy regime for every historic record or UK jurisdiction. Store applicable jurisdiction, dates, status, and rule/version references where the approved workflow requires them.
+
+## Important unresolved decisions
+
+| Decision                            | Recommended default until decided                                                                                                                            |
+| ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Initial paying customer             | Small English letting agencies, initially one to three branches, with conventional residential lettings.                                                     |
+| First paid proposition              | A clearly bounded lettings pipeline and tenancy-progression product; do not market it as a full replacement CRM.                                             |
+| Exact Phase 1 people model          | Separate human and organisation records behind narrow shared contact contracts; roles come from relationships. Approve before migration.                     |
+| Instruction services and fee fields | Support let-only and managed services with a small agreed summary; do not design accounting or every fee variation yet.                                      |
+| Property portal route               | Investigate provider access now; retain internal listing management and a website feed as useful outcomes even if direct portals are blocked.                |
+| Private file storage                | Prefer the existing London Supabase project if its storage controls meet the approved requirements; confirm through a separate decision.                     |
+| Workflow customisation              | Fixed, well-designed workflows with limited configuration first; no general workflow builder.                                                                |
+| Basic rent authority                | Treat Zayto as a recorder/display unless and until an approved payment/accounting integration or ledger becomes authoritative.                               |
+| Accounting approach                 | Integrate before building unless customer evidence and specialist review justify a native ledger.                                                            |
+| Initial specialist exclusions       | Defer student/HMO/build-to-rent/commercial and devolved-jurisdiction workflows unless a pilot explicitly requires one.                                       |
+| Pilot release threshold             | Complete the relevant security checklist, support boundary, migration/reconciliation, publishing position, backups/recovery, and honest product limitations. |
+
+## Immediate next development milestone
+
+**Outcome:** a usable landlord, property, ownership, and agency-instruction workflow for authorised staff using fictional data.
+
+### First implementation tasks, ordered by dependency and value
+
+1. Confirm the Phase 1 user journey, terminology, minimum fields, instruction statuses, service choices, and deliberate exclusions with the owner; record only decisions needed now.
+2. Approve the narrow ownership boundaries for individual contacts, organisations, properties, ownership relationships, instructions, notes/activity, and external-source references.
+3. Add Phase 1 permissions and design the workspace/branch access matrix before exposing any screens.
+4. Add the first migration for contacts/organisations with workspace-aware keys, RLS, provenance, lifecycle states, and focused cross-workspace tests.
+5. Build contact/organisation create, view, edit, archive, and search paths using existing UI/application patterns.
+6. Add property and historical ownership models with workspace-aware relationships, RLS, validation, and isolation tests.
+7. Build property and ownership create/view/edit flows with connected landlord/property navigation.
+8. Add instructions and service selection as records separate from ownership and future listings; include status history, responsible branch, permissions, audit, and tests.
+9. Add the connected onboarding workspace: useful search/filtering, related-record views, basic activity history, empty/error states, and responsive light/dark browser coverage.
+10. Decide private document storage and either add the approved upload/register slice or explicitly carry file upload as the next dependency; then run one milestone verification checkpoint.
+
+Each item should be a focused Codex task. Database migrations, shared-environment changes, paid services, provider connections, deployment, and pushing remain their normal approval gates.
+
+## Explicit blockers and non-goals
+
+- No real customer data before the applicable security, privacy, backup, recovery, support, and operational controls are evidenced.
+- No claim of portal publication, provider verification, signature, payment, deposit registration, legal compliance, or message delivery without a real verified action.
+- No invented rules for referencing, AML/KYC, Right to Rent, insurance, deposits, notices, accounting, or retention.
+- No assumption of Blinc or another supplier's software, data, API, documents, credentials, or commercial relationship.
+- No microservices, universal workflow engine, full agency website CMS, speculative queue, or generic integration framework without a current product need.
+- No full client accounting or handling of real client funds without separate approval and appropriate independent validation.
