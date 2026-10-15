@@ -2,6 +2,8 @@ import { Building2 } from "lucide-react";
 import { redirect } from "next/navigation";
 import {
   Card,
+  CardAction,
+  CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
@@ -58,7 +60,7 @@ export default async function WorkspaceBranchesPage({
   }
 
   return (
-    <div className="grid gap-x-12 xl:grid-cols-2">
+    <div className="grid gap-4 lg:grid-cols-2">
       {branches.map((branch) => {
         const address = [
           branch.address1,
@@ -113,13 +115,12 @@ export default async function WorkspaceBranchesPage({
         });
 
         return (
-          <section
-            key={branch.id}
-            className="grid content-start gap-4 border-t py-6"
-          >
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <h3 className="text-base font-semibold">{branch.name}</h3>
-              <div>
+          <Card key={branch.id}>
+            <CardHeader>
+              <CardTitle>
+                <h3>{branch.name}</h3>
+              </CardTitle>
+              <CardAction>
                 <StatusBadge
                   label={
                     branch.status === "ACTIVE"
@@ -128,9 +129,9 @@ export default async function WorkspaceBranchesPage({
                   }
                   tone={branch.status === "ACTIVE" ? "active" : "inactive"}
                 />
-              </div>
-            </div>
-            <div className="grid gap-4">
+              </CardAction>
+            </CardHeader>
+            <CardContent className="grid gap-4">
               <dl className="grid gap-5 sm:grid-cols-2">
                 <Detail label="Email" value={branch.email} />
                 <Detail label="Telephone" value={branch.telephone} />
@@ -153,8 +154,8 @@ export default async function WorkspaceBranchesPage({
                   }
                 />
               )}
-            </div>
-          </section>
+            </CardContent>
+          </Card>
         );
       })}
     </div>

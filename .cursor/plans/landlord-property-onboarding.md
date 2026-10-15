@@ -208,6 +208,7 @@ Memberships with several operational roles receive the union of those roles' per
 
 - Add structured addresses, characteristics, features, properties, current/historical ownership, lead landlord contact, and branch responsibility.
 - **Review:** joint/organisation ownership, no percentage requirement, historical transitions, duplicate addresses, and isolation tests.
+- The detailed Chunk 4 design and owner decisions are in `.cursor/plans/properties-and-ownership.md`.
 
 ### Chunk 5 — enquiries, appraisals, and tasks
 
