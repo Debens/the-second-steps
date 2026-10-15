@@ -35,81 +35,93 @@ import {
 } from "@/components/ui/table";
 import styles from "./design-lab.module.css";
 
+const SELECTED_STYLE = [
+  ["Shell", "Layered panels"],
+  ["Fields", "Soft filled"],
+  ["Cards", "Floating"],
+  ["Table", "Clean rows"],
+] as const;
+
 const DIRECTIONS = [
   {
     id: "cobalt",
     number: "01",
-    name: "Cobalt Command",
-    strapline: "Confident, compact and operational",
+    name: "Cobalt Blue",
+    strapline: "Clear, confident and familiar",
     description:
-      "The closest evolution of Zayto’s current direction: charcoal navigation, crisp cobalt actions and restrained surfaces.",
-    traits: [
-      ["Shell", "Classic sidebar"],
-      ["Fields", "Outlined"],
-      ["Cards", "Light elevation"],
-      ["Density", "Balanced"],
-    ],
+      "A crisp commercial blue with a charcoal shell and cool neutral working surfaces.",
+    traits: SELECTED_STYLE,
     className: styles.cobalt,
   },
   {
-    id: "evergreen",
+    id: "navy",
     number: "02",
-    name: "Evergreen Ledger",
-    strapline: "Grounded, trustworthy and precise",
+    name: "Deep Navy",
+    strapline: "Established, composed and dependable",
     description:
-      "A calm green-led system with stronger borders and tighter radii, inspired by dependable financial and operational tools.",
-    traits: [
-      ["Shell", "Framed workspace"],
-      ["Fields", "Compact and firm"],
-      ["Cards", "Structured borders"],
-      ["Density", "Efficient"],
-    ],
-    className: styles.evergreen,
+      "A darker blue direction with steel-grey neutrals for a traditional, trusted business tone.",
+    traits: SELECTED_STYLE,
+    className: styles.navy,
   },
   {
     id: "aubergine",
     number: "03",
-    name: "Aubergine Studio",
+    name: "Aubergine",
     strapline: "Premium, warm and relationship-led",
     description:
-      "Softer geometry and a plum accent give people-focused workflows a more considered, premium character.",
-    traits: [
-      ["Shell", "Layered panels"],
-      ["Fields", "Soft filled"],
-      ["Cards", "Floating"],
-      ["Density", "Relaxed"],
-    ],
+      "The original plum direction, pairing warm neutrals with a distinctive but restrained primary colour.",
+    traits: SELECTED_STYLE,
     className: styles.aubergine,
   },
   {
-    id: "ocean",
+    id: "forest",
     number: "04",
-    name: "Ocean Office",
-    strapline: "Open, calm and approachable",
+    name: "Forest Green",
+    strapline: "Grounded, trustworthy and calm",
     description:
-      "A blue-grey direction with generous spacing and soft elevation for teams that value clarity over density.",
-    traits: [
-      ["Shell", "Top navigation"],
-      ["Fields", "Tinted surfaces"],
-      ["Cards", "Borderless"],
-      ["Density", "Airy"],
-    ],
+      "A mature green palette with natural grey surfaces and a steady operational character.",
+    traits: SELECTED_STYLE,
+    className: styles.evergreen,
+  },
+  {
+    id: "petrol",
+    number: "05",
+    name: "Petrol Blue",
+    strapline: "Modern, calm and approachable",
+    description:
+      "A blue-green primary with misted surfaces that feels contemporary without becoming playful.",
+    traits: SELECTED_STYLE,
     className: styles.ocean,
   },
   {
-    id: "graphite",
-    number: "05",
-    name: "Graphite Precision",
-    strapline: "Minimal, direct and data-first",
+    id: "burgundy",
+    number: "06",
+    name: "Burgundy",
+    strapline: "Assured, warm and distinctive",
     description:
-      "A nearly monochrome direction with square geometry and selective indigo, designed for high information density.",
-    traits: [
-      ["Shell", "Compact icon rail"],
-      ["Fields", "Underline"],
-      ["Cards", "Flat panels"],
-      ["Density", "High"],
-    ],
+      "A restrained wine-red brand colour balanced by pale stone and rose-grey surfaces.",
+    traits: SELECTED_STYLE,
+    className: styles.burgundy,
+  },
+  {
+    id: "indigo",
+    number: "07",
+    name: "Soft Indigo",
+    strapline: "Digital, polished and precise",
+    description:
+      "An indigo-led SaaS palette with soft lavender accents and cool graphite navigation.",
+    traits: SELECTED_STYLE,
     className: styles.graphite,
+  },
+  {
+    id: "bronze",
+    number: "08",
+    name: "Warm Bronze",
+    strapline: "Established, warm and understated",
+    description:
+      "An earthy bronze accent with warm stone surfaces for a quieter premium direction.",
+    traits: SELECTED_STYLE,
+    className: styles.bronze,
   },
 ] as const;
 
@@ -645,17 +657,17 @@ export function DesignLab() {
           <Badge variant="info">Internal proof of concept</Badge>
           <h1>Zayto UI Design Lab</h1>
           <p>
-            Five professional CRM directions using identical records and states.
-            Compare hierarchy, density, colour and component character—not the
-            underlying functionality.
+            Eight colour directions using the selected Aubergine component style
+            and Cobalt table. Structure and content stay fixed so only the
+            palette changes.
           </p>
         </div>
         <div className={styles.reviewNote}>
           <strong>Review lens</strong>
-          <span>Trust · clarity · speed · accessibility</span>
+          <span>Brand fit · trust · clarity · accessibility</span>
         </div>
       </header>
-      <nav className={styles.jumpNav} aria-label="Design directions">
+      <nav className={styles.jumpNav} aria-label="Colour directions">
         {DIRECTIONS.map((direction) => (
           <a key={direction.id} href={`#${direction.id}`}>
             <span>{direction.number}</span>
