@@ -350,22 +350,16 @@ test.describe("sandbox access personas", () => {
           page.getByRole("heading", { name: "Users & access" }),
         ).toBeVisible();
         await expect(
-          page
-            .locator('[data-slot="card-title"]')
-            .filter({ hasText: "Olivia Hart" }),
+          page.getByRole("listitem").filter({ hasText: "Olivia Hart" }),
         ).toBeVisible();
         await expect(page.getByText(/^owner@zayto\.local/)).toBeVisible();
         const ownerUserCard = page
-          .locator('[data-slot="card"]')
+          .getByRole("listitem")
           .filter({ hasText: "Olivia Hart" });
         await expect(
-          ownerUserCard
-            .locator('[data-slot="card-title"]')
-            .getByText("Active", { exact: true }),
+          ownerUserCard.getByText("Active", { exact: true }),
         ).toHaveClass(/bg-success-soft/);
-        const ownerBadgeRow = ownerUserCard.locator(
-          '[data-slot="card-content"]',
-        );
+        const ownerBadgeRow = ownerUserCard;
         await expect(
           ownerBadgeRow.getByText("All branches", { exact: true }),
         ).toHaveClass(/bg-info-soft/);
@@ -373,7 +367,7 @@ test.describe("sandbox access personas", () => {
           ownerBadgeRow.getByText("Account Owner", { exact: true }),
         ).toHaveClass(/bg-secondary/);
         const staffUserCard = page
-          .locator('[data-slot="card"]')
+          .getByRole("listitem")
           .filter({ hasText: "Priya Shah" });
         await staffUserCard.getByRole("button", { name: "Edit" }).click();
         const accessDialog = page.getByRole("dialog");
@@ -389,13 +383,13 @@ test.describe("sandbox access personas", () => {
         await settingsNavigation
           .getByRole("link", { name: "Branches" })
           .click();
-        const mainBranchCard = page.locator('[data-slot="card"]').filter({
+        const mainBranchCard = page.locator("section").filter({
           has: page.getByRole("heading", {
             name: "Main Branch",
             exact: true,
           }),
         });
-        const riversideBranchCard = page.locator('[data-slot="card"]').filter({
+        const riversideBranchCard = page.locator("section").filter({
           has: page.getByRole("heading", {
             name: "Riverside Branch",
             exact: true,
@@ -477,14 +471,10 @@ test.describe("sandbox access personas", () => {
           page.getByRole("heading", { name: "Users & access" }),
         ).toBeVisible();
         await expect(
-          page
-            .locator('[data-slot="card-title"]')
-            .filter({ hasText: "Amelia Stone" }),
+          page.getByRole("listitem").filter({ hasText: "Amelia Stone" }),
         ).toBeVisible();
         await expect(
-          page
-            .locator('[data-slot="card-title"]')
-            .filter({ hasText: "Priya Shah" }),
+          page.getByRole("listitem").filter({ hasText: "Priya Shah" }),
         ).toBeVisible();
         await expect(
           page.getByText("Ruby Walker", { exact: true }),
@@ -511,7 +501,7 @@ test.describe("sandbox access personas", () => {
           ]);
         await page.goto("/dashboard/w/oakfield-lettings-demo/settings/users");
         const accountOwnerCard = page
-          .locator('[data-slot="card"]')
+          .getByRole("listitem")
           .filter({ hasText: "Olivia Hart" });
         await accountOwnerCard.getByRole("button", { name: "Edit" }).click();
         const roleDialog = page.getByRole("dialog");

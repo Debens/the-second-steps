@@ -1,13 +1,5 @@
 import { redirect } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { getWorkspaceMembers } from "@/core/access/application/workspace-members";
 import { ROLE_LABELS } from "@/core/access/domain/role";
@@ -34,7 +26,7 @@ export default async function WorkspaceUsersPage({
         </p>
       </div>
 
-      <div className="grid gap-4">
+      <ul className="grid divide-y border-t">
         {result.members.map((member, index) => {
           const recordedName = [member.firstName, member.lastName]
             .filter(Boolean)
@@ -45,9 +37,12 @@ export default async function WorkspaceUsersPage({
             `Unnamed user ${String(index + 1).padStart(2, "0")}`;
 
           return (
-            <Card key={member.id}>
-              <CardHeader>
-                <CardTitle className="flex flex-wrap items-center gap-2">
+            <li
+              key={member.id}
+              className="grid gap-3 py-5 sm:grid-cols-[minmax(0,1fr)_auto]"
+            >
+              <div className="grid min-w-0 gap-2">
+                <div className="flex flex-wrap items-center gap-2 text-base font-semibold">
                   {userLabel}
                   <StatusBadge
                     label={
@@ -65,47 +60,47 @@ export default async function WorkspaceUsersPage({
                           : "closed"
                     }
                   />
-                </CardTitle>
-                <CardDescription>
+                </div>
+                <p className="text-sm text-muted-foreground">
                   {member.primaryEmail ?? "No email recorded"}
                   {member.isCurrentUser ? " · You" : ""}
-                </CardDescription>
-                {member.status === "ACTIVE" &&
-                ((result.canManageRoles && !member.isCurrentUser) ||
-                  member.canManageScope) ? (
-                  <CardAction>
-                    <UserAccessForm
-                      branches={result.activeBranches}
-                      branchIds={member.branchIds}
-                      membershipId={member.id}
-                      roles={member.roles}
-                      scopeMode={member.scopeMode}
-                      userLabel={userLabel}
-                      workspaceSlug={workspaceSlug}
-                    />
-                  </CardAction>
-                ) : null}
-              </CardHeader>
-              <CardContent className="flex flex-wrap gap-2">
-                <Badge
-                  variant={
-                    member.scopeMode === "WORKSPACE" ? "info" : "outline"
-                  }
-                >
-                  {member.scopeMode === "WORKSPACE"
-                    ? "All branches"
-                    : `${member.branchCount} named branch${member.branchCount === 1 ? "" : "es"}`}
-                </Badge>
-                {member.roles.map((role) => (
-                  <Badge key={role} variant="secondary">
-                    {ROLE_LABELS[role]}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  <Badge
+                    variant={
+                      member.scopeMode === "WORKSPACE" ? "info" : "outline"
+                    }
+                  >
+                    {member.scopeMode === "WORKSPACE"
+                      ? "All branches"
+                      : `${member.branchCount} named branch${member.branchCount === 1 ? "" : "es"}`}
                   </Badge>
-                ))}
-              </CardContent>
-            </Card>
+                  {member.roles.map((role) => (
+                    <Badge key={role} variant="secondary">
+                      {ROLE_LABELS[role]}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+              {member.status === "ACTIVE" &&
+              ((result.canManageRoles && !member.isCurrentUser) ||
+                member.canManageScope) ? (
+                <div>
+                  <UserAccessForm
+                    branches={result.activeBranches}
+                    branchIds={member.branchIds}
+                    membershipId={member.id}
+                    roles={member.roles}
+                    scopeMode={member.scopeMode}
+                    userLabel={userLabel}
+                    workspaceSlug={workspaceSlug}
+                  />
+                </div>
+              ) : null}
+            </li>
           );
         })}
-      </div>
+      </ul>
     </div>
   );
 }

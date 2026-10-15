@@ -3,14 +3,6 @@
 import { LoaderCircle, Pencil } from "lucide-react";
 import { useActionState, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardAction,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { CustomerDetailsFormState } from "@/core/workspace/application/workspace-details";
@@ -275,15 +267,17 @@ export function CustomerDetailsEditor({
 
   return (
     <div className="grid gap-3">
-      <div className="grid items-start gap-6 lg:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Customer details</CardTitle>
-            <CardDescription>
-              Account identity and customer classification.
-            </CardDescription>
+      <div className="grid gap-8">
+        <section className="grid gap-4">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h2 className="text-base font-semibold">Customer details</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Account identity and customer classification.
+              </p>
+            </div>
             {canEdit && editing === null && (
-              <CardAction>
+              <div>
                 <Button
                   type="button"
                   variant="outline"
@@ -294,10 +288,10 @@ export function CustomerDetailsEditor({
                   <Pencil aria-hidden="true" data-icon="inline-start" />
                   Edit
                 </Button>
-              </CardAction>
+              </div>
             )}
-          </CardHeader>
-          <CardContent>
+          </div>
+          <div>
             {editing === "customer" ? (
               <DetailsForm
                 action={action}
@@ -320,17 +314,19 @@ export function CustomerDetailsEditor({
                 )}
               </dl>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </section>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Contact details</CardTitle>
-            <CardDescription>
-              Primary contact information and registered address.
-            </CardDescription>
+        <section className="grid gap-4 border-t pt-8">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <h2 className="text-base font-semibold">Contact details</h2>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Primary contact information and registered address.
+              </p>
+            </div>
             {canEdit && editing === null && (
-              <CardAction>
+              <div>
                 <Button
                   type="button"
                   variant="outline"
@@ -341,10 +337,10 @@ export function CustomerDetailsEditor({
                   <Pencil aria-hidden="true" data-icon="inline-start" />
                   Edit
                 </Button>
-              </CardAction>
+              </div>
             )}
-          </CardHeader>
-          <CardContent>
+          </div>
+          <div>
             {editing === "contact" ? (
               <DetailsForm
                 action={action}
@@ -366,8 +362,8 @@ export function CustomerDetailsEditor({
                 </Detail>
               </dl>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </section>
       </div>
 
       {message && (

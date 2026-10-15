@@ -93,59 +93,57 @@ export default async function ContactsPage({
           </Button>
         )}
       </div>
-      <Card>
-        <CardContent className="pt-6">
-          <form className="grid gap-3 md:grid-cols-[minmax(0,1fr)_auto_auto_auto] md:items-end">
-            <div className="grid gap-2">
-              <label className="text-sm font-medium" htmlFor="q">
-                Search contacts
-              </label>
-              <div className="relative">
-                <Search
-                  aria-hidden="true"
-                  className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
-                />
-                <Input
-                  className="pl-9"
-                  id="q"
-                  name="q"
-                  defaultValue={query}
-                  placeholder="Name, reference, email or telephone"
-                />
-              </div>
-            </div>
-            <div className="grid gap-2">
-              <label className="text-sm font-medium" htmlFor="kind">
-                Type
-              </label>
-              <OptionSelect
-                className="w-44"
-                id="kind"
-                name="kind"
-                placeholder="All contacts"
-                defaultValue={kind ?? ""}
-                options={[
-                  { value: "", label: "All contacts" },
-                  { value: "person", label: "People" },
-                  { value: "organisation", label: "Organisations" },
-                ]}
-              />
-            </div>
-            <label className="flex h-9 items-center gap-2 text-sm">
-              <input
-                type="checkbox"
-                name="archived"
-                value="yes"
-                defaultChecked={includeArchived}
-              />
-              Include archived
+      <div>
+        <form className="grid gap-4 md:grid-cols-[minmax(0,1fr)_auto_auto_auto] md:items-end">
+          <div className="grid gap-2">
+            <label className="text-sm font-medium" htmlFor="q">
+              Search contacts
             </label>
-            <Button type="submit" variant="outline">
-              Apply
-            </Button>
-          </form>
-        </CardContent>
-      </Card>
+            <div className="relative">
+              <Search
+                aria-hidden="true"
+                className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+              />
+              <Input
+                className="pl-9"
+                id="q"
+                name="q"
+                defaultValue={query}
+                placeholder="Name, reference, email or telephone"
+              />
+            </div>
+          </div>
+          <div className="grid gap-2">
+            <label className="text-sm font-medium" htmlFor="kind">
+              Type
+            </label>
+            <OptionSelect
+              className="w-44"
+              id="kind"
+              name="kind"
+              placeholder="All contacts"
+              defaultValue={kind ?? ""}
+              options={[
+                { value: "", label: "All contacts" },
+                { value: "person", label: "People" },
+                { value: "organisation", label: "Organisations" },
+              ]}
+            />
+          </div>
+          <label className="flex items-center gap-2 text-sm md:h-9">
+            <input
+              type="checkbox"
+              name="archived"
+              value="yes"
+              defaultChecked={includeArchived}
+            />
+            Include archived
+          </label>
+          <Button type="submit" variant="outline">
+            Apply
+          </Button>
+        </form>
+      </div>
       {contacts.length === 0 ? (
         <Card>
           <CardContent className="grid justify-items-center gap-3 py-12 text-center">
@@ -163,12 +161,12 @@ export default async function ContactsPage({
         </Card>
       ) : (
         <>
-          <div className="grid gap-3 md:hidden">
+          <div className="grid divide-y overflow-hidden rounded-2xl bg-card ring-1 ring-foreground/10 md:hidden">
             {contacts.map((contact) => (
               <Link
                 key={contact.id}
                 href={`${path}/${contact.id}`}
-                className="rounded-xl border bg-card p-4 transition-colors hover:bg-muted/50"
+                className="p-4 transition-colors hover:bg-muted/50"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
