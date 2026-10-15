@@ -27,6 +27,19 @@ Sanity-check significant decisions before implementing them, including accepted 
 - Record improvements that can safely wait in the relevant plan instead of expanding the current task. Flag work whose cost is disproportionate to its immediate benefit.
 - Keep progress updates, completion reports, and project documentation concise and useful. For straightforward work, implement after a brief inspection; for complex work, make a short plan and deliver it in manageable stages. Do not add dependencies or tooling unless the current outcome justifies them. Minimise unnecessary tool calls and repeated analysis, but never trade away security, data integrity, or essential verification to reduce usage.
 
+## AI model selection and usage budget
+
+This project is developed on a limited personal AI budget. Maximise completed, reliable functionality per unit of AI usage; do not simply minimise tokens.
+
+- Before a substantial task, assess its complexity and recommend a model (Haiku, Sonnet or Opus) with a brief reason, before starting work.
+- Default to **Sonnet** for normal development work.
+- Recommend **Haiku** for straightforward, low-risk changes where it is sufficient (copy edits, small styling tweaks, simple documentation).
+- Recommend **Opus** only where deeper reasoning is likely to give a meaningful improvement (for example authentication, permissions, tenant isolation, complex migrations, or architectural decisions).
+- Do not switch models automatically unless the owner has explicitly authorised it and it is supported; the owner switches with `/model`.
+- Break larger tasks into stages, avoid repository-wide analysis, and reuse existing documentation and ADRs rather than re-investigating settled questions.
+- Run targeted tests during development and broader suites at checkpoints.
+- Never compromise authentication, tenant isolation, data integrity, security or essential tests to save usage.
+
 ## Current stack (installed)
 
 - Next.js 16.4, **App Router** (`app/`). The Pages Router has been removed; do not add `pages/`.
