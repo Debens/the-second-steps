@@ -38,6 +38,25 @@ test("contact list and person creation path are available", async ({
   });
 });
 
+test("person record keeps its detail card and consistent summary icons", async ({
+  page,
+}) => {
+  await signInAsOwner(page);
+  await page.getByRole("link", { name: "Contacts" }).click();
+  await page.getByRole("link", { name: "Eleanor Price" }).click();
+
+  const personDetails = page
+    .locator('[data-slot="card"]')
+    .filter({ hasText: "Person details" });
+  await expect(personDetails).toBeVisible();
+  await expect(personDetails.locator("svg")).toHaveCount(4);
+
+  const preferences = page
+    .locator('[data-slot="card"]')
+    .filter({ hasText: "Preferences and branch" });
+  await expect(preferences.locator("svg")).toHaveCount(3);
+});
+
 test("organisation form is usable on mobile and in dark mode", async ({
   page,
 }) => {

@@ -187,7 +187,7 @@ Memberships with several operational roles receive the union of those roles' per
 - Add people, organisations, contact points, addresses, organisation-person links, readable references, and focused migration provenance.
 - Build create/view/edit/archive paths with targeted unit and database isolation tests.
 - **Review:** responsive UI, light/dark themes, duplicate warnings, validation, permissions, cross-workspace and cross-branch denial.
-- **UI polish follow-up:** make the contact record summary cards consistent about section icons; currently Contact methods, Address details, and Organisation details use icons while Preferences and branch does not.
+- **UI polish completed (2026-10-15):** restored the boxed identity section in the contact form and made person, organisation, preference, and branch summary fields consistent about icons.
 
 ### Chunk 3 — landlord relationships and duplicate resolution
 

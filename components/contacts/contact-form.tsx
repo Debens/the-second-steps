@@ -370,7 +370,7 @@ export function ContactForm({
           value={state.duplicateReviewToken}
         />
       )}
-      <section className="grid gap-4 border-b border-border pb-6">
+      <section className="grid gap-4 rounded-xl bg-card p-4 shadow-sm shadow-foreground/5 ring-1 ring-foreground/8">
         <div>
           <h2 className="text-lg font-semibold">
             {kind === "person" ? "Person details" : "Organisation details"}

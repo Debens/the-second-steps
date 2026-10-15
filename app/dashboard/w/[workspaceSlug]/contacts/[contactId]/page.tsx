@@ -1,10 +1,19 @@
 import {
   ArrowLeft,
+  Ban,
+  BriefcaseBusiness,
   Building2,
+  GitBranch,
+  Hash,
   Mail,
   MapPin,
+  MessageCircle,
   Phone,
+  ReceiptText,
+  Signature,
+  Type,
   UserRound,
+  type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
@@ -272,6 +281,31 @@ export default async function ContactPage({
             )}
           </CardContent>
         </Card>
+        {kind === "person" && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Person details</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-4 sm:grid-cols-2">
+              <Detail label="Title" value={contact.title} icon={Type} />
+              <Detail
+                label="First name"
+                value={contact.firstName}
+                icon={UserRound}
+              />
+              <Detail
+                label="Middle names"
+                value={contact.middleNames}
+                icon={Signature}
+              />
+              <Detail
+                label="Surname"
+                value={contact.lastName}
+                icon={Signature}
+              />
+            </CardContent>
+          </Card>
+        )}
         {kind === "organisation" && (
           <Card>
             <CardHeader>
@@ -286,12 +320,18 @@ export default async function ContactPage({
               <Detail
                 label="Organisation type"
                 value={contact.organisationType?.replaceAll("_", " ")}
+                icon={BriefcaseBusiness}
               />
               <Detail
                 label="Registration number"
                 value={contact.registrationNumber}
+                icon={Hash}
               />
-              <Detail label="VAT number" value={contact.vatNumber} />
+              <Detail
+                label="VAT number"
+                value={contact.vatNumber}
+                icon={ReceiptText}
+              />
             </CardContent>
           </Card>
         )}
@@ -300,13 +340,18 @@ export default async function ContactPage({
             <CardTitle>Preferences and branch</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-2">
-            <Detail label="Preferred contact" value={preferredChannel} />
+            <Detail
+              label="Preferred contact"
+              value={preferredChannel}
+              icon={MessageCircle}
+            />
             <Detail
               label="Responsible branch"
               value={
                 contact.branchLinks.find(({ isPrimary }) => isPrimary)?.branch
                   .name
               }
+              icon={GitBranch}
             />
             <Detail
               label="Do not use"
@@ -321,6 +366,7 @@ export default async function ContactPage({
                   .filter(Boolean)
                   .join(", ") || "None"
               }
+              icon={Ban}
             />
           </CardContent>
         </Card>
@@ -336,7 +382,7 @@ function Detail({
 }: {
   label: string;
   value: string | null | undefined;
-  icon?: typeof UserRound;
+  icon?: LucideIcon;
 }) {
   return (
     <div className="flex gap-3">
