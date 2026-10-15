@@ -34,7 +34,7 @@ function NavigationItems({ workspaceSlug }: { workspaceSlug: string }) {
             key={label}
             href={href}
             aria-current={active ? "page" : undefined}
-            className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm ${
+            className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
               active
                 ? "bg-sidebar-accent text-sidebar-accent-foreground"
                 : "text-sidebar-muted-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground"
@@ -57,7 +57,7 @@ export function DesktopNavigation({
   workspaceSlug: string;
 }) {
   return (
-    <aside className="hidden min-h-screen w-64 shrink-0 flex-col bg-sidebar p-5 text-sidebar-foreground lg:flex">
+    <aside className="hidden min-h-screen w-64 shrink-0 flex-col bg-sidebar p-5 text-sidebar-foreground lg:flex lg:min-h-[calc(100vh-1.5rem)] lg:rounded-2xl">
       <ZaytoWordmark />
       <p className="mt-6 truncate text-sm font-medium">{workspaceName}</p>
       <p className="text-xs text-sidebar-muted-foreground">

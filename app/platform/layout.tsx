@@ -26,8 +26,8 @@ export default async function PlatformLayout({
   if (!context) redirect("/access-denied");
 
   return (
-    <div className="min-h-screen bg-background lg:flex">
-      <aside className="hidden min-h-screen w-64 shrink-0 flex-col bg-sidebar p-5 text-sidebar-foreground lg:flex">
+    <div className="min-h-screen bg-background lg:flex lg:gap-3 lg:bg-secondary lg:p-3">
+      <aside className="hidden min-h-screen w-64 shrink-0 flex-col bg-sidebar p-5 text-sidebar-foreground lg:flex lg:min-h-[calc(100vh-1.5rem)] lg:rounded-2xl">
         <ZaytoWordmark />
         <div className="mt-6 flex items-center gap-2 rounded-lg bg-sidebar-accent px-3 py-2">
           <ShieldCheck aria-hidden="true" className="size-4" />
@@ -46,8 +46,8 @@ export default async function PlatformLayout({
         </p>
       </aside>
 
-      <div className="min-w-0 flex-1">
-        <header className="flex h-16 items-center gap-3 border-b border-primary/20 bg-primary/5 px-4 md:px-6 lg:px-8">
+      <div className="min-w-0 flex-1 bg-background lg:overflow-hidden lg:rounded-2xl">
+        <header className="flex h-16 items-center gap-3 border-b bg-card px-4 md:px-6 lg:px-8">
           <PlatformMobileNavigation />
           <div className="min-w-0 flex-1">
             <p className="truncate text-sm font-semibold">Zayto platform</p>

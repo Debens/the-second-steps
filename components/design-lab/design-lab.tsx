@@ -622,6 +622,9 @@ function ThemeShowcase({
         <div>
           <p>{direction.strapline}</p>
           <h2>{direction.name}</h2>
+          {direction.id === "navy" ? (
+            <Badge variant="default">Selected direction</Badge>
+          ) : null}
           <span>{direction.description}</span>
           <dl className={styles.styleTraits}>
             {direction.traits.map(([label, value]) => (
@@ -657,9 +660,9 @@ export function DesignLab() {
           <Badge variant="info">Internal proof of concept</Badge>
           <h1>Zayto UI Design Lab</h1>
           <p>
-            Eight colour directions using the selected Aubergine component style
-            and Cobalt table. Structure and content stay fixed so only the
-            palette changes.
+            Deep Navy is the selected Zayto direction, using the Aubergine
+            component style and Cobalt table. The alternatives remain here as a
+            record of the comparison.
           </p>
         </div>
         <div className={styles.reviewNote}>

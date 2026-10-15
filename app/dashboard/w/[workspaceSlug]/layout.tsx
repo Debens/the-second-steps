@@ -30,12 +30,12 @@ export default async function WorkspaceLayout({
   if (!context) redirect("/access-denied");
 
   return (
-    <div className="min-h-screen bg-background lg:flex">
+    <div className="min-h-screen bg-background lg:flex lg:gap-3 lg:bg-secondary lg:p-3">
       <DesktopNavigation
         workspaceName={context.workspace.displayName}
         workspaceSlug={context.workspace.slug}
       />
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 flex-1 bg-background lg:overflow-hidden lg:rounded-2xl">
         <header className="flex h-16 items-center gap-3 border-b bg-card px-4 md:px-6 lg:px-8">
           <MobileNavigation
             workspaceName={context.workspace.displayName}

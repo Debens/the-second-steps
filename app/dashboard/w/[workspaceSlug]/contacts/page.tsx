@@ -118,7 +118,7 @@ export default async function ContactsPage({
                 Type
               </label>
               <select
-                className="h-9 rounded-lg border border-input bg-transparent px-3 text-sm"
+                className="h-10 rounded-xl border border-input bg-muted/60 px-3 text-sm"
                 id="kind"
                 name="kind"
                 defaultValue={kind ?? ""}

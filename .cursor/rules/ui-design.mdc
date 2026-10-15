@@ -29,9 +29,9 @@ Use **shadcn/ui** first (`components/ui`). Add components with `npx shadcn@lates
 ## Brand (ADR-017)
 
 - Colours are defined once as `--brand-*` variables in `styles/globals.css` and mapped to semantic tokens. In components use semantic classes only (`bg-primary`, `text-muted-foreground`, `bg-sidebar`, `bg-highlight`); never hex, `--brand-*`, or arbitrary `[var(...)]` values. Need a new colour role? Add a semantic token in **both** theme blocks and a contrast pair in `styles/theme-contrast.test.ts`.
-- Direction: modern, premium SaaS with a neutral black/charcoal foundation. Light mode uses white and soft neutral grey; dark mode uses near-black backgrounds with layered charcoal surfaces, never navy-tinted panels.
-- Crisp cobalt blue is the single brand accent for primary actions, links, selected states, focus and the small wordmark mark. Keep large surfaces neutral; status colours are functional, not branding.
-- No amber branding, pink, teal, gradients, or traditional estate-agency styling.
+- Direction: modern, premium SaaS in the owner-selected **Deep Navy** direction. Light mode uses an off-white canvas, white floating surfaces and restrained blue-grey fills; dark mode uses layered deep-navy surfaces.
+- Deep navy is the primary brand colour for actions, links, selected states, focus and the wordmark mark. Use the rounded, softly elevated component treatment selected from the Aubergine Design Lab direction, with the clean conventional table treatment selected from Cobalt. Status colours remain functional, not branding.
+- No gradients, bright novelty colours, or traditional estate-agency styling.
 - Text needs 4.5:1 contrast (3:1 for large text); control borders and focus outlines need 3:1. Use `border-input` on form controls, `border-border` for dividers.
 - Font is Inter (`font-sans`); do not add other typefaces.
 
@@ -52,7 +52,7 @@ Desktop is the main working environment; mobile and tablet must be properly supp
 | --- | --- | --- |
 | Mobile | default (< 768px) | Top bar with menu button; navigation opens in a slide-out panel (shadcn `Sheet`) |
 | Tablet | `md:` (768–1023px) | Same slide-out panel; content may use two columns |
-| Desktop | `lg:` (≥ 1024px) | Fixed charcoal sidebar, collapsible to an icon rail |
+| Desktop | `lg:` (≥ 1024px) | Fixed deep-navy sidebar, collapsible to an icon rail |
 | Wide | `xl:` / `2xl:` | Wider content and extra columns; cap reading width with `max-w-*` |
 
 Use Tailwind's default breakpoints only; do not add custom ones. Use container queries (`@container`) when a component's layout depends on its own width rather than the screen's.

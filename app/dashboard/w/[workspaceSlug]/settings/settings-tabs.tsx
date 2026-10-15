@@ -14,8 +14,8 @@ export function SettingsTabs({ workspaceSlug }: { workspaceSlug: string }) {
   const base = `/dashboard/w/${workspaceSlug}/settings`;
 
   return (
-    <nav aria-label="Settings" className="overflow-x-auto border-b">
-      <div className="flex min-w-max gap-1">
+    <nav aria-label="Settings" className="overflow-x-auto">
+      <div className="flex min-w-max gap-1 rounded-xl bg-muted p-1">
         {SETTINGS_TABS.map((tab) => {
           const href = `${base}${tab.segment}`;
           const active = pathname === href;
@@ -25,10 +25,10 @@ export function SettingsTabs({ workspaceSlug }: { workspaceSlug: string }) {
               key={tab.label}
               href={href}
               aria-current={active ? "page" : undefined}
-              className={`border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
+              className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                 active
-                  ? "border-primary text-primary"
-                  : "border-transparent text-muted-foreground hover:text-foreground"
+                  ? "bg-card text-foreground shadow-sm"
+                  : "text-muted-foreground hover:bg-card/60 hover:text-foreground"
               }`}
             >
               {tab.label}

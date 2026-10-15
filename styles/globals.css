@@ -62,29 +62,29 @@
 }
 
 /*
- * Zayto brand palette. Change brand colours here only; the light (:root) and
+ * Zayto Deep Navy palette. Change brand colours here only; the light (:root) and
  * dark (.dark) blocks below map them onto semantic tokens. Contrast pairs are
  * enforced by styles/theme-contrast.test.ts (npm run test).
  */
 :root {
-  --brand-black: #0b0d10;
-  --brand-charcoal: #15181d;
-  --brand-charcoal-raised: #20242b;
-  --brand-charcoal-line: #343a44;
-  --brand-blue: #1d4ed8;
-  --brand-blue-light: #60a5fa;
-  --brand-blue-soft: #eaf1ff;
-  --brand-blue-night: #12233f;
-  --brand-canvas: #f4f5f7;
-  --brand-border: #d7dbe2;
-  --brand-control-border: #737b89;
-  --brand-control-border-dark: #6b7280;
+  --brand-navy: #24496f;
+  --brand-navy-light: #9fc5e4;
+  --brand-navy-soft: #dce7f1;
+  --brand-navy-night: #29465f;
+  --brand-canvas: #f4f6f8;
+  --brand-night: #101a24;
+  --brand-night-surface: #172635;
+  --brand-night-raised: #203446;
+  --brand-night-line: #3b5163;
+  --brand-border: #ced6de;
+  --brand-control-border: #6a7682;
+  --brand-control-border-dark: #8394a3;
   --brand-surface: #ffffff;
-  --brand-subtle: #e9ebef;
-  --brand-text: #17191d;
+  --brand-subtle: #e9edf1;
+  --brand-text: #18212b;
   --brand-text-muted: #59616d;
   --brand-text-on-dark: #f5f7fa;
-  --brand-text-on-dark-muted: #aeb5c0;
+  --brand-text-on-dark-muted: #b7c6d4;
   --brand-success: #067647;
   --brand-success-light: #4ade80;
   --brand-success-soft: #ecfdf3;
@@ -107,15 +107,15 @@
   --card-foreground: var(--brand-text);
   --popover: var(--brand-surface);
   --popover-foreground: var(--brand-text);
-  --primary: var(--brand-blue);
+  --primary: var(--brand-navy);
   --primary-foreground: #ffffff;
   --secondary: var(--brand-subtle);
   --secondary-foreground: var(--brand-text);
   --muted: var(--brand-subtle);
   --muted-foreground: var(--brand-text-muted);
-  --accent: var(--brand-blue-soft);
-  --accent-foreground: var(--brand-text);
-  --highlight: var(--brand-blue);
+  --accent: var(--brand-navy-soft);
+  --accent-foreground: var(--brand-navy);
+  --highlight: var(--brand-navy);
   --highlight-foreground: #ffffff;
   --success: var(--brand-success);
   --success-foreground: #ffffff;
@@ -126,76 +126,76 @@
   --destructive: var(--brand-danger);
   --destructive-foreground: #ffffff;
   --destructive-soft: var(--brand-danger-soft);
-  --info: var(--brand-blue);
+  --info: var(--brand-navy);
   --info-foreground: #ffffff;
-  --info-soft: var(--brand-blue-soft);
+  --info-soft: var(--brand-navy-soft);
   --border: var(--brand-border);
   --input: var(--brand-control-border);
-  --ring: var(--brand-blue);
-  --chart-1: var(--brand-blue);
+  --ring: var(--brand-navy);
+  --chart-1: var(--brand-navy);
   --chart-2: var(--brand-success);
   --chart-3: var(--brand-warning);
   --chart-4: var(--brand-danger);
   --chart-5: var(--brand-control-border);
-  --radius: 0.625rem;
-  --sidebar: var(--brand-charcoal);
+  --radius: 1rem;
+  --sidebar: var(--brand-night-surface);
   --sidebar-foreground: var(--brand-text-on-dark);
   --sidebar-muted-foreground: var(--brand-text-on-dark-muted);
-  --sidebar-primary: var(--brand-blue);
+  --sidebar-primary: var(--brand-navy);
   --sidebar-primary-foreground: #ffffff;
-  --sidebar-accent: var(--brand-charcoal-raised);
+  --sidebar-accent: var(--brand-night-raised);
   --sidebar-accent-foreground: var(--brand-text-on-dark);
-  --sidebar-border: var(--brand-charcoal-line);
-  --sidebar-ring: var(--brand-blue-light);
+  --sidebar-border: var(--brand-night-line);
+  --sidebar-ring: var(--brand-navy-light);
 }
 
 .dark {
   color-scheme: dark;
-  --background: var(--brand-black);
+  --background: var(--brand-night);
   --foreground: var(--brand-text-on-dark);
-  --card: var(--brand-charcoal);
+  --card: var(--brand-night-surface);
   --card-foreground: var(--brand-text-on-dark);
-  --popover: var(--brand-charcoal-raised);
+  --popover: var(--brand-night-raised);
   --popover-foreground: var(--brand-text-on-dark);
-  --primary: var(--brand-blue-light);
-  --primary-foreground: var(--brand-black);
-  --secondary: var(--brand-charcoal-raised);
+  --primary: var(--brand-navy-light);
+  --primary-foreground: var(--brand-night);
+  --secondary: var(--brand-night-raised);
   --secondary-foreground: var(--brand-text-on-dark);
-  --muted: var(--brand-charcoal-raised);
+  --muted: var(--brand-night-raised);
   --muted-foreground: var(--brand-text-on-dark-muted);
-  --accent: var(--brand-blue-night);
+  --accent: var(--brand-navy-night);
   --accent-foreground: var(--brand-text-on-dark);
-  --highlight: var(--brand-blue-light);
-  --highlight-foreground: var(--brand-black);
+  --highlight: var(--brand-navy-light);
+  --highlight-foreground: var(--brand-night);
   --success: var(--brand-success-light);
-  --success-foreground: var(--brand-black);
+  --success-foreground: var(--brand-night);
   --success-soft: var(--brand-success-night);
   --warning: var(--brand-warning-light);
-  --warning-foreground: var(--brand-black);
+  --warning-foreground: var(--brand-night);
   --warning-soft: var(--brand-warning-night);
   --destructive: var(--brand-danger-light);
-  --destructive-foreground: var(--brand-black);
+  --destructive-foreground: var(--brand-night);
   --destructive-soft: var(--brand-danger-night);
-  --info: var(--brand-blue-light);
-  --info-foreground: var(--brand-black);
-  --info-soft: var(--brand-blue-night);
-  --border: var(--brand-charcoal-line);
+  --info: var(--brand-navy-light);
+  --info-foreground: var(--brand-night);
+  --info-soft: var(--brand-navy-night);
+  --border: var(--brand-night-line);
   --input: var(--brand-control-border-dark);
-  --ring: var(--brand-blue-light);
-  --chart-1: var(--brand-blue-light);
+  --ring: var(--brand-navy-light);
+  --chart-1: var(--brand-navy-light);
   --chart-2: var(--brand-success-light);
   --chart-3: var(--brand-text-on-dark);
   --chart-4: var(--brand-danger-light);
   --chart-5: var(--brand-control-border-dark);
-  --sidebar: var(--brand-black);
+  --sidebar: #0c1620;
   --sidebar-foreground: var(--brand-text-on-dark);
   --sidebar-muted-foreground: var(--brand-text-on-dark-muted);
-  --sidebar-primary: var(--brand-blue-light);
-  --sidebar-primary-foreground: var(--brand-black);
-  --sidebar-accent: var(--brand-charcoal-raised);
+  --sidebar-primary: var(--brand-navy-light);
+  --sidebar-primary-foreground: var(--brand-night);
+  --sidebar-accent: var(--brand-night-raised);
   --sidebar-accent-foreground: var(--brand-text-on-dark);
-  --sidebar-border: var(--brand-charcoal-line);
-  --sidebar-ring: var(--brand-blue-light);
+  --sidebar-border: var(--brand-night-line);
+  --sidebar-ring: var(--brand-navy-light);
 }
 
 @layer base {

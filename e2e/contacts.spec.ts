@@ -22,11 +22,13 @@ test("contact list and person creation path are available", async ({
   await expect(page.getByRole("heading", { name: "Contacts" })).toBeVisible();
   await expect(page.getByLabel("Search contacts")).toBeVisible();
 
-  await page.getByRole("link", { name: "New contact" }).click();
-  await page.getByRole("link", { name: "Create person" }).click();
+  await page.getByRole("button", { name: "New contact" }).click();
+  await page.getByRole("button", { name: "Create person" }).click();
   await expect(page.getByRole("heading", { name: "New person" })).toBeVisible();
   await expect(page.getByLabel("First name")).toBeVisible();
-  await expect(page.getByLabel("Responsible branch")).toHaveValue(/.+/);
+  const branch = page.getByLabel("Responsible branch");
+  await branch.selectOption({ label: "Main Branch" });
+  await expect(branch).toHaveValue(/.+/);
   await expect(
     page.getByRole("button", { name: "Create contact" }),
   ).toBeVisible();
@@ -43,8 +45,8 @@ test("organisation form is usable on mobile and in dark mode", async ({
   await signInAsOwner(page);
   await page.getByRole("button", { name: "Open navigation" }).click();
   await page.getByRole("link", { name: "Contacts" }).click();
-  await page.getByRole("link", { name: "New contact" }).click();
-  await page.getByRole("link", { name: "Create organisation" }).click();
+  await page.getByRole("button", { name: "New contact" }).click();
+  await page.getByRole("button", { name: "Create organisation" }).click();
   await expect(
     page.getByRole("heading", { name: "New organisation" }),
   ).toBeVisible();

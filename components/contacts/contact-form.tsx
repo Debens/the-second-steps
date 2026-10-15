@@ -56,7 +56,7 @@ export type InitialContact = {
 const INITIAL_STATE: ContactFormState = { status: "idle", message: "" };
 const EMPTY_POINT: Point = { label: "", value: "", isPreferred: false };
 const SELECT_CLASS =
-  "h-9 w-full rounded-lg border border-input bg-transparent px-3 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50";
+  "h-10 w-full rounded-xl border border-input bg-muted/60 px-3 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:bg-card focus-visible:ring-3 focus-visible:ring-ring/40";
 
 const CONTACT_POINT_LABELS = {
   email: ["Personal", "Work", "Accounts", "Other"],
@@ -146,7 +146,7 @@ function ContactPointFields({
       {points.map((point, index) => (
         <div
           key={point.key}
-          className="grid gap-3 rounded-lg border p-3 sm:grid-cols-[1fr_2fr_auto]"
+          className="grid gap-3 rounded-xl border bg-muted/30 p-3 sm:grid-cols-[1fr_2fr_auto]"
         >
           <input type="hidden" name={`${kind}Id`} value={point.id ?? ""} />
           <div className="grid gap-2">
