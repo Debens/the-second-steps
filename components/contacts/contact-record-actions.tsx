@@ -38,7 +38,7 @@ export function ContactEditor({
 }) {
   return (
     <Dialog>
-      <DialogTrigger render={<Button variant="outline" />}>
+      <DialogTrigger render={<Button />}>
         <Pencil aria-hidden="true" />
         Edit contact
       </DialogTrigger>
