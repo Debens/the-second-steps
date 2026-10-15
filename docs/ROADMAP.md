@@ -8,7 +8,7 @@ Priority key: **P0** security/integrity foundation or immediate blocker; **P1** 
 
 ## Product direction
 
-Zayto is intended to become a connected, cloud-based CRM for UK residential letting agents and property-management businesses. England is the first supported jurisdiction. The initial target is independent and small-to-medium agencies with straightforward residential lettings, including let-only and managed portfolios. Larger groups, specialist housing, devolved jurisdictions, commercial property, and residential sales remain later expansion areas.
+Zayto is intended to become a connected, cloud-based CRM for UK residential letting agents and property-management businesses. England is the first supported jurisdiction. The initial target is independent agencies with approximately one to three branches and straightforward residential lettings, including let-only, rent-collection, and fully-managed portfolios. Larger groups, specialist housing, devolved jurisdictions, commercial property, and residential sales remain later expansion areas.
 
 The long-term journey is:
 
@@ -95,12 +95,12 @@ An authorised agency user can create and manage an individual or organisation la
 
 Minimum scope:
 
-- Individual and organisation contact records with practical contact details.
+- Individual and organisation contact records with practical contact details and reusable role relationships.
 - Landlord capacity expressed through relationships, not a duplicated global person type.
 - UK property record, address, core characteristics, status, and responsible branch.
 - Multiple owners and historical/effective ownership relationships.
 - Agency instruction separate from legal ownership and separate from a future listing.
-- Let-only and managed service selection, instruction status, key dates, and agreed fee summary without creating accounting entries.
+- Let-only, rent-collection, and fully-managed service selection, instruction status, key dates, and versioned agreed fee summary without creating accounting entries.
 - Basic notes/activity history and useful contact/property search.
 - Source provenance and external identifiers needed for later migration.
 - Narrow permissions, audit, workspace/branch scoping, and cross-tenant tests.
@@ -177,7 +177,7 @@ Each identifier is stable for roadmap discussions; it is not a database or ticke
 | --------- | ------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ | -------------------------------------- | -------------------------------------------------------------------------------------------------- |
 | `CRM-01`  | **Landlord prospecting and instructions** — win and onboard landlord business.                                      | Record an instruction, service, responsible branch, status, dates, agreed commercial summary, and linked parties/property with history.                                                 | Lead sources, valuations, follow-ups, negotiations, won/lost reporting, onboarding automation.         | Phase 1 / Next / P1 / Large            | People, property, tasks, documents; do not invent AML or agency-specific workflows.                |
 | `CORE-01` | **People, organisations, and contacts** — one workspace-specific contact foundation for several roles.              | Create/search/edit individuals and organisations; hold multiple practical contacts and historical relationships without cross-workspace leakage.                                        | Duplicate resolution, richer preferences, representatives, custom fields, identity links.              | Phase 1 / Next / P1 / Large            | Privacy, history, import mapping; avoid both role duplication and an over-general universal model. |
-| `CORE-02` | **Property and ownership** — preserve the physical property independently of instructions, listings, and tenancies. | Manage a UK property, responsible branch, status, characteristics, multiple owners, shares where specified, and effective ownership history.                                            | Keys, meters, amenities, condition history, richer licensing and portfolio structures.                 | Phase 1 / Next / P1 / Large            | People/organisations, branch scope, migration; property identity and duplicate-address handling.   |
+| `CORE-02` | **Property and ownership** — preserve the physical property independently of instructions, listings, and tenancies. | Manage a UK property, responsible branch, status, characteristics, multiple owners, a lead landlord contact, and effective ownership history; ownership percentages are not required.   | Keys, meters, amenities, condition history, richer licensing and portfolio structures.                 | Phase 1 / Next / P1 / Large            | People/organisations, branch scope, migration; property identity and duplicate-address handling.   |
 | `CRM-02`  | **Marketing and advertising** — prepare and publish accurate rental listings.                                       | Create a listing from an instruction, manage rent, availability, description, ordered media, approval and internal publication status; never claim an unconfirmed external publication. | Website feeds, portals, retries, per-channel IDs/status/history, brochures.                            | Phase 2 / Planned / P1 / Large         | Documents/media, legal review, provider access, durable jobs; external commercial blocker.         |
 | `CRM-03`  | **Applicants and enquiries** — manage demand without duplicating people.                                            | One applicant/household can enquire about several listings, hold preferences, progress status, source and communication history.                                                        | Saved searches, richer matching, self-service enquiry and marketing preferences.                       | Phase 2 / Planned / P1 / Large         | People, listings, communications, privacy; collect only necessary sensitive data.                  |
 | `CRM-04`  | **Viewings and internal calendar** — coordinate appointments and follow-up.                                         | Staff can schedule/reschedule/cancel viewings and valuations, record attendance/feedback, and see authorised team calendars.                                                            | Self-booking, block viewings, reminders, Google/Microsoft two-way sync.                                | Phase 2 / Planned / P1 / Medium        | Listings, applicants, tasks, communications; time zones, concurrency, external sync.               |
@@ -261,6 +261,8 @@ Do not hard-code one tenancy regime for every historic record or UK jurisdiction
 ## Immediate next development milestone
 
 **Outcome:** a usable landlord, property, ownership, and agency-instruction workflow for authorised staff using fictional data.
+
+The confirmed detailed requirements, proposed data relationships, reviewed delivery chunks, and remaining approval gates are maintained in `.cursor/plans/landlord-property-onboarding.md`.
 
 ### First implementation tasks, ordered by dependency and value
 

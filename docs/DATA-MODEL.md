@@ -64,7 +64,9 @@ Property *──* WorkspacePerson (via PropertyParty)
 
 Each workspace keeps its own operational person record and history. An identity link allows the person to use Zayto without exposing their record or other relationships to another workspace. A person may be a landlord, applicant, tenant, guarantor, contractor, or staff member in different contexts; those capacities are relationships and participations, not global identity roles.
 
-Human `WorkspacePerson` records will use first-name and last-name fields consistently with `UserIdentity`. Titles, preferred/former names, legal-name history, and mononyms remain deferred until a real workflow specifies them. Imports with only a full-name value must be mapped or reviewed rather than split on spaces automatically.
+Human `WorkspacePerson` records will use structured title, first name, middle names, surname, and preferred name fields for the confirmed landlord/contact workflow. First name and surname are initially required; the other fields are optional. Former/legal-name history and mononyms remain deferred until a real workflow specifies them. Imports with only a full-name value must be mapped or reviewed rather than split on spaces automatically.
+
+The confirmed Phase 1 product requirements and proposed relationships for people, organisations, contact points, properties, historical ownership, landlord opportunities, appraisals, instructions, versioned terms, tasks, and activity are recorded in `.cursor/plans/landlord-property-onboarding.md`. Those boundaries remain a planning proposal until the owner approves the Chunk 1 data-design gate; they must not be treated as implemented tables.
 
 ## Participation and external access
 
