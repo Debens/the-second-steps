@@ -196,11 +196,12 @@ Memberships with several operational roles receive the union of those roles' per
 - **Owner decisions (2026-10-15):**
   - Delivery order: 3A organisation-person links (existing table, no migration) → 3B notes/activity (new migration, approval gate) → 3C merge.
   - Landlord summaries and `Properties with us` move to Chunks 4/6, when properties and instructions exist.
-  - Notes default to the writer's branch; the writer may mark a note agency-wide.
+  - Notes default to the writer's branch; the writer may mark a note agency-wide. The 3B technical design is in `.cursor/plans/contact-notes.md`.
   - Linking a person to an organisation also gives the person a non-primary branch link to each of the organisation's branches within the actor's scope. Ending a link keeps it as history and leaves that branch visibility in place. Links are managed from the organisation record and require `contact.sensitive.manage`.
   - Merges cannot be undone in this slice. A careful side-by-side preview and confirmation step protects against mistakes; the merged record stays traceable and errors are corrected by editing. Admin undo is deferred because it requires a recorded merge manifest and split-back rules; revisit if pilot use shows a need.
   - The organisation's Link person dialog can also create a new person (name plus email or telephone) and link them in one transaction, after the standard duplicate check offers any matching existing person instead. The new person's primary branch is the organisation's branch that the actor can manage.
 - **Checkpoint (2026-10-15):** 3A is implemented: link existing or new person, edit (relationship and one main contact), and end, with audit, People and Organisations cards, disposable-database tests for permission, hidden-branch denial, branch sharing, single main contact, history and atomic create-and-link, and browser checks of the link dialog and duplicate warning.
+- **Checkpoint (2026-10-15):** 3B contact notes are implemented as designed in `.cursor/plans/contact-notes.md`, security-reviewed, tested against the disposable database, applied to shared development Supabase (RLS forced and grants verified), and browser-checked. Next: 3C merge design.
 - **Review:** history preservation, manager-only actions, search behaviour, and `Properties with us` semantics.
 
 ### Chunk 4 — properties and ownership

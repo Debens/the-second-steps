@@ -16,6 +16,8 @@ export const PERMISSIONS = [
   "contact.archive",
   "contact.sensitive.manage",
   "contact.merge",
+  "contact.note.create",
+  "contact.note.manage",
 ] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];

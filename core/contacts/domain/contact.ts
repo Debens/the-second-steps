@@ -354,3 +354,66 @@ export function validateRelationshipLabel(value: string) {
   }
   return { ok: true, label } as const;
 }
+
+export const NOTE_BODY_MAX = 5000;
+export const NOTE_REASON_MAX = 500;
+// Allows for small clock differences between a browser and the server.
+const NOTE_FUTURE_ALLOWANCE_MS = 5 * 60 * 1000;
+
+export function validateNoteBody(value: string) {
+  const body = value.trim();
+  if (!body) return { ok: false, error: "Enter the note." } as const;
+  if (body.length > NOTE_BODY_MAX) {
+    return {
+      ok: false,
+      error: `Use ${NOTE_BODY_MAX} characters or fewer.`,
+    } as const;
+  }
+  return { ok: true, body } as const;
+}
+
+export function validateNoteReason(value: string) {
+  const reason = value.trim();
+  if (!reason) return { ok: false, error: "Give a reason." } as const;
+  if (reason.length > NOTE_REASON_MAX) {
+    return {
+      ok: false,
+      error: `Use ${NOTE_REASON_MAX} characters or fewer.`,
+    } as const;
+  }
+  return { ok: true, reason } as const;
+}
+
+/** A blank value means "now"; otherwise the time must not be in the future. */
+export function validateNoteOccurredAt(
+  value: Date | null | undefined,
+  now: Date = new Date(),
+) {
+  if (value === null || value === undefined) {
+    return { ok: true, occurredAt: now } as const;
+  }
+  if (Number.isNaN(value.getTime())) {
+    return { ok: false, error: "Enter a valid date and time." } as const;
+  }
+  if (value.getTime() > now.getTime() + NOTE_FUTURE_ALLOWANCE_MS) {
+    return { ok: false, error: "The date cannot be in the future." } as const;
+  }
+  return { ok: true, occurredAt: value } as const;
+}
+
+/**
+ * A note belongs to the contact's primary branch when the writer can act
+ * there, otherwise to the first of the contact's branches the writer can
+ * act in. Returns null when the writer has no usable branch.
+ */
+export function chooseNoteBranch(input: {
+  contactBranches: readonly { branchId: string; isPrimary: boolean }[];
+  canAccess: (branchId: string) => boolean;
+}) {
+  const ordered = [...input.contactBranches].sort(
+    (a, b) => Number(b.isPrimary) - Number(a.isPrimary),
+  );
+  return (
+    ordered.find(({ branchId }) => input.canAccess(branchId))?.branchId ?? null
+  );
+}

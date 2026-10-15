@@ -127,3 +127,18 @@ test("the whole contact row opens the record", async ({ page }) => {
     page.getByRole("heading", { name: /Eleanor Price/ }),
   ).toBeVisible();
 });
+
+test("contact record shows the notes timeline and add form", async ({
+  page,
+}) => {
+  await signInAsOwner(page);
+  await page.getByRole("link", { name: "Contacts" }).click();
+  await page.getByRole("link", { name: "Eleanor Price" }).first().click();
+  const notes = page.locator('[data-slot="card"]').filter({ hasText: "Notes" });
+  await expect(notes.getByLabel("Note", { exact: true })).toBeVisible();
+  await expect(notes.getByLabel("Share with all branches")).toBeVisible();
+  await expect(notes.getByRole("button", { name: "Add note" })).toBeVisible();
+  await expect(
+    notes.getByRole("link", { name: "Show voided notes" }),
+  ).toBeVisible();
+});

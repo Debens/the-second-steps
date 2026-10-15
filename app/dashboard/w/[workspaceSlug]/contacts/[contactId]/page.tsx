@@ -22,6 +22,7 @@ import {
   ContactEditor,
 } from "@/components/contacts/contact-record-actions";
 import type { InitialContact } from "@/components/contacts/contact-form";
+import { ContactNotes } from "@/components/contacts/contact-notes";
 import { OrganisationPeople } from "@/components/contacts/organisation-people";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -29,16 +30,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { getWorkspaceAccessContext } from "@/core/access/application/access-context";
 import { requireMfaUser } from "@/core/auth/mfa";
+import { listContactNotes } from "@/core/contacts/application/contact-notes";
 import { getContact } from "@/core/contacts/application/contacts";
 import { getWorkspaceBranches } from "@/core/workspace/application/workspace-branches";
 import {
+  addContactNoteAction,
   changeContactArchiveAction,
   createAndLinkPersonAction,
+  editContactNoteAction,
   endPersonLinkAction,
   linkPersonAction,
   searchPeopleAction,
   updateContactAction,
   updatePersonLinkAction,
+  voidContactNoteAction,
 } from "../actions";
 
 function displayName(contact: {
@@ -79,16 +84,24 @@ export default async function ContactPage({
   searchParams,
 }: {
   params: Promise<{ workspaceSlug: string; contactId: string }>;
-  searchParams: Promise<{ error?: string | string[] }>;
+  searchParams: Promise<{ error?: string | string[]; voided?: string }>;
 }) {
   const { workspaceSlug, contactId } = await params;
   const listPath = `/dashboard/w/${workspaceSlug}/contacts`;
   const path = `${listPath}/${contactId}`;
   const user = await requireMfaUser(path, { workspaceSlug });
-  const [contact, context, branches] = await Promise.all([
+  const query = await searchParams;
+  const showVoided = query.voided === "1";
+  const [contact, context, branches, notes] = await Promise.all([
     getContact({ authSubject: user.id, workspaceSlug, contactId }),
     getWorkspaceAccessContext(user.id, workspaceSlug),
     getWorkspaceBranches(user.id, workspaceSlug),
+    listContactNotes({
+      authSubject: user.id,
+      workspaceSlug,
+      contactId,
+      includeVoided: showVoided,
+    }),
   ]);
   if (!context || !branches) redirect("/access-denied");
   if (!contact) notFound();
@@ -154,7 +167,7 @@ export default async function ContactPage({
   const activeBranches = branches.filter(({ status }) => status === "ACTIVE");
   const preferredChannel =
     contact.preferredCommunicationChannel?.toLowerCase() ?? "No preference";
-  const archiveFailed = (await searchParams).error === "archive";
+  const archiveFailed = query.error === "archive";
   const canManageLinks =
     context.permissions.has("contact.sensitive.manage") &&
     contact.status === "ACTIVE";
@@ -474,6 +487,56 @@ export default async function ContactPage({
                   .join(", ") || "None"
               }
               icon={Ban}
+            />
+          </CardContent>
+        </Card>
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle>Notes</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ContactNotes
+              addAction={addContactNoteAction.bind(
+                null,
+                workspaceSlug,
+                contactId,
+              )}
+              canAdd={
+                context.permissions.has("contact.note.create") &&
+                contact.status !== "MERGED"
+              }
+              canSeeVoided={context.permissions.has("contact.note.manage")}
+              showVoided={showVoided}
+              toggleHref={showVoided ? path : `${path}?voided=1`}
+              notes={(notes ?? []).map((note) => ({
+                id: note.id,
+                body: note.body,
+                occurredAt: note.occurredAt.toISOString(),
+                authorName: note.authorName,
+                branchName: note.branchName,
+                agencyWide: note.agencyWide,
+                edited: note.edited,
+                voided: note.voided,
+                voidReason: note.voidReason,
+                voidedByName: note.voidedByName,
+                canManage: note.canManage,
+                editAction: note.canManage
+                  ? editContactNoteAction.bind(
+                      null,
+                      workspaceSlug,
+                      contactId,
+                      note.id,
+                    )
+                  : null,
+                voidAction: note.canManage
+                  ? voidContactNoteAction.bind(
+                      null,
+                      workspaceSlug,
+                      contactId,
+                      note.id,
+                    )
+                  : null,
+              }))}
             />
           </CardContent>
         </Card>

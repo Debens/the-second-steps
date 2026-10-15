@@ -41,6 +41,8 @@ const ROLE_PERMISSIONS: Readonly<Record<SystemRole, readonly Permission[]>> = {
     "contact.archive",
     "contact.sensitive.manage",
     "contact.merge",
+    "contact.note.create",
+    "contact.note.manage",
   ],
   agency_admin: [
     "workspace.read",
@@ -59,6 +61,8 @@ const ROLE_PERMISSIONS: Readonly<Record<SystemRole, readonly Permission[]>> = {
     "contact.archive",
     "contact.sensitive.manage",
     "contact.merge",
+    "contact.note.create",
+    "contact.note.manage",
   ],
   branch_manager: [
     "workspace.read",
@@ -70,6 +74,8 @@ const ROLE_PERMISSIONS: Readonly<Record<SystemRole, readonly Permission[]>> = {
     "contact.archive",
     "contact.sensitive.manage",
     "contact.merge",
+    "contact.note.create",
+    "contact.note.manage",
   ],
   negotiator: [
     "workspace.read",
@@ -77,6 +83,7 @@ const ROLE_PERMISSIONS: Readonly<Record<SystemRole, readonly Permission[]>> = {
     "contact.read",
     "contact.create",
     "contact.update",
+    "contact.note.create",
   ],
   property_manager: [
     "workspace.read",
@@ -84,8 +91,15 @@ const ROLE_PERMISSIONS: Readonly<Record<SystemRole, readonly Permission[]>> = {
     "contact.read",
     "contact.create",
     "contact.update",
+    "contact.note.create",
   ],
-  accounts: ["workspace.read", "branch.read", "contact.read", "contact.update"],
+  accounts: [
+    "workspace.read",
+    "branch.read",
+    "contact.read",
+    "contact.update",
+    "contact.note.create",
+  ],
   read_only: [
     "workspace.read",
     "membership.read",

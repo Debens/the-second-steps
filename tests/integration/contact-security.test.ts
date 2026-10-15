@@ -494,4 +494,275 @@ describe("contact database security", () => {
       client.release();
     }
   });
+
+  describe("contact notes", () => {
+    const noteIds = {
+      branchNote: randomUUID(),
+      agencyNote: randomUUID(),
+    };
+
+    async function seedNotes() {
+      await adminPool.query(
+        `INSERT INTO "contact_branch_links" (
+          "workspace_id", "contact_id", "branch_id", "is_primary",
+          "created_by_membership_id", "updated_at"
+        ) VALUES ($1::uuid, $2::uuid, $3::uuid, false, $4::uuid,
+          CURRENT_TIMESTAMP)`,
+        [ids.workspaceA, ids.personA1, ids.branchA2, ids.membershipA1],
+      );
+      await adminPool.query(
+        `INSERT INTO "contact_notes" (
+          "id", "workspace_id", "contact_id", "branch_id", "visibility",
+          "body", "created_by_membership_id", "author_name", "updated_at"
+        ) VALUES
+          ($1::uuid, $3::uuid, $4::uuid, $5::uuid, 'branch', 'Private',
+            $6::uuid, 'Author One', CURRENT_TIMESTAMP),
+          ($2::uuid, $3::uuid, $4::uuid, $5::uuid, 'agency', 'Shared',
+            $6::uuid, 'Author One', CURRENT_TIMESTAMP)`,
+        [
+          noteIds.branchNote,
+          noteIds.agencyNote,
+          ids.workspaceA,
+          ids.personA1,
+          ids.branchA1,
+          ids.membershipA1,
+        ],
+      );
+    }
+
+    async function inContext<T>(
+      context: Parameters<typeof setContactContext>[1],
+      run: (client: PoolClient) => Promise<T>,
+    ) {
+      const client = await runtimePool.connect();
+      try {
+        await client.query("BEGIN");
+        await setContactContext(client, context);
+        const result = await run(client);
+        await client.query("ROLLBACK");
+        return result;
+      } finally {
+        client.release();
+      }
+    }
+
+    const branchA1User = {
+      workspaceId: ids.workspaceA,
+      membershipId: ids.membershipA1,
+      scope: "named_branches" as const,
+      branchIds: [ids.branchA1],
+    };
+    const branchA2User = {
+      workspaceId: ids.workspaceA,
+      membershipId: ids.membershipA2,
+      scope: "named_branches" as const,
+      branchIds: [ids.branchA2],
+    };
+
+    it("hides branch-private notes from another branch but shows agency-wide ones", async () => {
+      await seedNotes();
+      const owner = await inContext(branchA1User, (client) =>
+        client.query<{ body: string }>(
+          `SELECT "body" FROM "contact_notes" ORDER BY "body"`,
+        ),
+      );
+      expect(owner.rows.map(({ body }) => body)).toEqual(["Private", "Shared"]);
+      const other = await inContext(branchA2User, (client) =>
+        client.query<{ body: string }>(`SELECT "body" FROM "contact_notes"`),
+      );
+      expect(other.rows.map(({ body }) => body)).toEqual(["Shared"]);
+      const outsider = await inContext(
+        {
+          workspaceId: ids.workspaceB,
+          membershipId: ids.membershipB,
+          scope: "workspace",
+        },
+        (client) => client.query(`SELECT "id" FROM "contact_notes"`),
+      );
+      expect(outsider.rows).toHaveLength(0);
+    });
+
+    it("requires the writer to act in the owning branch and be the author", async () => {
+      await seedNotes();
+      const insert = (
+        client: PoolClient,
+        branchId: string,
+        authorMembershipId: string,
+      ) =>
+        client.query(
+          `INSERT INTO "contact_notes" (
+            "workspace_id", "contact_id", "branch_id", "body",
+            "created_by_membership_id", "author_name", "updated_at"
+          ) VALUES ($1::uuid, $2::uuid, $3::uuid, 'New', $4::uuid,
+            'Writer', CURRENT_TIMESTAMP)`,
+          [ids.workspaceA, ids.personA1, branchId, authorMembershipId],
+        );
+      await inContext(branchA2User, async (client) => {
+        await client.query("SAVEPOINT s1");
+        await expect(
+          insert(client, ids.branchA1, ids.membershipA2),
+        ).rejects.toMatchObject({ code: "42501" });
+        await client.query("ROLLBACK TO SAVEPOINT s1");
+        await expect(
+          insert(client, ids.branchA2, ids.membershipA1),
+        ).rejects.toMatchObject({ code: "42501" });
+        await client.query("ROLLBACK TO SAVEPOINT s1");
+        await expect(
+          insert(client, ids.branchA2, ids.membershipA2),
+        ).resolves.toMatchObject({ rowCount: 1 });
+      });
+    });
+
+    it("lets only the owning branch change a note, and never its ownership", async () => {
+      await seedNotes();
+      const update = (client: PoolClient, setClause: string) =>
+        client.query(
+          `UPDATE "contact_notes" SET ${setClause}, "updated_at" = CURRENT_TIMESTAMP
+           WHERE "id" = $1::uuid`,
+          [noteIds.agencyNote],
+        );
+      await inContext(branchA2User, async (client) => {
+        const result = await update(client, `"body" = 'Hijacked'`);
+        expect(result.rowCount).toBe(0);
+      });
+      await inContext(branchA1User, async (client) => {
+        await expect(
+          update(client, `"body" = 'Corrected'`),
+        ).resolves.toMatchObject({ rowCount: 1 });
+        await client.query("SAVEPOINT s1");
+        await expect(
+          update(client, `"branch_id" = '${ids.branchA2}'::uuid`),
+        ).rejects.toMatchObject({ code: "23514" });
+        await client.query("ROLLBACK TO SAVEPOINT s1");
+        await expect(
+          update(client, `"author_name" = 'Someone else'`),
+        ).rejects.toMatchObject({ code: "23514" });
+      });
+    });
+
+    it("keeps a voided note final and the history append-only", async () => {
+      await seedNotes();
+      await inContext(branchA1User, async (client) => {
+        await client.query(
+          `INSERT INTO "contact_note_revisions" (
+            "workspace_id", "note_id", "previous_body", "previous_occurred_at",
+            "previous_visibility", "edit_reason", "edited_by_membership_id"
+          ) VALUES ($1::uuid, $2::uuid, 'Old', CURRENT_TIMESTAMP, 'branch',
+            'Typo', $3::uuid)`,
+          [ids.workspaceA, noteIds.branchNote, ids.membershipA1],
+        );
+        await client.query("SAVEPOINT s1");
+        await expect(
+          client.query(
+            `UPDATE "contact_note_revisions" SET "edit_reason" = 'Changed'`,
+          ),
+        ).rejects.toMatchObject({ code: "42501" });
+        await client.query("ROLLBACK TO SAVEPOINT s1");
+        await expect(
+          client.query(`DELETE FROM "contact_note_revisions"`),
+        ).rejects.toMatchObject({ code: "42501" });
+        await client.query("ROLLBACK TO SAVEPOINT s1");
+        await expect(
+          client.query(`DELETE FROM "contact_notes"`),
+        ).rejects.toMatchObject({ code: "42501" });
+        await client.query("ROLLBACK TO SAVEPOINT s1");
+
+        await client.query(
+          `UPDATE "contact_notes" SET "status" = 'voided',
+            "voided_at" = CURRENT_TIMESTAMP,
+            "voided_by_membership_id" = $2::uuid, "voided_by_name" = 'Mgr',
+            "void_reason" = 'Wrong contact', "updated_at" = CURRENT_TIMESTAMP
+           WHERE "id" = $1::uuid`,
+          [noteIds.branchNote, ids.membershipA1],
+        );
+        await client.query("SAVEPOINT s2");
+        await expect(
+          client.query(
+            `UPDATE "contact_notes" SET "status" = 'active',
+              "voided_at" = NULL, "voided_by_membership_id" = NULL,
+              "voided_by_name" = NULL, "void_reason" = NULL,
+              "updated_at" = CURRENT_TIMESTAMP
+             WHERE "id" = $1::uuid`,
+            [noteIds.branchNote],
+          ),
+        ).rejects.toMatchObject({ code: "23514" });
+      });
+    });
+
+    it("does not let voiding rewrite a note", async () => {
+      await seedNotes();
+      await inContext(branchA1User, async (client) => {
+        await expect(
+          client.query(
+            `UPDATE "contact_notes" SET "status" = 'voided',
+              "voided_at" = CURRENT_TIMESTAMP,
+              "voided_by_membership_id" = $2::uuid, "voided_by_name" = 'Mgr',
+              "void_reason" = 'Wrong contact', "body" = 'Rewritten',
+              "updated_at" = CURRENT_TIMESTAMP
+             WHERE "id" = $1::uuid`,
+            [noteIds.branchNote, ids.membershipA1],
+          ),
+        ).rejects.toMatchObject({ code: "23514" });
+      });
+    });
+
+    it("keeps earlier wording private to the owning branch after sharing", async () => {
+      await seedNotes();
+      await adminPool.query(
+        `INSERT INTO "contact_note_revisions" (
+          "workspace_id", "note_id", "previous_body", "previous_occurred_at",
+          "previous_visibility", "edit_reason", "edited_by_membership_id"
+        ) VALUES ($1::uuid, $2::uuid, 'Private earlier wording',
+          CURRENT_TIMESTAMP, 'branch', 'Shared it', $3::uuid)`,
+        [ids.workspaceA, noteIds.agencyNote, ids.membershipA1],
+      );
+      const owning = await inContext(branchA1User, (client) =>
+        client.query(`SELECT "previous_body" FROM "contact_note_revisions"`),
+      );
+      expect(owning.rows).toEqual([
+        { previous_body: "Private earlier wording" },
+      ]);
+      const otherBranch = await inContext(branchA2User, async (client) => {
+        const notes = await client.query(
+          `SELECT "id" FROM "contact_notes" WHERE "id" = $1::uuid`,
+          [noteIds.agencyNote],
+        );
+        const revisions = await client.query(
+          `SELECT "previous_body" FROM "contact_note_revisions"`,
+        );
+        return { notes: notes.rows, revisions: revisions.rows };
+      });
+      expect(otherBranch.notes).toHaveLength(1);
+      expect(otherBranch.revisions).toEqual([]);
+    });
+
+    it("only files a note under one of the contact's current branches", async () => {
+      const insert = (client: PoolClient, branchId: string) =>
+        client.query(
+          `INSERT INTO "contact_notes" (
+            "workspace_id", "contact_id", "branch_id", "body",
+            "created_by_membership_id", "author_name", "updated_at"
+          ) VALUES ($1::uuid, $2::uuid, $3::uuid, 'New', $4::uuid,
+            'Writer', CURRENT_TIMESTAMP)`,
+          [ids.workspaceA, ids.personA2, branchId, ids.membershipAAll],
+        );
+      await inContext(
+        {
+          workspaceId: ids.workspaceA,
+          membershipId: ids.membershipAAll,
+          scope: "workspace",
+        },
+        async (client) => {
+          await client.query("SAVEPOINT s1");
+          await expect(insert(client, ids.branchA1)).rejects.toMatchObject({
+            code: "42501",
+          });
+          await client.query("ROLLBACK TO SAVEPOINT s1");
+          await expect(insert(client, ids.branchA2)).resolves.toMatchObject({
+            rowCount: 1,
+          });
+        },
+      );
+    });
+  });
 });

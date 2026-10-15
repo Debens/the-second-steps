@@ -117,6 +117,20 @@ enum ContactStatus {
   @@map("contact_status")
 }
 
+enum ContactNoteVisibility {
+  BRANCH @map("branch")
+  AGENCY @map("agency")
+
+  @@map("contact_note_visibility")
+}
+
+enum ContactNoteStatus {
+  ACTIVE @map("active")
+  VOIDED @map("voided")
+
+  @@map("contact_note_status")
+}
+
 enum OrganisationType {
   LIMITED_COMPANY @map("limited_company")
   LLP             @map("llp")
@@ -233,6 +247,7 @@ model Branch {
   workspace    Workspace                @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
   access       MembershipBranchAccess[]
   contactLinks ContactBranchLink[]
+  contactNotes ContactNote[]
 
   @@unique([workspaceId, id])
   @@unique([workspaceId, name])
@@ -257,6 +272,9 @@ model Membership {
   auditEvents               AuditEvent[]             @relation("AuditMembership")
   contactsCreated           Contact[]                @relation("ContactCreatedBy")
   contactBranchLinksCreated ContactBranchLink[]      @relation("ContactBranchLinkCreatedBy")
+  contactNotesCreated       ContactNote[]            @relation("ContactNoteCreatedBy")
+  contactNotesVoided        ContactNote[]            @relation("ContactNoteVoidedBy")
+  contactNoteRevisions      ContactNoteRevision[]    @relation("ContactNoteEditedBy")
 
   @@unique([workspaceId, userIdentityId])
   @@unique([workspaceId, id])
@@ -409,6 +427,7 @@ model Contact {
   organisationLinks             OrganisationPersonLink[] @relation("OrganisationContact")
   personLinks                   OrganisationPersonLink[] @relation("PersonContact")
   branchLinks                   ContactBranchLink[]
+  notes                         ContactNote[]
 
   @@unique([workspaceId, id])
   @@unique([workspaceId, reference])
@@ -505,4 +524,55 @@ model ContactBranchLink {
   @@index([workspaceId, branchId, endedAt])
   @@index([workspaceId, createdByMembershipId])
   @@map("contact_branch_links")
+}
+
+model ContactNote {
+  id                    String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workspaceId           String                    @map("workspace_id") @db.Uuid
+  contactId             String                    @map("contact_id") @db.Uuid
+  branchId              String                    @map("branch_id") @db.Uuid
+  visibility            ContactNoteVisibility     @default(BRANCH)
+  body                  String
+  occurredAt            DateTime                  @default(now()) @map("occurred_at") @db.Timestamptz(6)
+  status                ContactNoteStatus         @default(ACTIVE)
+  lastEditedAt          DateTime?                 @map("last_edited_at") @db.Timestamptz(6)
+  version               Int                       @default(1)
+  voidedAt              DateTime?                 @map("voided_at") @db.Timestamptz(6)
+  voidedByMembershipId  String?                   @map("voided_by_membership_id") @db.Uuid
+  voidReason            String?                   @map("void_reason") @db.VarChar(500)
+  voidedByName          String?                   @map("voided_by_name") @db.VarChar(200)
+  createdByMembershipId String                    @map("created_by_membership_id") @db.Uuid
+  authorName            String                    @map("author_name") @db.VarChar(200)
+  createdAt             DateTime                  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime                  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  contact               Contact                   @relation(fields: [workspaceId, contactId], references: [workspaceId, id], onDelete: Restrict)
+  branch                Branch                    @relation(fields: [workspaceId, branchId], references: [workspaceId, id], onDelete: Restrict)
+  createdByMembership   Membership                @relation("ContactNoteCreatedBy", fields: [workspaceId, createdByMembershipId], references: [workspaceId, id], onDelete: Restrict)
+  voidedByMembership    Membership?               @relation("ContactNoteVoidedBy", fields: [workspaceId, voidedByMembershipId], references: [workspaceId, id], onDelete: Restrict)
+  revisions             ContactNoteRevision[]
+
+  @@unique([workspaceId, id])
+  @@index([workspaceId, contactId, status, occurredAt(sort: Desc)])
+  @@index([workspaceId, branchId])
+  @@index([workspaceId, createdByMembershipId])
+  @@map("contact_notes")
+}
+
+model ContactNoteRevision {
+  id                   String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workspaceId          String                @map("workspace_id") @db.Uuid
+  noteId               String                @map("note_id") @db.Uuid
+  previousBody         String                @map("previous_body")
+  previousOccurredAt   DateTime              @map("previous_occurred_at") @db.Timestamptz(6)
+  previousVisibility   ContactNoteVisibility @map("previous_visibility")
+  editReason           String                @map("edit_reason") @db.VarChar(500)
+  editedByMembershipId String                @map("edited_by_membership_id") @db.Uuid
+  createdAt            DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
+  note                 ContactNote           @relation(fields: [workspaceId, noteId], references: [workspaceId, id], onDelete: Restrict)
+  editedByMembership   Membership            @relation("ContactNoteEditedBy", fields: [workspaceId, editedByMembershipId], references: [workspaceId, id], onDelete: Restrict)
+
+  @@unique([workspaceId, id])
+  @@index([workspaceId, noteId, createdAt])
+  @@index([workspaceId, editedByMembershipId])
+  @@map("contact_note_revisions")
 }

@@ -8,6 +8,10 @@ import {
   validateContactAddresses,
   validateContactPoints,
   validateOrganisationDetails,
+  chooseNoteBranch,
+  validateNoteBody,
+  validateNoteOccurredAt,
+  validateNoteReason,
   validatePersonDetails,
   validateRelationshipLabel,
 } from "./contact";
@@ -169,5 +173,56 @@ describe("contact domain", () => {
     expect(validateRelationshipLabel("x".repeat(101))).toMatchObject({
       ok: false,
     });
+  });
+
+  it("validates note text and reasons", () => {
+    expect(validateNoteBody("  Called landlord  ")).toEqual({
+      ok: true,
+      body: "Called landlord",
+    });
+    expect(validateNoteBody("   ")).toMatchObject({ ok: false });
+    expect(validateNoteBody("x".repeat(5001))).toMatchObject({ ok: false });
+    expect(validateNoteReason(" Typo ")).toEqual({ ok: true, reason: "Typo" });
+    expect(validateNoteReason("")).toMatchObject({ ok: false });
+    expect(validateNoteReason("x".repeat(501))).toMatchObject({ ok: false });
+  });
+
+  it("defaults the note time to now and rejects future times", () => {
+    const now = new Date("2026-10-15T12:00:00Z");
+    expect(validateNoteOccurredAt(null, now)).toEqual({
+      ok: true,
+      occurredAt: now,
+    });
+    const past = new Date("2026-10-14T09:30:00Z");
+    expect(validateNoteOccurredAt(past, now)).toEqual({
+      ok: true,
+      occurredAt: past,
+    });
+    expect(
+      validateNoteOccurredAt(new Date("2026-10-16T12:00:00Z"), now),
+    ).toMatchObject({ ok: false });
+    expect(validateNoteOccurredAt(new Date("nonsense"), now)).toMatchObject({
+      ok: false,
+    });
+  });
+
+  it("chooses the primary branch when usable, else the first usable branch", () => {
+    const branches = [
+      { branchId: "b", isPrimary: false },
+      { branchId: "a", isPrimary: true },
+      { branchId: "c", isPrimary: false },
+    ];
+    expect(
+      chooseNoteBranch({ contactBranches: branches, canAccess: () => true }),
+    ).toBe("a");
+    expect(
+      chooseNoteBranch({
+        contactBranches: branches,
+        canAccess: (id) => id !== "a",
+      }),
+    ).toBe("b");
+    expect(
+      chooseNoteBranch({ contactBranches: branches, canAccess: () => false }),
+    ).toBeNull();
   });
 });

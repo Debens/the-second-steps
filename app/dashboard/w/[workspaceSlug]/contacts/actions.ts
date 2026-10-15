@@ -14,6 +14,11 @@ import {
   type CommunicationPreferencesInput,
 } from "@/core/contacts/application/contacts";
 import {
+  addContactNote,
+  editContactNote,
+  voidContactNote,
+} from "@/core/contacts/application/contact-notes";
+import {
   createAndLinkOrganisationPerson,
   endOrganisationPersonLink,
   linkOrganisationPerson,
@@ -648,4 +653,98 @@ export async function createAndLinkPersonAction(
   }
   revalidatePath(`/dashboard/w/${workspaceSlug}/contacts`, "layout");
   return { status: "saved", message: "Person added and linked." };
+}
+
+export type NoteFormState = {
+  status: "idle" | "error" | "saved";
+  message: string;
+};
+
+const NOTE_FIELD_ERROR = "Check the note details and try again.";
+
+// The browser sends the chosen time as an ISO string in its own time zone.
+function noteOccurredAt(formData: FormData) {
+  const value = text(formData, "occurredAt").trim();
+  return value ? new Date(value) : null;
+}
+
+function noteFailure(
+  error:
+    "access_denied" | "contact_not_found" | "invalid_input" | "invalid_state",
+): NoteFormState {
+  return {
+    status: "error",
+    message:
+      error === "invalid_input"
+        ? NOTE_FIELD_ERROR
+        : error === "invalid_state"
+          ? "This note can no longer be changed."
+          : "The note could not be saved. Check your access and try again.",
+  };
+}
+
+export async function addContactNoteAction(
+  workspaceSlug: string,
+  contactId: string,
+  _previousState: NoteFormState,
+  formData: FormData,
+): Promise<NoteFormState> {
+  const path = `/dashboard/w/${workspaceSlug}/contacts/${contactId}`;
+  const user = await requireMfaUser(path, { workspaceSlug });
+  const result = await addContactNote({
+    authSubject: user.id,
+    workspaceSlug,
+    contactId,
+    body: text(formData, "body"),
+    occurredAt: noteOccurredAt(formData),
+    shareWithAllBranches: checked(formData, "shareWithAllBranches"),
+  });
+  if (!result.ok) return noteFailure(result.error);
+  revalidatePath(path);
+  return { status: "saved", message: "Note added." };
+}
+
+export async function editContactNoteAction(
+  workspaceSlug: string,
+  contactId: string,
+  noteId: string,
+  _previousState: NoteFormState,
+  formData: FormData,
+): Promise<NoteFormState> {
+  const path = `/dashboard/w/${workspaceSlug}/contacts/${contactId}`;
+  const user = await requireMfaUser(path, { workspaceSlug });
+  const result = await editContactNote({
+    authSubject: user.id,
+    workspaceSlug,
+    contactId,
+    noteId,
+    body: text(formData, "body"),
+    occurredAt: noteOccurredAt(formData),
+    shareWithAllBranches: checked(formData, "shareWithAllBranches"),
+    reason: text(formData, "reason"),
+  });
+  if (!result.ok) return noteFailure(result.error);
+  revalidatePath(path);
+  return { status: "saved", message: "Note updated." };
+}
+
+export async function voidContactNoteAction(
+  workspaceSlug: string,
+  contactId: string,
+  noteId: string,
+  _previousState: NoteFormState,
+  formData: FormData,
+): Promise<NoteFormState> {
+  const path = `/dashboard/w/${workspaceSlug}/contacts/${contactId}`;
+  const user = await requireMfaUser(path, { workspaceSlug });
+  const result = await voidContactNote({
+    authSubject: user.id,
+    workspaceSlug,
+    contactId,
+    noteId,
+    reason: text(formData, "reason"),
+  });
+  if (!result.ok) return noteFailure(result.error);
+  revalidatePath(path);
+  return { status: "saved", message: "Note voided." };
 }

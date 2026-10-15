@@ -75,6 +75,7 @@ describe("workspace roles", () => {
         "contact.read",
         "contact.create",
         "contact.update",
+        "contact.note.create",
       ]),
     );
   });
@@ -90,6 +91,35 @@ describe("workspace roles", () => {
     expect(hasPermission(["accounts"], "contact.create")).toBe(false);
     expect(hasPermission(["read_only"], "contact.read")).toBe(true);
     expect(hasPermission(["read_only"], "contact.update")).toBe(false);
+  });
+
+  it("lets writers add contact notes but only managers correct them", () => {
+    for (const role of [
+      "workspace_owner",
+      "agency_admin",
+      "branch_manager",
+      "negotiator",
+      "property_manager",
+      "accounts",
+    ] as const) {
+      expect(hasPermission([role], "contact.note.create")).toBe(true);
+    }
+    expect(hasPermission(["read_only"], "contact.note.create")).toBe(false);
+    for (const role of [
+      "workspace_owner",
+      "agency_admin",
+      "branch_manager",
+    ] as const) {
+      expect(hasPermission([role], "contact.note.manage")).toBe(true);
+    }
+    for (const role of [
+      "negotiator",
+      "property_manager",
+      "accounts",
+      "read_only",
+    ] as const) {
+      expect(hasPermission([role], "contact.note.manage")).toBe(false);
+    }
   });
 
   it("allows only an Account Owner to assign the owner role", () => {

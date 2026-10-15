@@ -12,6 +12,12 @@ import {
   updateOrganisationIdentity,
 } from "@/core/contacts/application/contacts";
 import {
+  addContactNote,
+  editContactNote,
+  listContactNotes,
+  voidContactNote,
+} from "@/core/contacts/application/contact-notes";
+import {
   createAndLinkOrganisationPerson,
   endOrganisationPersonLink,
   linkOrganisationPerson,
@@ -708,5 +714,252 @@ describe("contact application layer", () => {
       `SELECT count(*)::int AS "count" FROM "contacts" WHERE "kind" = 'person'`,
     );
     expect(people.rows).toEqual([{ count: 1 }]);
+  });
+
+  describe("contact notes", () => {
+    const base = { workspaceSlug: "contact-app" };
+
+    async function shareWithBranchB(contactId: string) {
+      await adminPool.query(
+        `INSERT INTO "contact_branch_links" (
+          "workspace_id", "contact_id", "branch_id", "is_primary",
+          "created_by_membership_id", "updated_at"
+        ) VALUES ($1::uuid, $2::uuid, $3::uuid, false, $4::uuid,
+          CURRENT_TIMESTAMP)`,
+        [ids.workspace, contactId, ids.branchB, ids.managerMembership],
+      );
+    }
+
+    function listFor(
+      authSubject: string,
+      contactId: string,
+      includeVoided = false,
+    ) {
+      return listContactNotes({
+        ...base,
+        authSubject,
+        contactId,
+        includeVoided,
+      });
+    }
+
+    it("adds attributed notes in the writer's branch and audits without text", async () => {
+      const contactId = await createPerson();
+      await adminPool.query(
+        `UPDATE "user_identities" SET "first_name" = 'Nora', "last_name" = 'Negotiator'
+         WHERE "id" = $1::uuid`,
+        [ids.negotiatorAIdentity],
+      );
+      const added = await addContactNote({
+        ...base,
+        authSubject: ids.negotiatorAAuth,
+        contactId,
+        body: "  Landlord wants a valuation next week.  ",
+        occurredAt: new Date("2026-10-01T09:00:00Z"),
+        shareWithAllBranches: false,
+      });
+      expect(added.ok).toBe(true);
+
+      const notes = await listFor(ids.managerAuth, contactId);
+      expect(notes).toMatchObject([
+        {
+          body: "Landlord wants a valuation next week.",
+          authorName: "Nora Negotiator",
+          branchName: "Branch A",
+          agencyWide: false,
+          edited: false,
+          canManage: true,
+        },
+      ]);
+      expect(notes?.[0]?.occurredAt.toISOString()).toBe(
+        "2026-10-01T09:00:00.000Z",
+      );
+      const negotiatorView = await listFor(ids.negotiatorAAuth, contactId);
+      expect(negotiatorView?.[0]?.canManage).toBe(false);
+
+      const audit = await adminPool.query(
+        `SELECT "metadata"::text AS "metadata" FROM "audit_events"
+         WHERE "action" = 'contact.note.create' AND "outcome" = 'succeeded'`,
+      );
+      expect(audit.rows).toHaveLength(1);
+      expect(audit.rows[0].metadata).not.toContain("valuation");
+    });
+
+    it("rejects invalid, future-dated and unauthorised notes", async () => {
+      const contactId = await createPerson();
+      const note = {
+        ...base,
+        contactId,
+        body: "A note",
+        shareWithAllBranches: false,
+      };
+      await expect(
+        addContactNote({
+          ...note,
+          authSubject: ids.negotiatorAAuth,
+          body: "   ",
+        }),
+      ).resolves.toEqual({ ok: false, error: "invalid_input" });
+      await expect(
+        addContactNote({
+          ...note,
+          authSubject: ids.negotiatorAAuth,
+          occurredAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+        }),
+      ).resolves.toEqual({ ok: false, error: "invalid_input" });
+      await expect(
+        addContactNote({ ...note, authSubject: ids.negotiatorBAuth }),
+      ).resolves.toEqual({ ok: false, error: "contact_not_found" });
+    });
+
+    it("keeps branch notes private on a shared contact unless shared with all branches", async () => {
+      const contactId = await createPerson();
+      await shareWithBranchB(contactId);
+      const add = (authSubject: string, shareWithAllBranches: boolean) =>
+        addContactNote({
+          ...base,
+          authSubject,
+          contactId,
+          body: shareWithAllBranches ? "Agency note" : "Branch note",
+          shareWithAllBranches,
+        });
+      await add(ids.negotiatorAAuth, false);
+      await add(ids.managerAuth, true);
+      const bAdded = await add(ids.negotiatorBAuth, false);
+      expect(bAdded.ok).toBe(true);
+
+      const bodies = async (authSubject: string) =>
+        ((await listFor(authSubject, contactId)) ?? [])
+          .map(({ body }) => body)
+          .sort();
+      expect(await bodies(ids.negotiatorAAuth)).toEqual([
+        "Agency note",
+        "Branch note",
+      ]);
+      expect(await bodies(ids.negotiatorBAuth)).toEqual([
+        "Agency note",
+        "Branch note",
+      ]);
+      const branchB = await listFor(ids.negotiatorBAuth, contactId);
+      expect(branchB?.map(({ branchName }) => branchName).sort()).toEqual([
+        "Branch A",
+        "Branch B",
+      ]);
+      const aNotes = await listFor(ids.negotiatorAAuth, contactId);
+      expect(aNotes?.map(({ branchName }) => branchName).sort()).toEqual([
+        "Branch A",
+        "Branch A",
+      ]);
+      // The owner has workspace scope and sees everything.
+      expect((await listFor(ids.ownerAuth, contactId))?.length).toBe(3);
+    });
+
+    it("lets managers correct and void notes with reasons while keeping history", async () => {
+      const contactId = await createPerson();
+      const added = await addContactNote({
+        ...base,
+        authSubject: ids.negotiatorAAuth,
+        contactId,
+        body: "Original wording",
+        shareWithAllBranches: false,
+      });
+      if (!added.ok) throw new Error("Note creation failed.");
+      const manage = {
+        ...base,
+        contactId,
+        noteId: added.noteId,
+      };
+      const edit = {
+        ...manage,
+        body: "Corrected wording",
+        occurredAt: null,
+        shareWithAllBranches: false,
+        reason: "Typo",
+      };
+      await expect(
+        editContactNote({ ...edit, authSubject: ids.negotiatorAAuth }),
+      ).resolves.toEqual({ ok: false, error: "access_denied" });
+      await expect(
+        editContactNote({ ...edit, authSubject: ids.managerAuth, reason: " " }),
+      ).resolves.toEqual({ ok: false, error: "invalid_input" });
+      await expect(
+        editContactNote({ ...edit, authSubject: ids.managerAuth }),
+      ).resolves.toEqual({ ok: true, noteId: added.noteId });
+
+      const history = await adminPool.query(
+        `SELECT "previous_body", "edit_reason" FROM "contact_note_revisions"`,
+      );
+      expect(history.rows).toEqual([
+        { previous_body: "Original wording", edit_reason: "Typo" },
+      ]);
+      expect(
+        (await listFor(ids.negotiatorAAuth, contactId))?.[0],
+      ).toMatchObject({ body: "Corrected wording", edited: true });
+
+      await expect(
+        voidContactNote({
+          ...manage,
+          authSubject: ids.negotiatorAAuth,
+          reason: "Wrong contact",
+        }),
+      ).resolves.toEqual({ ok: false, error: "access_denied" });
+      await expect(
+        voidContactNote({
+          ...manage,
+          authSubject: ids.managerAuth,
+          reason: "Wrong contact",
+        }),
+      ).resolves.toEqual({ ok: true, noteId: added.noteId });
+      expect(await listFor(ids.managerAuth, contactId)).toEqual([]);
+      const voided = await listFor(ids.managerAuth, contactId, true);
+      expect(voided?.[0]).toMatchObject({
+        voided: true,
+        voidReason: "Wrong contact",
+        canManage: false,
+      });
+      // Negotiators cannot ask for voided notes.
+      expect(await listFor(ids.negotiatorAAuth, contactId, true)).toEqual([]);
+      await expect(
+        editContactNote({ ...edit, authSubject: ids.managerAuth }),
+      ).resolves.toEqual({ ok: false, error: "invalid_state" });
+    });
+
+    it("stops a manager changing another branch's agency-wide note", async () => {
+      const contactId = await createPerson();
+      await shareWithBranchB(contactId);
+      const added = await addContactNote({
+        ...base,
+        authSubject: ids.negotiatorBAuth,
+        contactId,
+        body: "Branch B shares this",
+        shareWithAllBranches: true,
+      });
+      if (!added.ok) throw new Error("Note creation failed.");
+      const notes = await listFor(ids.managerAuth, contactId);
+      expect(notes).toMatchObject([
+        { branchName: "Branch B", canManage: false },
+      ]);
+      await expect(
+        editContactNote({
+          ...base,
+          authSubject: ids.managerAuth,
+          contactId,
+          noteId: added.noteId,
+          body: "Changed by A",
+          occurredAt: null,
+          shareWithAllBranches: true,
+          reason: "Because",
+        }),
+      ).resolves.toEqual({ ok: false, error: "access_denied" });
+      await expect(
+        voidContactNote({
+          ...base,
+          authSubject: ids.managerAuth,
+          contactId,
+          noteId: added.noteId,
+          reason: "Because",
+        }),
+      ).resolves.toEqual({ ok: false, error: "access_denied" });
+    });
   });
 });
