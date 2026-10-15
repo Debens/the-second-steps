@@ -125,8 +125,8 @@ export default async function WorkspaceUsersPage({
         ))}
       </div>
 
-      <Card className="hidden md:block">
-        <CardContent className="px-0">
+      <Card className="hidden py-0 md:block">
+        <CardContent className="p-0">
           <Table>
             <TableHeader>
               <TableRow>

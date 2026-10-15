@@ -190,8 +190,8 @@ export default async function ContactsPage({
               </Link>
             ))}
           </div>
-          <Card className="hidden md:block">
-            <CardContent className="pt-4">
+          <Card className="hidden py-0 md:block">
+            <CardContent className="p-0">
               <Table>
                 <TableHeader>
                   <TableRow>
