@@ -15,6 +15,17 @@ Use **shadcn/ui** first (`components/ui`). Add components with `npx shadcn@lates
 - Every list or detail view has **loading**, **empty**, and **error** states. Toasts confirm completed actions; field problems show inline.
 - UI wording is for UK letting agents: British spelling, `£`, `DD/MM/YYYY` dates.
 
+## Interaction design and visual coherence
+
+- Design around the user's task, not around individual database fields or server actions. Related changes that users understand as one task should normally share one clear entry point, one review surface, and one save action.
+- Keep cards and list rows calm and easy to scan. Avoid adding several adjacent Edit, Add, Remove, or settings buttons when a single **Edit** or **Manage** action can open a well-structured dialog or page.
+- Prefer progressive disclosure: show the important current state first, then reveal detailed controls inside the edit flow. Do not make every possible action permanently visible.
+- A modal may contain grouped sections or tabs when they belong to the same bounded task and can be understood and saved together. Use a full page instead when the task is long, multi-stage, or needs substantial context. Do not hide unrelated actions in one oversized modal merely to reduce the button count.
+- Use one obvious primary action per surface. Secondary and destructive actions must be visually subordinate, clearly labelled, and placed near the item they affect.
+- Before adding a new control, inspect the surrounding screen and ask: can this fit naturally into an existing edit/manage flow; will the hierarchy remain clear on mobile; and can the user predict what one save will change?
+- Visual quality is part of completion. Check alignment, spacing, hierarchy, wording, empty/error/pending states, keyboard behaviour, and light/dark responsive layouts—not only whether the action technically works.
+- When consolidating security-sensitive settings, save the complete validated result atomically where partial updates could briefly or permanently grant unintended access.
+
 ## Brand (ADR-017)
 
 - Colours are defined once as `--brand-*` variables in `styles/globals.css` and mapped to semantic tokens. In components use semantic classes only (`bg-primary`, `text-muted-foreground`, `bg-sidebar`, `bg-highlight`); never hex, `--brand-*`, or arbitrary `[var(...)]` values. Need a new colour role? Add a semantic token in **both** theme blocks and a contrast pair in `styles/theme-contrast.test.ts`.

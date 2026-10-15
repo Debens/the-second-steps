@@ -10,7 +10,10 @@ import {
 import { StatusBadge } from "@/components/ui/status-badge";
 import { BranchUserList } from "@/components/workspace/branch-user-list";
 import { requireMfaUser } from "@/core/auth/mfa";
+import { getWorkspaceMembers } from "@/core/access/application/workspace-members";
 import { getWorkspaceBranches } from "@/core/workspace/application/workspace-branches";
+import { formatPersonName } from "@/core/platform/domain/user-profile";
+import { ManageBranchUsersDialog } from "./branch-assignment-controls";
 
 function valueOrFallback(value: string | null) {
   return value || <span className="text-muted-foreground">Not recorded</span>;
@@ -35,7 +38,10 @@ export default async function WorkspaceBranchesPage({
   const { workspaceSlug } = await params;
   const path = `/dashboard/w/${workspaceSlug}/settings/branches`;
   const user = await requireMfaUser(path, { workspaceSlug });
-  const branches = await getWorkspaceBranches(user.id, workspaceSlug);
+  const [branches, membersResult] = await Promise.all([
+    getWorkspaceBranches(user.id, workspaceSlug),
+    getWorkspaceMembers(user.id, workspaceSlug),
+  ]);
   if (!branches) redirect("/access-denied");
 
   if (branches.length === 0) {
@@ -64,6 +70,48 @@ export default async function WorkspaceBranchesPage({
         ]
           .filter(Boolean)
           .join(", ");
+        const canManageBranch =
+          branch.status === "ACTIVE" &&
+          membersResult?.canManageBranchScopes === true;
+        const candidates =
+          canManageBranch && membersResult
+            ? membersResult.members.flatMap((member) =>
+                member.canManageScope &&
+                member.status === "ACTIVE" &&
+                member.scopeMode === "NAMED_BRANCHES" &&
+                !member.branchIds.includes(branch.id)
+                  ? [
+                      {
+                        membershipId: member.id,
+                        label: formatPersonName(
+                          member.firstName,
+                          member.lastName,
+                        ),
+                        email: member.primaryEmail,
+                        branchIds: member.branchIds,
+                      },
+                    ]
+                  : [],
+              )
+            : [];
+        const memberById = new Map(
+          membersResult?.members.map((member) => [member.id, member]) ?? [],
+        );
+        const assignedUsers = (branch.users ?? []).flatMap((branchUser) => {
+          const member = memberById.get(branchUser.membershipId);
+          if (!member) return [];
+
+          return [
+            {
+              membershipId: member.id,
+              label: formatPersonName(member.firstName, member.lastName),
+              email: member.primaryEmail,
+              branchIds: member.branchIds,
+              canManageScope: member.canManageScope,
+              scopeMode: member.scopeMode,
+            },
+          ];
+        });
 
         return (
           <Card key={branch.id}>
@@ -88,7 +136,21 @@ export default async function WorkspaceBranchesPage({
                   <Detail label="Address" value={address || null} />
                 </div>
               </dl>
-              {branch.users && <BranchUserList users={branch.users} />}
+              {branch.users && (
+                <BranchUserList
+                  users={branch.users}
+                  headerAction={
+                    canManageBranch ? (
+                      <ManageBranchUsersDialog
+                        workspaceSlug={workspaceSlug}
+                        branchId={branch.id}
+                        candidates={candidates}
+                        assignedUsers={assignedUsers}
+                      />
+                    ) : undefined
+                  }
+                />
+              )}
             </CardContent>
           </Card>
         );

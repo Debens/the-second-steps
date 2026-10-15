@@ -5,6 +5,8 @@ import {
   getWorkspaceMembers,
   updateWorkspaceMemberRoles,
 } from "@/core/access/application/workspace-members";
+import { updateWorkspaceMemberAccess } from "@/core/access/application/workspace-member-access";
+import { updateWorkspaceMemberScope } from "@/core/access/application/workspace-member-scope";
 import { db } from "@/core/db/client";
 import {
   listCustomerFeatureFlags,
@@ -533,6 +535,234 @@ describe("database and workspace access hardening", () => {
       [ids.workspaceA],
     );
     expect(deniedAudit.rowCount).toBe(1);
+  });
+
+  it("lets an Account Owner update branch scope and records the old and new scope", async () => {
+    await expect(
+      updateWorkspaceMemberScope({
+        authSubject: ids.ownerOneAuth,
+        workspaceSlug: "workspace-a",
+        targetMembershipId: ids.sameBranchMembership,
+        proposedScope: {
+          kind: "named_branches",
+          branchIds: [ids.branchA, ids.branchB],
+        },
+      }),
+    ).resolves.toEqual({ ok: true });
+
+    const updated = await adminPool.query<{ branch_id: string }>(
+      `SELECT "branch_id" FROM "membership_branch_access"
+       WHERE "membership_id" = $1::uuid ORDER BY "branch_id"`,
+      [ids.sameBranchMembership],
+    );
+    expect(updated.rows.map(({ branch_id }) => branch_id).sort()).toEqual(
+      [ids.branchA, ids.branchB].sort(),
+    );
+
+    const audit = await adminPool.query<{
+      outcome: string;
+      metadata: {
+        previousScope: { kind: string; branchIds: string[] };
+        newScope: { kind: string; branchIds: string[] };
+      };
+    }>(
+      `SELECT "outcome", "metadata" FROM "audit_events"
+       WHERE "action" = 'membership.scope.update'
+         AND "target_id" = $1`,
+      [ids.sameBranchMembership],
+    );
+    expect(audit.rows).toEqual([
+      expect.objectContaining({
+        outcome: "succeeded",
+        metadata: {
+          previousScope: {
+            kind: "named_branches",
+            branchIds: [ids.branchA],
+          },
+          newScope: {
+            kind: "named_branches",
+            branchIds: [ids.branchA, ids.branchB],
+          },
+        },
+      }),
+    ]);
+  });
+
+  it("updates roles and branch scope together with one audit event", async () => {
+    await expect(
+      updateWorkspaceMemberAccess({
+        authSubject: ids.ownerOneAuth,
+        workspaceSlug: "workspace-a",
+        targetMembershipId: ids.sameBranchMembership,
+        proposedRoleValues: ["property_manager"],
+        proposedScope: {
+          kind: "named_branches",
+          branchIds: [ids.branchA, ids.branchB],
+        },
+      }),
+    ).resolves.toEqual({ ok: true });
+
+    const roles = await adminPool.query<{ role_code: string }>(
+      `SELECT "role_code" FROM "membership_roles"
+       WHERE "membership_id" = $1::uuid ORDER BY "role_code"`,
+      [ids.sameBranchMembership],
+    );
+    expect(roles.rows).toEqual([{ role_code: "property_manager" }]);
+
+    const branches = await adminPool.query<{ branch_id: string }>(
+      `SELECT "branch_id" FROM "membership_branch_access"
+       WHERE "membership_id" = $1::uuid ORDER BY "branch_id"`,
+      [ids.sameBranchMembership],
+    );
+    expect(branches.rows.map(({ branch_id }) => branch_id).sort()).toEqual(
+      [ids.branchA, ids.branchB].sort(),
+    );
+
+    const audit = await adminPool.query<{ outcome: string }>(
+      `SELECT "outcome" FROM "audit_events"
+       WHERE "action" = 'membership.access.update'
+         AND "target_id" = $1`,
+      [ids.sameBranchMembership],
+    );
+    expect(audit.rows).toEqual([{ outcome: "succeeded" }]);
+  });
+
+  it("leaves roles and branch scope unchanged when a combined update is denied", async () => {
+    await expect(
+      updateWorkspaceMemberAccess({
+        authSubject: ids.ownerOneAuth,
+        workspaceSlug: "workspace-a",
+        targetMembershipId: ids.sameBranchMembership,
+        proposedRoleValues: ["property_manager"],
+        proposedScope: {
+          kind: "named_branches",
+          branchIds: [ids.branchA, ids.workspaceB],
+        },
+      }),
+    ).resolves.toEqual({ ok: false, error: "invalid_branch" });
+
+    const roles = await adminPool.query<{ role_code: string }>(
+      `SELECT "role_code" FROM "membership_roles"
+       WHERE "membership_id" = $1::uuid`,
+      [ids.sameBranchMembership],
+    );
+    expect(roles.rows).toEqual([{ role_code: "negotiator" }]);
+
+    const branches = await adminPool.query<{ branch_id: string }>(
+      `SELECT "branch_id" FROM "membership_branch_access"
+       WHERE "membership_id" = $1::uuid`,
+      [ids.sameBranchMembership],
+    );
+    expect(branches.rows).toEqual([{ branch_id: ids.branchA }]);
+  });
+
+  it("denies branch-scope changes by Branch Managers, by the target user, and across workspaces", async () => {
+    await expect(
+      updateWorkspaceMemberScope({
+        authSubject: ids.managerAuth,
+        workspaceSlug: "workspace-a",
+        targetMembershipId: ids.sameBranchMembership,
+        proposedScope: { kind: "named_branches", branchIds: [ids.branchA] },
+      }),
+    ).resolves.toEqual({ ok: false, error: "cannot_manage_scope" });
+
+    await expect(
+      updateWorkspaceMemberScope({
+        authSubject: ids.ownerOneAuth,
+        workspaceSlug: "workspace-a",
+        targetMembershipId: ids.ownerOneMembership,
+        proposedScope: { kind: "named_branches", branchIds: [ids.branchA] },
+      }),
+    ).resolves.toEqual({ ok: false, error: "self_scope_change" });
+
+    await expect(
+      updateWorkspaceMemberScope({
+        authSubject: ids.ownerOneAuth,
+        workspaceSlug: "workspace-a",
+        targetMembershipId: ids.workspaceBOwnerMembership,
+        proposedScope: { kind: "workspace" },
+      }),
+    ).resolves.toEqual({ ok: false, error: "member_not_found" });
+  });
+
+  it("enforces named-scope administrator limits and owner protection", async () => {
+    await adminPool.query(
+      `UPDATE "membership_roles" SET "role_code" = 'agency_admin'
+       WHERE "membership_id" = $1::uuid`,
+      [ids.managerMembership],
+    );
+
+    await expect(
+      updateWorkspaceMemberScope({
+        authSubject: ids.managerAuth,
+        workspaceSlug: "workspace-a",
+        targetMembershipId: ids.sameBranchMembership,
+        proposedScope: {
+          kind: "named_branches",
+          branchIds: [ids.branchA, ids.branchB],
+        },
+      }),
+    ).resolves.toEqual({ ok: false, error: "invalid_branch" });
+
+    await expect(
+      updateWorkspaceMemberScope({
+        authSubject: ids.managerAuth,
+        workspaceSlug: "workspace-a",
+        targetMembershipId: ids.ownerOneMembership,
+        proposedScope: { kind: "named_branches", branchIds: [ids.branchA] },
+      }),
+    ).resolves.toEqual({ ok: false, error: "owner_scope_requires_owner" });
+
+    await expect(
+      updateWorkspaceMemberScope({
+        authSubject: ids.managerAuth,
+        workspaceSlug: "workspace-a",
+        targetMembershipId: ids.overlappingMembership,
+        proposedScope: { kind: "named_branches", branchIds: [ids.branchA] },
+      }),
+    ).resolves.toEqual({ ok: true });
+  });
+
+  it("rejects empty, inactive-branch, and suspended-user scope changes", async () => {
+    await expect(
+      updateWorkspaceMemberScope({
+        authSubject: ids.ownerOneAuth,
+        workspaceSlug: "workspace-a",
+        targetMembershipId: ids.sameBranchMembership,
+        proposedScope: { kind: "named_branches", branchIds: [] },
+      }),
+    ).resolves.toEqual({ ok: false, error: "invalid_scope" });
+
+    await adminPool.query(
+      `UPDATE "branches" SET "status" = 'inactive'
+       WHERE "id" = $1::uuid`,
+      [ids.branchB],
+    );
+    await expect(
+      updateWorkspaceMemberScope({
+        authSubject: ids.ownerOneAuth,
+        workspaceSlug: "workspace-a",
+        targetMembershipId: ids.sameBranchMembership,
+        proposedScope: {
+          kind: "named_branches",
+          branchIds: [ids.branchA, ids.branchB],
+        },
+      }),
+    ).resolves.toEqual({ ok: false, error: "invalid_branch" });
+
+    await adminPool.query(
+      `UPDATE "memberships" SET "status" = 'suspended'
+       WHERE "id" = $1::uuid`,
+      [ids.sameBranchMembership],
+    );
+    await expect(
+      updateWorkspaceMemberScope({
+        authSubject: ids.ownerOneAuth,
+        workspaceSlug: "workspace-a",
+        targetMembershipId: ids.sameBranchMembership,
+        proposedScope: { kind: "workspace" },
+      }),
+    ).resolves.toEqual({ ok: false, error: "member_not_found" });
   });
 
   it("rejects an empty named-branch membership at commit", async () => {

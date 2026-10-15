@@ -1,4 +1,5 @@
 import { UsersRound } from "lucide-react";
+import type { ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
 import { StatusBadge } from "@/components/ui/status-badge";
 import { formatPersonName } from "@/core/platform/domain/user-profile";
@@ -15,19 +16,26 @@ type BranchUser = {
 export function BranchUserList({
   users,
   divided = true,
+  headerAction,
 }: {
   users: readonly BranchUser[];
   divided?: boolean;
+  headerAction?: ReactNode;
 }) {
   return (
     <section
       aria-label="Users with access"
       className={divided ? "border-t pt-4" : undefined}
     >
-      <div className="mb-3 flex items-center gap-2">
-        <UsersRound aria-hidden="true" className="size-4 text-primary" />
-        <h4 className="text-sm font-semibold">Users with access</h4>
-        <span className="text-xs text-muted-foreground">({users.length})</span>
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2">
+          <UsersRound aria-hidden="true" className="size-4 text-primary" />
+          <h4 className="text-sm font-semibold">Users with access</h4>
+          <span className="text-xs text-muted-foreground">
+            ({users.length})
+          </span>
+        </div>
+        {headerAction}
       </div>
 
       {users.length === 0 ? (
@@ -47,7 +55,7 @@ export function BranchUserList({
                   {user.primaryEmail ?? "Email not recorded"}
                 </p>
               </div>
-              <div className="flex shrink-0 flex-wrap gap-1.5 sm:justify-end">
+              <div className="flex shrink-0 flex-wrap items-center gap-1.5 sm:justify-end">
                 <Badge
                   variant={user.scopeMode === "WORKSPACE" ? "info" : "outline"}
                 >

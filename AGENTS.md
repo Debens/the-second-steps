@@ -32,6 +32,7 @@ Sanity-check significant decisions before implementing them, including accepted 
 - Next.js 16.4, **App Router** (`app/`). The Pages Router has been removed; do not add `pages/`.
 - React 19.3, TypeScript (strict), Tailwind CSS 4, shadcn/ui (Nova, Base UI, `rsc: true`)
 - Light/dark/system themes and responsive conventions: every new screen and component must support both themes and mobile, tablet and desktop from the start (`.cursor/rules/ui-design.mdc`, ADR-018)
+- Interfaces must be visually coherent and task-led. Prefer one clear entry point and one reviewed save for related edits; do not scatter several buttons across a card when one well-structured modal or page can handle the task more clearly (`.cursor/rules/ui-design.mdc`, ADR-018).
 - Checks: `npm run check` (typecheck, ESLint, Prettier, Vitest), `npm run test:e2e` (Playwright), `npm run build`
 
 - Database: PostgreSQL on Supabase (London) via Prisma 7.10 (`prisma/`, `core/db/`). The access foundation exists; no CRM tables exist. The app uses least-privilege `zayto_app` over verified TLS, while `zayto_migrator` owns schema objects and applies migrations. The shared role cutover and access-hardening migrations were applied and verified on 2026-10-13 (ADR-016 and ADR-027).

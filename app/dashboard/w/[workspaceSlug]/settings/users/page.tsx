@@ -12,7 +12,7 @@ import { StatusBadge } from "@/components/ui/status-badge";
 import { getWorkspaceMembers } from "@/core/access/application/workspace-members";
 import { ROLE_LABELS } from "@/core/access/domain/role";
 import { requireMfaUser } from "@/core/auth/mfa";
-import { RoleForm } from "./role-form";
+import { UserAccessForm } from "./role-form";
 
 export default async function WorkspaceUsersPage({
   params,
@@ -70,16 +70,21 @@ export default async function WorkspaceUsersPage({
                   {member.primaryEmail ?? "No email recorded"}
                   {member.isCurrentUser ? " · You" : ""}
                 </CardDescription>
-                {result.canManageRoles && !member.isCurrentUser && (
+                {member.status === "ACTIVE" &&
+                ((result.canManageRoles && !member.isCurrentUser) ||
+                  member.canManageScope) ? (
                   <CardAction>
-                    <RoleForm
+                    <UserAccessForm
+                      branches={result.activeBranches}
+                      branchIds={member.branchIds}
                       membershipId={member.id}
                       roles={member.roles}
+                      scopeMode={member.scopeMode}
                       userLabel={userLabel}
                       workspaceSlug={workspaceSlug}
                     />
                   </CardAction>
-                )}
+                ) : null}
               </CardHeader>
               <CardContent className="flex flex-wrap gap-2">
                 <Badge

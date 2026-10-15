@@ -1,6 +1,6 @@
 # Customer account and access management
 
-**Status:** Confirmed product outcome and delivery sequence. The consolidated Settings structure, separate customer/contact card editing, customer user lists, read-only branch details, Platform customer Users tab, and branch-associated user views are implemented and verified against shared Supabase. The user list shows branch-scoped names/emails and uses a role-edit modal with a multi-select dropdown. The read-only Platform Owner branch-assignment policy migration was applied and verified on shared Supabase on 2026-10-14. Branch scope editing and invitations remain to be built. A reversible shared-sandbox customer-detail save remains approval-gated.
+**Status:** Confirmed product outcome and delivery sequence. The consolidated Settings structure, separate customer/contact card editing, customer user lists, read-only branch details, Platform customer Users tab, and branch-associated user views are implemented and verified against shared Supabase. The read-only Platform Owner branch-assignment policy migration was applied and verified on shared Supabase on 2026-10-14. Customer branch-scope editing is implemented locally with one combined user-access modal and one branch-user management modal; focused unit, disposable-database, browser, full check, and production-build verification passed on 2026-10-15. Invitations remain to be built. A reversible shared-sandbox customer-detail save remains approval-gated.
 
 ## Outcome
 
@@ -83,7 +83,15 @@ Local Mailpit may support fictional development invites. Production invitations 
 4. **Invitation foundation:** after separate schema and shared-migration approval, add invitation issue, resend, revoke, expire, and claim flows with transactional membership creation.
 5. **Lifecycle controls later:** user/customer suspension, reactivation, notifications, and readable audit history remain in the platform user-management roadmap and should not be smuggled into the first editing slice.
 
-Each slice requires unit tests, disposable-database RLS/invariant tests, responsive light/dark browser coverage, `npm run check`, and `npm run build`. Shared migrations and real shared-sandbox mutations remain separate approval gates.
+Validate each slice in proportion to its risk. Access-control and scope changes require focused unit and disposable-database RLS/invariant tests; user-visible flows require relevant responsive light/dark browser coverage. Run `npm run check`, broader browser coverage, and `npm run build` at the planned verification checkpoint rather than repeating every gate after every slice. Shared migrations and real shared-sandbox mutations remain separate approval gates.
+
+### Verification checkpoint — 2026-10-15 (passed)
+
+- Add focused unit and disposable-database integration coverage for the combined role-and-scope transaction, including rollback on any denied or invalid change.
+- Exercise the Users & access **Edit** modal and each Branches **Edit users** modal in the browser as Account Owner, Agency Admin, and view-only Branch Manager personas.
+- Check mobile, tablet, desktop, light, and dark presentation, including long user lists, pending/error feedback, keyboard navigation, and the locked **All branches** state.
+- Remove superseded separate editing components only after confirming the consolidated flows cover every supported path.
+- Run `npm run check`, `npm run test:integration`, `npm run test:e2e`, and `npm run build`. Keep shared-sandbox mutations separately approval-gated.
 
 ## Decisions before implementation
 

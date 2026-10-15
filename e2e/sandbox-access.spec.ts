@@ -372,6 +372,20 @@ test.describe("sandbox access personas", () => {
         await expect(
           ownerBadgeRow.getByText("Account Owner", { exact: true }),
         ).toHaveClass(/bg-secondary/);
+        const staffUserCard = page
+          .locator('[data-slot="card"]')
+          .filter({ hasText: "Priya Shah" });
+        await staffUserCard.getByRole("button", { name: "Edit" }).click();
+        const accessDialog = page.getByRole("dialog");
+        await expect(
+          accessDialog.getByRole("heading", { name: "Edit Priya Shah" }),
+        ).toBeVisible();
+        await expect(
+          accessDialog.getByRole("radio", { name: "Selected branches" }),
+        ).toBeChecked();
+        await expect(accessDialog.getByLabel("Main Branch")).toBeChecked();
+        await expect(accessDialog.getByLabel("Riverside Branch")).toBeChecked();
+        await accessDialog.getByRole("button", { name: "Cancel" }).click();
         await settingsNavigation
           .getByRole("link", { name: "Branches" })
           .click();
@@ -417,6 +431,19 @@ test.describe("sandbox access personas", () => {
         await expect(
           mainBranchCard.getByText("Ruby Walker", { exact: true }),
         ).toHaveCount(0);
+        await mainBranchCard
+          .getByRole("button", { name: "Edit users" })
+          .click();
+        const branchUsersDialog = page.getByRole("dialog");
+        await expect(
+          branchUsersDialog.getByRole("heading", {
+            name: "Edit branch users",
+          }),
+        ).toBeVisible();
+        await expect(
+          branchUsersDialog.getByText("Olivia Hart", { exact: true }),
+        ).toBeVisible();
+        await page.keyboard.press("Escape");
       }
 
       if (persona.email === "branch.manager@zayto.local") {
@@ -441,19 +468,29 @@ test.describe("sandbox access personas", () => {
         await expect(
           page.getByText("Ruby Walker", { exact: true }),
         ).toHaveCount(0);
+        await expect(
+          page.getByRole("button", { name: "Edit users" }),
+        ).toHaveCount(0);
 
         await page.goto("/dashboard/w/oakfield-lettings-demo/settings/users");
         await expect(
           page.getByRole("heading", { name: "Users & access" }),
         ).toBeVisible();
         await expect(
-          page.getByText("Amelia Stone", { exact: true }),
+          page
+            .locator('[data-slot="card-title"]')
+            .filter({ hasText: "Amelia Stone" }),
         ).toBeVisible();
         await expect(
-          page.getByText("Priya Shah", { exact: true }),
+          page
+            .locator('[data-slot="card-title"]')
+            .filter({ hasText: "Priya Shah" }),
         ).toBeVisible();
         await expect(
           page.getByText("Ruby Walker", { exact: true }),
+        ).toHaveCount(0);
+        await expect(
+          page.getByRole("button", { name: "Edit", exact: true }),
         ).toHaveCount(0);
       }
 
@@ -465,6 +502,13 @@ test.describe("sandbox access personas", () => {
       }
 
       if (persona.email === "dual.owner@zayto.local") {
+        await page.setViewportSize({ width: 390, height: 844 });
+        const currentOrigin = new URL(page.url()).origin;
+        await page
+          .context()
+          .addCookies([
+            { name: "zayto-theme", value: "dark", url: currentOrigin },
+          ]);
         await page.goto("/dashboard/w/oakfield-lettings-demo/settings/users");
         const accountOwnerCard = page
           .locator('[data-slot="card"]')
@@ -474,10 +518,20 @@ test.describe("sandbox access personas", () => {
         await expect(
           roleDialog.getByRole("heading", { name: "Edit Olivia Hart" }),
         ).toBeVisible();
+        await expect(page.locator("html")).toHaveClass(/\bdark\b/);
+        await expect(
+          roleDialog.getByRole("radio", { name: "All branches" }),
+        ).toBeChecked();
+        expect(
+          await page.evaluate(
+            () => document.documentElement.scrollWidth <= window.innerWidth,
+          ),
+        ).toBe(true);
         await roleDialog.getByRole("button", { name: /Account Owner/ }).click();
         await expect(
           page.getByRole("checkbox", { name: /Account Owner/ }),
         ).toBeChecked();
+        await page.keyboard.press("Escape");
         await roleDialog.getByRole("button", { name: "Cancel" }).click();
       }
 

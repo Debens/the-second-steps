@@ -38,11 +38,15 @@ export type WorkspaceMemberSummary = {
   roles: readonly SystemRole[];
   scopeMode: "WORKSPACE" | "NAMED_BRANCHES";
   branchCount: number;
+  branchIds: readonly string[];
+  canManageScope: boolean;
 };
 
 export type WorkspaceMembersResult = {
   actorMembershipId: string;
   canManageRoles: boolean;
+  canManageBranchScopes: boolean;
+  activeBranches: readonly { id: string; name: string }[];
   members: readonly WorkspaceMemberSummary[];
 };
 
@@ -121,40 +125,72 @@ export async function getWorkspaceMembers(
             ],
           };
 
-    const memberships = await transaction.membership.findMany({
-      where: { workspaceId: actor.workspaceId, ...visibilityFilter },
-      select: {
-        id: true,
-        userIdentityId: true,
-        status: true,
-        scopeMode: true,
-        userIdentity: {
-          select: {
-            firstName: true,
-            lastName: true,
-            primaryEmail: true,
+    const [memberships, activeBranches] = await Promise.all([
+      transaction.membership.findMany({
+        where: { workspaceId: actor.workspaceId, ...visibilityFilter },
+        select: {
+          id: true,
+          userIdentityId: true,
+          status: true,
+          scopeMode: true,
+          userIdentity: {
+            select: {
+              firstName: true,
+              lastName: true,
+              primaryEmail: true,
+            },
           },
+          roles: { select: { roleCode: true } },
+          branchAccess: { select: { branchId: true } },
         },
-        roles: { select: { roleCode: true } },
-        _count: { select: { branchAccess: true } },
-      },
-      orderBy: [{ status: "asc" }, { createdAt: "asc" }],
-    });
+        orderBy: [{ status: "asc" }, { createdAt: "asc" }],
+      }),
+      transaction.branch.findMany({
+        where: {
+          workspaceId: actor.workspaceId,
+          status: "ACTIVE",
+          ...(scopeValidation.scope.kind === "named_branches"
+            ? { id: { in: [...scopeValidation.scope.branchIds] } }
+            : {}),
+        },
+        select: { id: true, name: true },
+        orderBy: { name: "asc" },
+      }),
+    ]);
+
+    const canManageBranchScopes = hasPermission(
+      actorRoles,
+      "membership.scope.manage",
+    );
+    const actorIsOwner = actorRoles.includes("workspace_owner");
 
     return {
       actorMembershipId: actor.id,
       canManageRoles: hasPermission(actorRoles, "membership.roles.manage"),
-      members: memberships.map((membership) => ({
-        id: membership.id,
-        firstName: membership.userIdentity.firstName,
-        lastName: membership.userIdentity.lastName,
-        primaryEmail: membership.userIdentity.primaryEmail,
-        isCurrentUser: membership.userIdentityId === identity.userIdentityId,
-        status: membership.status,
-        roles: toSystemRoles(membership.roles),
-        scopeMode: membership.scopeMode,
-        branchCount: membership._count.branchAccess,
-      })),
+      canManageBranchScopes,
+      activeBranches,
+      members: memberships.map((membership) => {
+        const roles = toSystemRoles(membership.roles);
+        const isCurrentUser =
+          membership.userIdentityId === identity.userIdentityId;
+        return {
+          id: membership.id,
+          firstName: membership.userIdentity.firstName,
+          lastName: membership.userIdentity.lastName,
+          primaryEmail: membership.userIdentity.primaryEmail,
+          isCurrentUser,
+          status: membership.status,
+          roles,
+          scopeMode: membership.scopeMode,
+          branchCount: membership.branchAccess.length,
+          branchIds: membership.branchAccess.map(({ branchId }) => branchId),
+          canManageScope:
+            canManageBranchScopes &&
+            !isCurrentUser &&
+            membership.status === "ACTIVE" &&
+            (actorIsOwner || !roles.includes("workspace_owner")),
+        };
+      }),
     };
   });
 }

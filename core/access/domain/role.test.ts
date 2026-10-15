@@ -24,6 +24,9 @@ describe("workspace roles", () => {
     expect(hasPermission(["workspace_owner"], "membership.roles.manage")).toBe(
       true,
     );
+    expect(hasPermission(["workspace_owner"], "membership.scope.manage")).toBe(
+      true,
+    );
   });
 
   it("keeps commercial settings away from Agency Admins", () => {
@@ -33,12 +36,18 @@ describe("workspace roles", () => {
     expect(hasPermission(["agency_admin"], "membership.roles.manage")).toBe(
       true,
     );
+    expect(hasPermission(["agency_admin"], "membership.scope.manage")).toBe(
+      true,
+    );
   });
 
   it("gives Branch Managers view-only staff access", () => {
     expect(hasPermission(["branch_manager"], "membership.read")).toBe(true);
     expect(hasPermission(["branch_manager"], "membership.invite")).toBe(false);
     expect(hasPermission(["branch_manager"], "membership.roles.manage")).toBe(
+      false,
+    );
+    expect(hasPermission(["branch_manager"], "membership.scope.manage")).toBe(
       false,
     );
   });

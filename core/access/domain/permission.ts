@@ -5,6 +5,7 @@ export const PERMISSIONS = [
   "membership.read",
   "membership.invite",
   "membership.roles.manage",
+  "membership.scope.manage",
   "membership.suspend",
   "branch.read",
   "branch.manage",
