@@ -34,6 +34,7 @@ Use **shadcn/ui** first (`components/ui`). Add components with `npx shadcn@lates
 - Every detail row has an icon, a muted `text-xs` label and a `text-sm font-medium` value (`dt`/`dd` pairs). Use initials in a circular `bg-accent` avatar for people and organisations until real images exist.
 - Grid children that contain long text (emails, addresses) need `min-w-0` or `grid-cols-[minmax(0,1fr)]` so the page never scrolls sideways. Check at 390px.
 - Existing screens that still use cards for grouped fields (platform and settings administration) move to this pattern when they are next substantially changed.
+- Page content is **left-aligned** against the navigation with a `max-w-*` cap, not centred with `mx-auto`. Centre only standalone panels such as sign-in, error, and not-found screens.
 - Reference mock-ups: `/design-lab/contact` (development only).
 
 ## Brand (ADR-017)

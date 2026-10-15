@@ -16,7 +16,7 @@ const modules = [
 
 export default function WorkspaceDashboardPage() {
   return (
-    <div className="mx-auto grid max-w-7xl gap-6">
+    <div className="grid max-w-7xl gap-6">
       <div>
         <p className="text-sm text-muted-foreground">Overview</p>
         <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>

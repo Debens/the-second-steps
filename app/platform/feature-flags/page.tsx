@@ -22,7 +22,7 @@ export default async function FeatureFlagsPage() {
   if (!flags) redirect("/access-denied");
 
   return (
-    <div className="mx-auto grid max-w-5xl gap-6">
+    <div className="grid max-w-5xl gap-6">
       <div>
         <p className="text-sm font-medium text-primary">Platform settings</p>
         <h1 className="text-2xl font-semibold tracking-tight">Feature flags</h1>

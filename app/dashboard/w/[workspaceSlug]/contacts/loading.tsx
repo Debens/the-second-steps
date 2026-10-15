@@ -2,7 +2,7 @@ import { Card, CardContent } from "@/components/ui/card";
 
 export default function ContactsLoading() {
   return (
-    <div className="mx-auto grid max-w-7xl gap-6" aria-busy="true">
+    <div className="grid max-w-7xl gap-6" aria-busy="true">
       <div className="grid gap-2">
         <div className="h-4 w-40 animate-pulse rounded bg-muted" />
         <div className="h-8 w-56 animate-pulse rounded bg-muted" />

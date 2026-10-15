@@ -61,7 +61,7 @@ export default async function PlatformCustomersPage({
   if (!customers) redirect("/access-denied");
 
   return (
-    <div className="mx-auto grid max-w-7xl gap-6">
+    <div className="grid max-w-7xl gap-6">
       <div>
         <p className="text-sm font-medium text-primary">Customer accounts</p>
         <h1 className="text-2xl font-semibold tracking-tight">Customers</h1>

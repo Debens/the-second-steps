@@ -223,7 +223,7 @@ export default async function ContactPage({
       .join(", ") || "None";
 
   return (
-    <div className="mx-auto grid max-w-6xl gap-6">
+    <div className="grid max-w-7xl gap-6">
       <Button
         variant="ghost"
         size="sm"

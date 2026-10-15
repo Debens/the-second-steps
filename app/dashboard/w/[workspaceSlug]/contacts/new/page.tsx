@@ -33,7 +33,7 @@ export default async function NewContactPage({
       : null;
   if (!kind)
     return (
-      <div className="mx-auto grid max-w-3xl gap-6">
+      <div className="grid max-w-3xl gap-6">
         <div>
           <p className="text-sm text-muted-foreground">Contacts</p>
           <h1 className="text-2xl font-semibold tracking-tight">New contact</h1>
@@ -80,7 +80,7 @@ export default async function NewContactPage({
     );
   const activeBranches = branches.filter(({ status }) => status === "ACTIVE");
   return (
-    <div className="mx-auto grid max-w-4xl gap-6">
+    <div className="grid max-w-4xl gap-6">
       <Button
         variant="ghost"
         size="sm"
