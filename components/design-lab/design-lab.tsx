@@ -43,6 +43,12 @@ const DIRECTIONS = [
     strapline: "Confident, compact and operational",
     description:
       "The closest evolution of Zayto’s current direction: charcoal navigation, crisp cobalt actions and restrained surfaces.",
+    traits: [
+      ["Shell", "Classic sidebar"],
+      ["Fields", "Outlined"],
+      ["Cards", "Light elevation"],
+      ["Density", "Balanced"],
+    ],
     className: styles.cobalt,
   },
   {
@@ -52,6 +58,12 @@ const DIRECTIONS = [
     strapline: "Grounded, trustworthy and precise",
     description:
       "A calm green-led system with stronger borders and tighter radii, inspired by dependable financial and operational tools.",
+    traits: [
+      ["Shell", "Framed workspace"],
+      ["Fields", "Compact and firm"],
+      ["Cards", "Structured borders"],
+      ["Density", "Efficient"],
+    ],
     className: styles.evergreen,
   },
   {
@@ -61,6 +73,12 @@ const DIRECTIONS = [
     strapline: "Premium, warm and relationship-led",
     description:
       "Softer geometry and a plum accent give people-focused workflows a more considered, premium character.",
+    traits: [
+      ["Shell", "Layered panels"],
+      ["Fields", "Soft filled"],
+      ["Cards", "Floating"],
+      ["Density", "Relaxed"],
+    ],
     className: styles.aubergine,
   },
   {
@@ -70,6 +88,12 @@ const DIRECTIONS = [
     strapline: "Open, calm and approachable",
     description:
       "A blue-grey direction with generous spacing and soft elevation for teams that value clarity over density.",
+    traits: [
+      ["Shell", "Top navigation"],
+      ["Fields", "Tinted surfaces"],
+      ["Cards", "Borderless"],
+      ["Density", "Airy"],
+    ],
     className: styles.ocean,
   },
   {
@@ -79,6 +103,12 @@ const DIRECTIONS = [
     strapline: "Minimal, direct and data-first",
     description:
       "A nearly monochrome direction with square geometry and selective indigo, designed for high information density.",
+    traits: [
+      ["Shell", "Compact icon rail"],
+      ["Fields", "Underline"],
+      ["Cards", "Flat panels"],
+      ["Density", "High"],
+    ],
     className: styles.graphite,
   },
 ] as const;
@@ -581,6 +611,14 @@ function ThemeShowcase({
           <p>{direction.strapline}</p>
           <h2>{direction.name}</h2>
           <span>{direction.description}</span>
+          <dl className={styles.styleTraits}>
+            {direction.traits.map(([label, value]) => (
+              <div key={label}>
+                <dt>{label}</dt>
+                <dd>{value}</dd>
+              </div>
+            ))}
+          </dl>
         </div>
       </header>
       <div className={styles.showcaseBody}>
