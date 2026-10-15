@@ -1,4 +1,4 @@
-import type { NextConfig } from "next";
+﻿import type { NextConfig } from "next";
 
 function assertReleaseEnvironment() {
   const requireStaffMfa = process.env.REQUIRE_STAFF_MFA;
@@ -37,6 +37,8 @@ if (process.env.NODE_ENV === "production") {
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  // Development only: keep the Next.js badge off the mobile menu button.
+  devIndicators: false,
   async headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },

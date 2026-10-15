@@ -3,6 +3,7 @@
 import { ContactRound, Home, Menu, Settings } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState } from "react";
 import { ZaytoWordmark } from "@/components/brand/zayto-wordmark";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,7 +15,13 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 
-function NavigationItems({ workspaceSlug }: { workspaceSlug: string }) {
+function NavigationItems({
+  onNavigate,
+  workspaceSlug,
+}: {
+  onNavigate?: () => void;
+  workspaceSlug: string;
+}) {
   const pathname = usePathname();
   const base = `/dashboard/w/${workspaceSlug}`;
   const items = [
@@ -34,6 +41,7 @@ function NavigationItems({ workspaceSlug }: { workspaceSlug: string }) {
             key={label}
             href={href}
             aria-current={active ? "page" : undefined}
+            onClick={onNavigate}
             className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
               active
                 ? "bg-sidebar-accent text-sidebar-accent-foreground"
@@ -80,8 +88,10 @@ export function MobileNavigation({
   workspaceName: string;
   workspaceSlug: string;
 }) {
+  const [open, setOpen] = useState(false);
+
   return (
-    <Sheet>
+    <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger
         render={<Button variant="outline" size="icon" className="lg:hidden" />}
       >
@@ -98,7 +108,10 @@ export function MobileNavigation({
           </SheetDescription>
         </SheetHeader>
         <div className="px-2">
-          <NavigationItems workspaceSlug={workspaceSlug} />
+          <NavigationItems
+            workspaceSlug={workspaceSlug}
+            onNavigate={() => setOpen(false)}
+          />
         </div>
       </SheetContent>
     </Sheet>
