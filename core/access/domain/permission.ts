@@ -10,6 +10,12 @@ export const PERMISSIONS = [
   "branch.read",
   "branch.manage",
   "audit.read",
+  "contact.read",
+  "contact.create",
+  "contact.update",
+  "contact.archive",
+  "contact.sensitive.manage",
+  "contact.merge",
 ] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];

@@ -3,6 +3,7 @@ import "server-only";
 import type { Prisma } from "@/core/db/generated/client";
 import { AuthenticationProvider } from "@/core/db/generated/enums";
 import { db } from "@/core/db/client";
+import type { MembershipScope } from "@/core/access/domain/scope";
 
 export type AccessTransaction = Prisma.TransactionClient;
 
@@ -34,6 +35,30 @@ export async function setWorkspaceDatabaseContext(
 ) {
   assertUuid(workspaceId, "workspaceId");
   await setLocal(transaction, "app.workspace_id", workspaceId);
+}
+
+export async function setWorkspaceMemberDatabaseContext(
+  transaction: AccessTransaction,
+  input: {
+    workspaceId: string;
+    membershipId: string;
+    scope: MembershipScope;
+  },
+) {
+  assertUuid(input.membershipId, "membershipId");
+  await setWorkspaceDatabaseContext(transaction, input.workspaceId);
+  await setLocal(transaction, "app.membership_id", input.membershipId);
+  await setLocal(transaction, "app.membership_scope_mode", input.scope.kind);
+
+  const branchIds =
+    input.scope.kind === "named_branches" ? input.scope.branchIds : [];
+  for (const branchId of branchIds) assertUuid(branchId, "branchId");
+
+  await setLocal(
+    transaction,
+    "app.allowed_branch_ids",
+    `{${branchIds.join(",")}}`,
+  );
 }
 
 export async function lockWorkspaceAccessChanges(

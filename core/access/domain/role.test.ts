@@ -68,7 +68,28 @@ describe("workspace roles", () => {
   it("combines compatible roles without duplicating permissions", () => {
     const permissions = permissionsForRoles(["negotiator", "accounts"]);
 
-    expect(permissions).toEqual(new Set(["workspace.read", "branch.read"]));
+    expect(permissions).toEqual(
+      new Set([
+        "workspace.read",
+        "branch.read",
+        "contact.read",
+        "contact.create",
+        "contact.update",
+      ]),
+    );
+  });
+
+  it("limits sensitive contact actions to managers and administrators", () => {
+    expect(hasPermission(["branch_manager"], "contact.sensitive.manage")).toBe(
+      true,
+    );
+    expect(hasPermission(["negotiator"], "contact.sensitive.manage")).toBe(
+      false,
+    );
+    expect(hasPermission(["accounts"], "contact.update")).toBe(true);
+    expect(hasPermission(["accounts"], "contact.create")).toBe(false);
+    expect(hasPermission(["read_only"], "contact.read")).toBe(true);
+    expect(hasPermission(["read_only"], "contact.update")).toBe(false);
   });
 
   it("allows only an Account Owner to assign the owner role", () => {

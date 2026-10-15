@@ -102,6 +102,57 @@ enum FeatureFlagStatus {
   @@map("feature_flag_status")
 }
 
+enum ContactKind {
+  PERSON       @map("person")
+  ORGANISATION @map("organisation")
+
+  @@map("contact_kind")
+}
+
+enum ContactStatus {
+  ACTIVE   @map("active")
+  ARCHIVED @map("archived")
+  MERGED   @map("merged")
+
+  @@map("contact_status")
+}
+
+enum OrganisationType {
+  LIMITED_COMPANY @map("limited_company")
+  LLP             @map("llp")
+  PARTNERSHIP     @map("partnership")
+  TRUST           @map("trust")
+  CHARITY         @map("charity")
+  OTHER           @map("other")
+
+  @@map("organisation_type")
+}
+
+enum ContactPointKind {
+  EMAIL     @map("email")
+  TELEPHONE @map("telephone")
+
+  @@map("contact_point_kind")
+}
+
+enum CommunicationChannel {
+  EMAIL     @map("email")
+  TELEPHONE @map("telephone")
+  SMS       @map("sms")
+  WHATSAPP  @map("whatsapp")
+  POST      @map("post")
+
+  @@map("communication_channel")
+}
+
+enum ContactAddressKind {
+  INDIVIDUAL     @map("individual")
+  REGISTERED     @map("registered")
+  CORRESPONDENCE @map("correspondence")
+
+  @@map("contact_address_kind")
+}
+
 model UserIdentity {
   id                      String                         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   firstName               String?                        @map("first_name") @db.VarChar(100)
@@ -160,26 +211,28 @@ model Workspace {
   memberships          Membership[]
   auditEvents          AuditEvent[]
   featureFlagOverrides WorkspaceFeatureFlagOverride[]
+  contacts             Contact[]
 
   @@map("workspaces")
 }
 
 model Branch {
-  id          String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  workspaceId String                   @map("workspace_id") @db.Uuid
-  name        String                   @db.VarChar(160)
-  email       String?                  @db.VarChar(254)
-  telephone   String?                  @db.VarChar(32)
-  address1    String?                  @map("address_1") @db.VarChar(160)
-  address2    String?                  @map("address_2") @db.VarChar(160)
-  townCity    String?                  @map("town_city") @db.VarChar(100)
-  county      String?                  @db.VarChar(100)
-  postcode    String?                  @db.VarChar(16)
-  status      BranchStatus             @default(ACTIVE)
-  createdAt   DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt   DateTime                 @updatedAt @map("updated_at") @db.Timestamptz(6)
-  workspace   Workspace                @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
-  access      MembershipBranchAccess[]
+  id           String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workspaceId  String                   @map("workspace_id") @db.Uuid
+  name         String                   @db.VarChar(160)
+  email        String?                  @db.VarChar(254)
+  telephone    String?                  @db.VarChar(32)
+  address1     String?                  @map("address_1") @db.VarChar(160)
+  address2     String?                  @map("address_2") @db.VarChar(160)
+  townCity     String?                  @map("town_city") @db.VarChar(100)
+  county       String?                  @db.VarChar(100)
+  postcode     String?                  @db.VarChar(16)
+  status       BranchStatus             @default(ACTIVE)
+  createdAt    DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime                 @updatedAt @map("updated_at") @db.Timestamptz(6)
+  workspace    Workspace                @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  access       MembershipBranchAccess[]
+  contactLinks ContactBranchLink[]
 
   @@unique([workspaceId, id])
   @@unique([workspaceId, name])
@@ -188,20 +241,22 @@ model Branch {
 }
 
 model Membership {
-  id             String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  workspaceId    String                   @map("workspace_id") @db.Uuid
-  userIdentityId String                   @map("user_identity_id") @db.Uuid
-  status         MembershipStatus         @default(ACTIVE)
-  scopeMode      MembershipScopeMode      @map("scope_mode")
-  startedAt      DateTime                 @default(now()) @map("started_at") @db.Timestamptz(6)
-  endedAt        DateTime?                @map("ended_at") @db.Timestamptz(6)
-  createdAt      DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt      DateTime                 @updatedAt @map("updated_at") @db.Timestamptz(6)
-  workspace      Workspace                @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
-  userIdentity   UserIdentity             @relation(fields: [userIdentityId], references: [id], onDelete: Restrict)
-  roles          MembershipRole[]
-  branchAccess   MembershipBranchAccess[]
-  auditEvents    AuditEvent[]             @relation("AuditMembership")
+  id                        String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workspaceId               String                   @map("workspace_id") @db.Uuid
+  userIdentityId            String                   @map("user_identity_id") @db.Uuid
+  status                    MembershipStatus         @default(ACTIVE)
+  scopeMode                 MembershipScopeMode      @map("scope_mode")
+  startedAt                 DateTime                 @default(now()) @map("started_at") @db.Timestamptz(6)
+  endedAt                   DateTime?                @map("ended_at") @db.Timestamptz(6)
+  createdAt                 DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                 DateTime                 @updatedAt @map("updated_at") @db.Timestamptz(6)
+  workspace                 Workspace                @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  userIdentity              UserIdentity             @relation(fields: [userIdentityId], references: [id], onDelete: Restrict)
+  roles                     MembershipRole[]
+  branchAccess              MembershipBranchAccess[]
+  auditEvents               AuditEvent[]             @relation("AuditMembership")
+  contactsCreated           Contact[]                @relation("ContactCreatedBy")
+  contactBranchLinksCreated ContactBranchLink[]      @relation("ContactBranchLinkCreatedBy")
 
   @@unique([workspaceId, userIdentityId])
   @@unique([workspaceId, id])
@@ -314,4 +369,140 @@ model WorkspaceFeatureFlagOverride {
   @@index([featureFlagId])
   @@index([changedByUserIdentityId])
   @@map("workspace_feature_flag_overrides")
+}
+
+model Contact {
+  id                            String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workspaceId                   String                   @map("workspace_id") @db.Uuid
+  kind                          ContactKind
+  reference                     String                   @db.VarChar(20)
+  status                        ContactStatus            @default(ACTIVE)
+  title                         String?                  @db.VarChar(40)
+  firstName                     String?                  @map("first_name") @db.VarChar(100)
+  middleNames                   String?                  @map("middle_names") @db.VarChar(200)
+  lastName                      String?                  @map("last_name") @db.VarChar(100)
+  preferredName                 String?                  @map("preferred_name") @db.VarChar(100)
+  organisationType              OrganisationType?        @map("organisation_type")
+  legalName                     String?                  @map("legal_name") @db.VarChar(200)
+  tradingName                   String?                  @map("trading_name") @db.VarChar(200)
+  registrationNumber            String?                  @map("registration_number") @db.VarChar(64)
+  normalizedRegistrationNumber  String?                  @map("normalized_registration_number") @db.VarChar(64)
+  vatNumber                     String?                  @map("vat_number") @db.VarChar(32)
+  normalizedVatNumber           String?                  @map("normalized_vat_number") @db.VarChar(32)
+  preferredCommunicationChannel CommunicationChannel?    @map("preferred_communication_channel")
+  doNotEmail                    Boolean                  @default(false) @map("do_not_email")
+  doNotTelephone                Boolean                  @default(false) @map("do_not_telephone")
+  doNotSms                      Boolean                  @default(false) @map("do_not_sms")
+  doNotWhatsApp                 Boolean                  @default(false) @map("do_not_whatsapp")
+  doNotPost                     Boolean                  @default(false) @map("do_not_post")
+  mergedIntoContactId           String?                  @map("merged_into_contact_id") @db.Uuid
+  archivedAt                    DateTime?                @map("archived_at") @db.Timestamptz(6)
+  createdByMembershipId         String                   @map("created_by_membership_id") @db.Uuid
+  createdAt                     DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                     DateTime                 @updatedAt @map("updated_at") @db.Timestamptz(6)
+  workspace                     Workspace                @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  createdByMembership           Membership               @relation("ContactCreatedBy", fields: [workspaceId, createdByMembershipId], references: [workspaceId, id], onDelete: Restrict)
+  mergedIntoContact             Contact?                 @relation("ContactMerge", fields: [workspaceId, mergedIntoContactId], references: [workspaceId, id], onDelete: Restrict)
+  mergedContacts                Contact[]                @relation("ContactMerge")
+  contactPoints                 ContactPoint[]
+  addresses                     ContactAddress[]
+  organisationLinks             OrganisationPersonLink[] @relation("OrganisationContact")
+  personLinks                   OrganisationPersonLink[] @relation("PersonContact")
+  branchLinks                   ContactBranchLink[]
+
+  @@unique([workspaceId, id])
+  @@unique([workspaceId, reference])
+  @@index([workspaceId, status])
+  @@index([workspaceId, kind, lastName])
+  @@index([workspaceId, kind, legalName])
+  @@index([workspaceId, normalizedRegistrationNumber])
+  @@index([workspaceId, normalizedVatNumber])
+  @@index([workspaceId, mergedIntoContactId])
+  @@index([workspaceId, createdByMembershipId])
+  @@map("contacts")
+}
+
+model ContactPoint {
+  id              String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workspaceId     String           @map("workspace_id") @db.Uuid
+  contactId       String           @map("contact_id") @db.Uuid
+  kind            ContactPointKind
+  label           String?          @db.VarChar(40)
+  value           String           @db.VarChar(254)
+  normalizedValue String           @map("normalized_value") @db.VarChar(254)
+  isPreferred     Boolean          @default(false) @map("is_preferred")
+  archivedAt      DateTime?        @map("archived_at") @db.Timestamptz(6)
+  createdAt       DateTime         @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt       DateTime         @updatedAt @map("updated_at") @db.Timestamptz(6)
+  contact         Contact          @relation(fields: [workspaceId, contactId], references: [workspaceId, id], onDelete: Restrict)
+
+  @@unique([workspaceId, id])
+  @@index([workspaceId, contactId, kind])
+  @@index([workspaceId, kind, normalizedValue])
+  @@map("contact_points")
+}
+
+model ContactAddress {
+  id           String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workspaceId  String             @map("workspace_id") @db.Uuid
+  contactId    String             @map("contact_id") @db.Uuid
+  kind         ContactAddressKind
+  addressLine1 String             @map("address_line_1") @db.VarChar(160)
+  addressLine2 String?            @map("address_line_2") @db.VarChar(160)
+  locality     String?            @db.VarChar(100)
+  townCity     String             @map("town_city") @db.VarChar(100)
+  county       String?            @db.VarChar(100)
+  postcode     String             @db.VarChar(16)
+  countryCode  String             @default("GB") @map("country_code") @db.Char(2)
+  archivedAt   DateTime?          @map("archived_at") @db.Timestamptz(6)
+  createdAt    DateTime           @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt    DateTime           @updatedAt @map("updated_at") @db.Timestamptz(6)
+  contact      Contact            @relation(fields: [workspaceId, contactId], references: [workspaceId, id], onDelete: Restrict)
+
+  @@unique([workspaceId, id])
+  @@index([workspaceId, contactId, kind])
+  @@index([workspaceId, postcode])
+  @@map("contact_addresses")
+}
+
+model OrganisationPersonLink {
+  id                    String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workspaceId           String    @map("workspace_id") @db.Uuid
+  organisationContactId String    @map("organisation_contact_id") @db.Uuid
+  personContactId       String    @map("person_contact_id") @db.Uuid
+  relationshipLabel     String?   @map("relationship_label") @db.VarChar(100)
+  isPrimary             Boolean   @default(false) @map("is_primary")
+  startedAt             DateTime  @default(now()) @map("started_at") @db.Timestamptz(6)
+  endedAt               DateTime? @map("ended_at") @db.Timestamptz(6)
+  createdAt             DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime  @updatedAt @map("updated_at") @db.Timestamptz(6)
+  organisationContact   Contact   @relation("OrganisationContact", fields: [workspaceId, organisationContactId], references: [workspaceId, id], onDelete: Restrict)
+  personContact         Contact   @relation("PersonContact", fields: [workspaceId, personContactId], references: [workspaceId, id], onDelete: Restrict)
+
+  @@unique([workspaceId, id])
+  @@index([workspaceId, organisationContactId, endedAt])
+  @@index([workspaceId, personContactId, endedAt])
+  @@map("organisation_person_links")
+}
+
+model ContactBranchLink {
+  id                    String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workspaceId           String     @map("workspace_id") @db.Uuid
+  contactId             String     @map("contact_id") @db.Uuid
+  branchId              String     @map("branch_id") @db.Uuid
+  isPrimary             Boolean    @default(false) @map("is_primary")
+  startedAt             DateTime   @default(now()) @map("started_at") @db.Timestamptz(6)
+  endedAt               DateTime?  @map("ended_at") @db.Timestamptz(6)
+  createdByMembershipId String     @map("created_by_membership_id") @db.Uuid
+  createdAt             DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
+  contact               Contact    @relation(fields: [workspaceId, contactId], references: [workspaceId, id], onDelete: Restrict)
+  branch                Branch     @relation(fields: [workspaceId, branchId], references: [workspaceId, id], onDelete: Restrict)
+  createdByMembership   Membership @relation("ContactBranchLinkCreatedBy", fields: [workspaceId, createdByMembershipId], references: [workspaceId, id], onDelete: Restrict)
+
+  @@unique([workspaceId, id])
+  @@index([workspaceId, contactId, endedAt])
+  @@index([workspaceId, branchId, endedAt])
+  @@index([workspaceId, createdByMembershipId])
+  @@map("contact_branch_links")
 }

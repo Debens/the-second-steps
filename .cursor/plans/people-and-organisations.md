@@ -1,6 +1,6 @@
 # People and organisations — Chunk 2 technical design
 
-**Status:** Technical design approved by the owner on 2026-10-15. Schema changes, a migration, application implementation, and shared-database access still require their stated approval gates.
+**Status:** Technical design approved. Chunk 2A database/security foundation is implemented and verified locally as of 2026-10-15. The migration has not been applied to shared Supabase; contact application services and UI have not been built.
 
 **Parent plan:** `.cursor/plans/landlord-property-onboarding.md`
 
@@ -319,5 +319,30 @@ At the Chunk 2 checkpoint, run the documented full relevant checks because this 
 
 - **Approved:** Accounts staff may update routine contact details within authorised branches; sensitive identity, registration, ownership, branch, and future banking fields remain separately protected.
 - **Approved:** table/field boundaries, branch-aware RLS context, permission behaviour, audit coverage, and focused test plan.
-- **Pending:** authorisation to implement the Prisma schema and create the migration locally.
+- **Approved and completed locally:** Prisma schema, migration, contact domain rules, permission bundles, verified branch database context, and focused security tests.
 - **Pending later gate:** applying a locally verified migration to the shared Supabase database.
+
+## Chunk 2A implementation checkpoint
+
+Implemented:
+
+- Contact, contact-point, contact-address, organisation-person-link, and contact-branch-link Prisma models.
+- Local migration with strict subtype/lifecycle constraints, effective branch relationships, workspace-aware foreign keys, branch-aware RLS, least-privilege runtime grants, and no runtime hard delete.
+- Contact permission bundles for the approved fixed staff roles.
+- Transaction-local verified membership and branch-scope database context for future contact operations.
+- Domain validation/normalization, duplicate-signal classification, and non-sequential readable contact references.
+- Focused unit and disposable-database security coverage.
+
+Verified:
+
+- Prisma schema validation and client generation.
+- TypeScript typecheck and targeted ESLint.
+- 18 focused contact/role unit tests.
+- 35 disposable-database integration tests, including migration application, cross-workspace and cross-branch denial, hidden child denial, Platform Owner denial, required primary branch, relationship constraints, and runtime hard-delete denial.
+- Formatting and diff checks for the changed paths.
+
+Not yet done:
+
+- Shared Supabase migration application.
+- Contact repositories/application use cases, audit-writing operations, pages, forms, search, duplicate-warning UI, or browser tests.
+- Merge execution, notes, landlord roles, properties, imports, documents, or integrations.
