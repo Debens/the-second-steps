@@ -183,7 +183,7 @@ Memberships with several operational roles receive the union of those roles' per
 
 - Approve exact schema, RLS policies, indexes, lifecycle states, audit actions, and permission names.
 - The technical proposal is maintained in `.cursor/plans/people-and-organisations.md` and must pass its owner approval gate before implementation.
-- **Checkpoint:** Chunk 2A database/security foundation is locally implemented and verified; shared migration application and application/UI work remain gated.
+- **Checkpoint:** Chunk 2A database/security foundation is locally implemented, verified, and applied to shared development Supabase; application/UI work remains gated.
 - Add people, organisations, contact points, addresses, organisation-person links, readable references, and focused migration provenance.
 - Build create/view/edit/archive paths with targeted unit and database isolation tests.
 - **Review:** responsive UI, light/dark themes, duplicate warnings, validation, permissions, cross-workspace and cross-branch denial.
@@ -230,6 +230,6 @@ CSV import follows stable manual workflows and must be ready before a pilot agen
 
 ## Next approval gate
 
-Before Chunk 2 changes Prisma or the shared database, present a concise proposal covering the exact people/organisation tables and fields, workspace-aware constraints, branch/resource scope, RLS policies, lifecycle states, audit actions, code-level permissions, and focused tests. The owner must approve that technical design and the migration operation separately.
+The Chunk 2 database-design and migration gates have passed. Before contact application/UI work begins, present its narrow use cases, audit-writing boundary, and targeted test scope; keep later merge, notes, landlord, and property work behind their own chunk gates.
 
 Later decisions, not blockers for Chunk 2: private document storage; native e-signing; detailed ownership checks; address finder; retention/erasure periods; marketing readiness and publishing; communications delivery; CSV mapping/import; and design-partner recruitment.

@@ -47,9 +47,13 @@ This route can reach useful value earlier, but it is commercially credible only 
 - CI does not yet run browser tests or a scheduled dependency audit.
 - Customer users can be managed after they exist; invitation, claim, suspension/reactivation, and production notification flows remain incomplete.
 
+### Partially implemented
+
+- The people/organisation database and security foundation is applied: neutral contacts, contact methods, contact addresses, organisation-person relationships, effective branch links, permissions, constraints, and branch-aware RLS. Contact application services, audit-writing operations, search, forms, lists, and record pages are not yet implemented.
+
 ### Not implemented
 
-- CRM contacts, landlords, organisations, properties, ownership, instructions, listings, applicants, viewings, offers, applications, tenancies, maintenance, compliance, or accounting records.
+- Landlord relationships, opportunities, appraisals, properties, ownership, instructions, listings, applicants, viewings, offers, applications, tenancies, maintenance, compliance, or accounting records.
 - Participant access, personal portal, resource grants, product entitlements, subscriptions, billing, or usage metering.
 - Private document storage, job processing, production monitoring, suitable backups/recovery, data-retention operations, or real customer migration.
 - Live provider integrations or confirmed access to property portal APIs and testing facilities.

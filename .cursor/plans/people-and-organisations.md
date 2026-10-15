@@ -1,6 +1,6 @@
 # People and organisations — Chunk 2 technical design
 
-**Status:** Technical design approved. Chunk 2A database/security foundation is implemented and verified locally as of 2026-10-15. The migration has not been applied to shared Supabase; contact application services and UI have not been built.
+**Status:** Technical design approved. Chunk 2A database/security foundation was implemented, verified locally, applied to shared development Supabase, and confirmed up to date on 2026-10-15. Contact application services and UI have not been built.
 
 **Parent plan:** `.cursor/plans/landlord-property-onboarding.md`
 
@@ -320,7 +320,7 @@ At the Chunk 2 checkpoint, run the documented full relevant checks because this 
 - **Approved:** Accounts staff may update routine contact details within authorised branches; sensitive identity, registration, ownership, branch, and future banking fields remain separately protected.
 - **Approved:** table/field boundaries, branch-aware RLS context, permission behaviour, audit coverage, and focused test plan.
 - **Approved and completed locally:** Prisma schema, migration, contact domain rules, permission bundles, verified branch database context, and focused security tests.
-- **Pending later gate:** applying a locally verified migration to the shared Supabase database.
+- **Approved and completed:** the locally verified migration was applied to shared development Supabase and the migration status was confirmed up to date.
 
 ## Chunk 2A implementation checkpoint
 
@@ -343,6 +343,5 @@ Verified:
 
 Not yet done:
 
-- Shared Supabase migration application.
 - Contact repositories/application use cases, audit-writing operations, pages, forms, search, duplicate-warning UI, or browser tests.
 - Merge execution, notes, landlord roles, properties, imports, documents, or integrations.
