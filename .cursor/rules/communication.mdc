@@ -34,7 +34,7 @@ Then give the exact command in a copyable code block.
 
 ## During work
 
-- Report meaningful progress: what is done and what is next.
+- Report only meaningful progress: what is done and what is next. Do not narrate routine file reads or safe commands individually, repeat unchanged status, or paste logs unless they help with a decision.
 - If something fails, say what went wrong and how you will fix it.
 - Do not silently make major architectural decisions.
 
@@ -71,4 +71,4 @@ Give a short plain-English summary:
 - The current Git state, when files changed
 - What you recommend next
 
-Leave out technical logs unless they are needed for a decision.
+Include only items relevant to the task. Leave out technical logs and lengthy file-by-file accounts unless they are needed for a decision.

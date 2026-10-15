@@ -6,7 +6,17 @@ alwaysApply: false
 
 # Testing and quality
 
-Installed: ESLint (`npm run lint`), Prettier (`npm run format`), Vitest for unit/integration tests (`npm run test`, files `*.test.ts`), Playwright for browser tests (`npm run test:e2e`, files in `e2e/`). Run `npm run check` before saying work is done, plus `test:e2e` for UI changes. Theme contrast pairs are checked in `styles/theme-contrast.test.ts` on every `npm run test`; theme switching is covered in `e2e/theme.spec.ts`.
+Installed: ESLint (`npm run lint`), Prettier (`npm run format`), Vitest for unit/integration tests (`npm run test`, files `*.test.ts`), Playwright for browser tests (`npm run test:e2e`, files in `e2e/`). `npm run check` is a full local gate: typecheck, repository-wide lint and format checking, and all unit tests. `npm run test:integration` also starts a disposable Docker database and applies migrations. Use those broad commands at the checkpoints defined in `AGENTS.md`, not automatically after every edit.
+
+Choose the smallest check that can establish confidence in the change:
+
+- **Documentation or minor visual-only UI:** inspect the diff and use relevant file-level formatting or lint checks when needed. Do not run behavioural tests when behaviour did not change.
+- **Simple functions and forms:** run the directly related Vitest file(s), plus relevant lint or type checking when the change can affect them.
+- **Features:** test the changed behaviour and affected dependencies. Add focused browser coverage only for user-visible flows that need a real browser.
+- **Security-sensitive work:** thoroughly test the relevant authentication, authorisation, workspace isolation, financial, migration, and failure paths. Use disposable test data and databases, never shared or production data.
+- **Full gates:** run `npm run check`, integration tests, e2e, and/or build when their coverage is relevant to a significant architectural change, a planned checkpoint, or release preparation. Do not assume every gate is required in every case.
+
+Do not rerun a successful check after unrelated or documentation-only changes. After a failure, understand the cause before editing or retrying; do not repeatedly invoke an unchanged failing command.
 
 - **Unit** — domain rules and permission helpers.
 - **Integration** — data access and transactions against a test database, never a shared or production one.
