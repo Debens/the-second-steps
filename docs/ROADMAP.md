@@ -49,7 +49,7 @@ This route can reach useful value earlier, but it is commercially credible only 
 
 ### Partially implemented
 
-- The people/organisation database and security foundation is applied: neutral contacts, contact methods, contact addresses, organisation-person relationships, effective branch links, permissions, constraints, and branch-aware RLS. Contact application services, audit-writing operations, search, forms, lists, and record pages are not yet implemented.
+- The people/organisation database and security foundation is applied. The branch-scoped application layer now supports contact create, view, list/search, routine update, manager-only organisation identity changes, archive/reactivate, explainable duplicate candidates, and audit writing. Forms, list screens, record pages, organisation-person editing, and merge execution are not yet implemented.
 
 ### Not implemented
 

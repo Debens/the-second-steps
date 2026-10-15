@@ -1,6 +1,6 @@
 # Permissions and access
 
-Supabase login, server-verified sessions, the workspace and membership access foundation, fixed staff roles, feature-flagged TOTP MFA enforcement, and the separate Platform Owner shell are implemented. Platform Owners can browse limited user/customer administration metadata and manage audited user names, customer/contact details, and customer feature-flag overrides; authorised customer roles can edit ordinary customer/contact details within their verified workspace. None of this grants CRM-record access. Participations, entitlements, resource/field grants, invitations, and CRM data access are not implemented.
+Supabase login, server-verified sessions, the workspace and membership access foundation, fixed staff roles, feature-flagged TOTP MFA enforcement, and the separate Platform Owner shell are implemented. Platform Owners can browse limited account-administration metadata and manage audited user names, customer details, and customer feature-flag overrides; this does not grant access to customer CRM contacts. Authorised customer staff can now create, read, update, search, archive/reactivate, and check duplicate contact candidates according to their role and branch scope. Participations, entitlements, resource/field grants, invitations, and access to other CRM modules are not implemented.
 
 ## Three-layer access model (confirmed)
 

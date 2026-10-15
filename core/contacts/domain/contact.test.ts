@@ -5,6 +5,8 @@ import {
   normalizePostcode,
   normalizeTelephone,
   preferredChannelIsAllowed,
+  validateContactAddresses,
+  validateContactPoints,
   validateOrganisationDetails,
   validatePersonDetails,
 } from "./contact";
@@ -96,6 +98,58 @@ describe("contact domain", () => {
         restricted: new Set(["email"]),
       }),
     ).toBe(false);
+  });
+
+  it("normalises contact points and permits one preferred value per kind", () => {
+    expect(
+      validateContactPoints([
+        {
+          kind: "email",
+          label: " Work ",
+          value: " OWNER@EXAMPLE.COM ",
+          isPreferred: true,
+        },
+        {
+          kind: "telephone",
+          label: "Mobile",
+          value: "07700 900123",
+          isPreferred: true,
+        },
+      ]),
+    ).toMatchObject({
+      ok: true,
+      points: [
+        { label: "Work", normalizedValue: "owner@example.com" },
+        { normalizedValue: "+447700900123" },
+      ],
+    });
+    expect(
+      validateContactPoints([
+        { kind: "email", label: "", value: "a@example.com", isPreferred: true },
+        { kind: "email", label: "", value: "b@example.com", isPreferred: true },
+      ]),
+    ).toEqual({ ok: false, reason: "multiple_preferred_contact_points" });
+  });
+
+  it("keeps person and organisation address kinds separate", () => {
+    const address = {
+      kind: "registered" as const,
+      addressLine1: " 1 High Street ",
+      addressLine2: "",
+      locality: "",
+      townCity: " London ",
+      county: "",
+      postcode: " sw1a 1aa ",
+      countryCode: "gb",
+    };
+    expect(validateContactAddresses("organisation", [address])).toMatchObject({
+      ok: true,
+      addresses: [{ postcode: "SW1A1AA", countryCode: "GB" }],
+    });
+    expect(validateContactAddresses("person", [address])).toEqual({
+      ok: false,
+      reason: "invalid_address",
+    });
   });
 
   it("creates kind-labelled non-sequential references", () => {

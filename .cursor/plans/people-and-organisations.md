@@ -1,6 +1,6 @@
 # People and organisations — Chunk 2 technical design
 
-**Status:** Technical design approved. Chunk 2A database/security foundation was implemented, verified locally, applied to shared development Supabase, and confirmed up to date on 2026-10-15. Contact application services and UI have not been built.
+**Status:** Technical design approved. Chunk 2A database/security foundation was implemented, verified locally, applied to shared development Supabase, and confirmed up to date on 2026-10-15. Chunk 2B contact application services are implemented and focused-tested locally. Contact UI has not been built.
 
 **Parent plan:** `.cursor/plans/landlord-property-onboarding.md`
 
@@ -343,5 +343,20 @@ Verified:
 
 Not yet done:
 
-- Contact repositories/application use cases, audit-writing operations, pages, forms, search, duplicate-warning UI, or browser tests.
+- Pages, forms, duplicate-warning UI, organisation-person relationship editing, or browser tests.
 - Merge execution, notes, landlord roles, properties, imports, documents, or integrations.
+
+## Chunk 2B application checkpoint
+
+Implemented:
+
+- Verified-workspace and branch-scoped contact create, view, list/search, routine update, archive, and reactivate services.
+- Separately protected organisation identity updates for Branch Manager or higher.
+- Explainable duplicate-candidate lookup without automatic merging.
+- Audits for successful mutations and permission/validation denials without contact details in audit metadata.
+
+Verified locally:
+
+- TypeScript, targeted lint and formatting checks.
+- 9 focused contact-domain tests.
+- 4 focused disposable-database application tests covering create/read/list, branch isolation, routine updates, duplicate candidates, archive/reactivate permissions, and sensitive-update denial.

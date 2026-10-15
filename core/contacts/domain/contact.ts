@@ -10,6 +10,12 @@ export const CONTACT_LIMITS = {
   vatNumber: 32,
   email: 254,
   telephone: 32,
+  label: 40,
+  addressLine: 160,
+  locality: 100,
+  townCity: 100,
+  county: 100,
+  postcode: 16,
 } as const;
 
 export type PersonDetailsInput = {
@@ -195,4 +201,148 @@ export function preferredChannelIsAllowed(input: {
   restricted: ReadonlySet<string>;
 }) {
   return input.preferred === null || !input.restricted.has(input.preferred);
+}
+
+export type ContactPointInput = {
+  id?: string;
+  kind: "email" | "telephone";
+  label: string;
+  value: string;
+  isPreferred: boolean;
+};
+
+export type ValidContactPoint = {
+  id?: string;
+  kind: ContactPointInput["kind"];
+  label: string | null;
+  value: string;
+  normalizedValue: string;
+  isPreferred: boolean;
+};
+
+export function validateContactPoints(input: readonly ContactPointInput[]) {
+  const ids = input.flatMap(({ id }) => (id ? [id] : []));
+  if (new Set(ids).size !== ids.length) {
+    return { ok: false, reason: "duplicate_contact_point" } as const;
+  }
+
+  const preferredKinds = input
+    .filter(({ isPreferred }) => isPreferred)
+    .map(({ kind }) => kind);
+  if (new Set(preferredKinds).size !== preferredKinds.length) {
+    return { ok: false, reason: "multiple_preferred_contact_points" } as const;
+  }
+
+  const points: ValidContactPoint[] = [];
+  for (const point of input) {
+    const value = point.value.trim();
+    const label = optionalValue(point.label);
+    if (label && label.length > CONTACT_LIMITS.label) {
+      return { ok: false, reason: "invalid_contact_point" } as const;
+    }
+
+    const normalizedValue =
+      point.kind === "email"
+        ? normalizeEmail(value)
+        : normalizeTelephone(value);
+    const maximum =
+      point.kind === "email" ? CONTACT_LIMITS.email : CONTACT_LIMITS.telephone;
+    if (!normalizedValue || value.length > maximum) {
+      return { ok: false, reason: "invalid_contact_point" } as const;
+    }
+
+    points.push({
+      id: point.id,
+      kind: point.kind,
+      label,
+      value,
+      normalizedValue,
+      isPreferred: point.isPreferred,
+    });
+  }
+
+  return { ok: true, points } as const;
+}
+
+export type ContactAddressInput = {
+  id?: string;
+  kind: "individual" | "registered" | "correspondence";
+  addressLine1: string;
+  addressLine2: string;
+  locality: string;
+  townCity: string;
+  county: string;
+  postcode: string;
+  countryCode: string;
+};
+
+export type ValidContactAddress = {
+  id?: string;
+  kind: ContactAddressInput["kind"];
+  addressLine1: string;
+  addressLine2: string | null;
+  locality: string | null;
+  townCity: string;
+  county: string | null;
+  postcode: string;
+  countryCode: string;
+};
+
+export function validateContactAddresses(
+  contactKind: "person" | "organisation",
+  input: readonly ContactAddressInput[],
+) {
+  const ids = input.flatMap(({ id }) => (id ? [id] : []));
+  const kinds = input.map(({ kind }) => kind);
+  if (
+    new Set(ids).size !== ids.length ||
+    new Set(kinds).size !== kinds.length
+  ) {
+    return { ok: false, reason: "duplicate_address" } as const;
+  }
+
+  const addresses: ValidContactAddress[] = [];
+  for (const address of input) {
+    const kindIsValid =
+      contactKind === "person"
+        ? address.kind === "individual"
+        : address.kind !== "individual";
+    const addressLine1 = address.addressLine1.trim();
+    const townCity = address.townCity.trim();
+    const postcode = normalizePostcode(address.postcode);
+    const countryCode = address.countryCode.trim().toUpperCase();
+    const optionalFields = {
+      addressLine2: optionalValue(address.addressLine2),
+      locality: optionalValue(address.locality),
+      county: optionalValue(address.county),
+    };
+
+    if (
+      !kindIsValid ||
+      !addressLine1 ||
+      !townCity ||
+      !postcode ||
+      !/^[A-Z]{2}$/.test(countryCode) ||
+      addressLine1.length > CONTACT_LIMITS.addressLine ||
+      townCity.length > CONTACT_LIMITS.townCity ||
+      postcode.length > CONTACT_LIMITS.postcode ||
+      (optionalFields.addressLine2?.length ?? 0) > CONTACT_LIMITS.addressLine ||
+      (optionalFields.locality?.length ?? 0) > CONTACT_LIMITS.locality ||
+      (optionalFields.county?.length ?? 0) > CONTACT_LIMITS.county
+    ) {
+      return { ok: false, reason: "invalid_address" } as const;
+    }
+
+    addresses.push({
+      id: address.id,
+      kind: address.kind,
+      addressLine1,
+      ...optionalFields,
+      townCity,
+      postcode,
+      countryCode,
+    });
+  }
+
+  return { ok: true, addresses } as const;
 }
