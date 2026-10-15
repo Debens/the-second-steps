@@ -359,6 +359,42 @@ describe("contact application layer", () => {
     });
     if (!organisation.ok) throw new Error("Organisation creation failed.");
     await expect(
+      updateContact({
+        authSubject: ids.negotiatorAAuth,
+        workspaceSlug: "contact-app",
+        contactId: organisation.contactId,
+        kind: "organisation",
+        details: {
+          type: "limited_company",
+          legalName: "Oakfield Limited",
+          tradingName: "Oakfield Homes",
+          registrationNumber: "AB123456",
+          vatNumber: "",
+        },
+        communication,
+        contactPoints: [],
+        addresses: [],
+      }),
+    ).resolves.toEqual({ ok: true, contactId: organisation.contactId });
+    await expect(
+      updateContact({
+        authSubject: ids.negotiatorAAuth,
+        workspaceSlug: "contact-app",
+        contactId: organisation.contactId,
+        kind: "organisation",
+        details: {
+          type: "limited_company",
+          legalName: "Changed Limited",
+          tradingName: "Oakfield Homes",
+          registrationNumber: "AB123456",
+          vatNumber: "",
+        },
+        communication,
+        contactPoints: [],
+        addresses: [],
+      }),
+    ).resolves.toEqual({ ok: false, error: "access_denied" });
+    await expect(
       updateOrganisationIdentity({
         authSubject: ids.negotiatorAAuth,
         workspaceSlug: "contact-app",

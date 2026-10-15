@@ -1,6 +1,6 @@
 # People and organisations — Chunk 2 technical design
 
-**Status:** Technical design approved. Chunk 2A database/security foundation was implemented, verified locally, applied to shared development Supabase, and confirmed up to date on 2026-10-15. Chunk 2B contact application services are implemented and focused-tested locally. Contact UI has not been built.
+**Status:** Technical design approved. Chunk 2A database/security foundation was implemented, verified locally, applied to shared development Supabase, and confirmed up to date on 2026-10-15. Chunk 2B contact services are focused-tested. The first Chunk 2C contact UI is implemented locally and build-verified; authenticated browser/visual review remains outstanding.
 
 **Parent plan:** `.cursor/plans/landlord-property-onboarding.md`
 
@@ -343,7 +343,7 @@ Verified:
 
 Not yet done:
 
-- Pages, forms, duplicate-warning UI, organisation-person relationship editing, or browser tests.
+- Authenticated responsive/light-dark browser review and organisation-person relationship editing.
 - Merge execution, notes, landlord roles, properties, imports, documents, or integrations.
 
 ## Chunk 2B application checkpoint
@@ -360,3 +360,17 @@ Verified locally:
 - TypeScript, targeted lint and formatting checks.
 - 9 focused contact-domain tests.
 - 4 focused disposable-database application tests covering create/read/list, branch isolation, routine updates, duplicate candidates, archive/reactivate permissions, and sensitive-update denial.
+
+## Chunk 2C UI checkpoint
+
+Implemented locally:
+
+- Contacts navigation and a combined responsive people/organisation list with search, type, and archived filters.
+- Full-page person/organisation creation with branch selection, multiple labelled contact methods, addresses, communication preferences, duplicate review, and inline validation.
+- Contact record pages, responsive edit dialog/sheet, manager-protected organisation identity editing, and archive/reactivate controls.
+- Loading, empty, error, and inaccessible-record states.
+
+Verified:
+
+- TypeScript, targeted lint/formatting, focused domain tests, focused disposable-database application tests, and the production build pass.
+- The read-only desktop/mobile Playwright checks are written but their run is currently blocked by development quick-sign-in failing before the Contacts routes are reached. Responsive light/dark visual verification therefore remains outstanding.

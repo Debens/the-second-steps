@@ -49,7 +49,7 @@ This route can reach useful value earlier, but it is commercially credible only 
 
 ### Partially implemented
 
-- The people/organisation database and security foundation is applied. The branch-scoped application layer now supports contact create, view, list/search, routine update, manager-only organisation identity changes, archive/reactivate, explainable duplicate candidates, and audit writing. Forms, list screens, record pages, organisation-person editing, and merge execution are not yet implemented.
+- The people/organisation database and security foundation is applied. The branch-scoped application layer supports contact create, view, list/search, routine update, manager-only organisation identity changes, archive/reactivate, explainable duplicate candidates, and audit writing. A first responsive Contacts list, create form, record page, edit flow, duplicate warning, and archive/reactivate UI is implemented locally and passes static/build checks; its authenticated browser review remains outstanding. Organisation-person editing and merge execution are not yet implemented.
 
 ### Not implemented
 

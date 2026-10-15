@@ -28,9 +28,9 @@ export default function WorkspaceDashboardPage() {
           <p className="font-medium">Protected workspace</p>
           <p>
             Workspace membership, role permissions and database isolation are
-            active. MFA is staged behind a feature flag during development and
-            is mandatory for release. CRM records remain unavailable until their
-            product slice is implemented.
+            active. Contact records are available within each user&apos;s branch
+            scope. MFA is staged during development and remains mandatory for
+            release.
           </p>
         </div>
       </div>

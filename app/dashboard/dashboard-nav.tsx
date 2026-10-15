@@ -1,6 +1,6 @@
 "use client";
 
-import { Home, Menu, Settings } from "lucide-react";
+import { ContactRound, Home, Menu, Settings } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ZaytoWordmark } from "@/components/brand/zayto-wordmark";
@@ -19,6 +19,7 @@ function NavigationItems({ workspaceSlug }: { workspaceSlug: string }) {
   const base = `/dashboard/w/${workspaceSlug}`;
   const items = [
     { label: "Overview", icon: Home, href: base },
+    { label: "Contacts", icon: ContactRound, href: `${base}/contacts` },
     { label: "Settings", icon: Settings, href: `${base}/settings` },
   ];
 

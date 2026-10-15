@@ -140,13 +140,18 @@ function validateCreateDetails(
   if (input.kind === "person") {
     const validation = validatePersonDetails(input.details);
     return validation.ok
-      ? { ok: true, data: validation.details }
+      ? {
+          ok: true as const,
+          kind: "person" as const,
+          data: validation.details,
+        }
       : { ok: false as const };
   }
   const validation = validateOrganisationDetails(input.details);
   return validation.ok
     ? {
-        ok: true,
+        ok: true as const,
+        kind: "organisation" as const,
         data: {
           organisationType: ORGANISATION_TYPE[validation.details.type],
           legalName: validation.details.legalName,
@@ -206,6 +211,7 @@ export async function listContacts(input: {
   authSubject: string;
   workspaceSlug: string;
   query?: string;
+  kind?: "person" | "organisation";
   includeArchived?: boolean;
   includeMerged?: boolean;
 }) {
@@ -227,6 +233,14 @@ export async function listContacts(input: {
         where: {
           workspaceId: actor.workspaceId,
           status: { in: statuses },
+          ...(input.kind
+            ? {
+                kind:
+                  input.kind === "person"
+                    ? ContactKind.PERSON
+                    : ContactKind.ORGANISATION,
+              }
+            : {}),
           ...(query
             ? {
                 OR: [
@@ -387,23 +401,40 @@ type UpdateContactInput = {
   addresses: readonly ContactAddressInput[];
 } & (
   | { kind: "person"; details: PersonDetailsInput }
-  | { kind: "organisation"; tradingName: string }
+  | { kind: "organisation"; details: OrganisationDetailsInput }
 );
 
 function validateRoutineDetails(
   input:
     | { kind: "person"; details: PersonDetailsInput }
-    | { kind: "organisation"; tradingName: string },
+    | { kind: "organisation"; details: OrganisationDetailsInput },
 ) {
   if (input.kind === "person") {
     const validation = validatePersonDetails(input.details);
     return validation.ok
-      ? { ok: true, data: validation.details }
+      ? {
+          ok: true as const,
+          kind: "person" as const,
+          data: validation.details,
+        }
       : { ok: false as const };
   }
-  const tradingName = input.tradingName.trim() || null;
-  return (tradingName?.length ?? 0) <= 200
-    ? { ok: true, data: { tradingName } }
+  const validation = validateOrganisationDetails(input.details);
+  return validation.ok
+    ? {
+        ok: true as const,
+        kind: "organisation" as const,
+        data: {
+          organisationType: ORGANISATION_TYPE[validation.details.type],
+          legalName: validation.details.legalName,
+          tradingName: validation.details.tradingName,
+          registrationNumber: validation.details.registrationNumber,
+          normalizedRegistrationNumber:
+            validation.details.normalizedRegistrationNumber,
+          vatNumber: validation.details.vatNumber,
+          normalizedVatNumber: validation.details.normalizedVatNumber,
+        },
+      }
     : { ok: false as const };
 }
 
@@ -543,7 +574,15 @@ export async function updateContact(
       }
       const contact = await transaction.contact.findFirst({
         where: { id: input.contactId, workspaceId: actor.workspaceId },
-        select: { id: true, kind: true, status: true },
+        select: {
+          id: true,
+          kind: true,
+          status: true,
+          organisationType: true,
+          legalName: true,
+          registrationNumber: true,
+          vatNumber: true,
+        },
       });
       if (!contact) return { ok: false, error: "contact_not_found" };
       if (
@@ -558,6 +597,26 @@ export async function updateContact(
           actor,
           "contact.update",
           "invalid_state",
+          contact.id,
+        );
+      }
+
+      const canManageSensitive = hasPermission(
+        actor.roles,
+        "contact.sensitive.manage",
+      );
+      const sensitiveIdentityChanged =
+        details.kind === "organisation" &&
+        (contact.organisationType !== details.data.organisationType ||
+          contact.legalName !== details.data.legalName ||
+          contact.registrationNumber !== details.data.registrationNumber ||
+          contact.vatNumber !== details.data.vatNumber);
+      if (!canManageSensitive && sensitiveIdentityChanged) {
+        return deny(
+          transaction,
+          actor,
+          "contact.update",
+          "access_denied",
           contact.id,
         );
       }
@@ -591,7 +650,9 @@ export async function updateContact(
         where: { id: contact.id },
         data: {
           ...communication,
-          ...details.data,
+          ...(details.kind === "person" || canManageSensitive
+            ? details.data
+            : { tradingName: details.data.tradingName }),
         },
       });
       await audit(transaction, actor, {
@@ -604,6 +665,7 @@ export async function updateContact(
             "communication",
             "contact_methods",
             "addresses",
+            ...(sensitiveIdentityChanged ? ["organisation_identity"] : []),
           ],
         },
       });
