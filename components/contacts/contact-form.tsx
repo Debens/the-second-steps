@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { OptionSelect } from "@/components/ui/option-select";
 import type { ContactFormState } from "@/app/dashboard/w/[workspaceSlug]/contacts/actions";
 
 type FormAction = (
@@ -55,9 +56,6 @@ export type InitialContact = {
 
 const INITIAL_STATE: ContactFormState = { status: "idle", message: "" };
 const EMPTY_POINT: Point = { label: "", value: "", isPreferred: false };
-const SELECT_CLASS =
-  "h-10 w-full rounded-xl border border-input bg-muted/60 px-3 text-sm outline-none transition-colors focus-visible:border-ring focus-visible:bg-card focus-visible:ring-3 focus-visible:ring-ring/40";
-
 const CONTACT_POINT_LABELS = {
   email: ["Personal", "Work", "Accounts", "Other"],
   telephone: ["Mobile", "Home", "Work", "Other"],
@@ -151,22 +149,21 @@ function ContactPointFields({
           <input type="hidden" name={`${kind}Id`} value={point.id ?? ""} />
           <div className="grid gap-2">
             <Label htmlFor={`${kind}Label-${index}`}>Label</Label>
-            <select
-              className={SELECT_CLASS}
+            <OptionSelect
               id={`${kind}Label-${index}`}
               name={`${kind}Label`}
               defaultValue={point.label || labelOptions[0]}
-            >
-              {point.label &&
-                !(labelOptions as readonly string[]).includes(point.label) && (
-                  <option value={point.label}>{point.label}</option>
-                )}
-              {labelOptions.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
+              options={[
+                ...(point.label &&
+                !(labelOptions as readonly string[]).includes(point.label)
+                  ? [{ value: point.label, label: point.label }]
+                  : []),
+                ...labelOptions.map((option) => ({
+                  value: option,
+                  label: option,
+                })),
+              ]}
+            />
           </div>
           <Field
             label={kind === "email" ? "Email" : "Telephone"}
@@ -444,20 +441,20 @@ export function ContactForm({
               )}
               <div className="grid gap-2">
                 <Label htmlFor="organisationType">Organisation type</Label>
-                <select
-                  className={SELECT_CLASS}
+                <OptionSelect
                   id="organisationType"
                   name="organisationType"
                   defaultValue={initial?.organisationType ?? "limited_company"}
                   disabled={Boolean(initial) && !canManageIdentity}
-                >
-                  <option value="limited_company">Limited company</option>
-                  <option value="llp">LLP</option>
-                  <option value="partnership">Partnership</option>
-                  <option value="trust">Trust</option>
-                  <option value="charity">Charity</option>
-                  <option value="other">Other</option>
-                </select>
+                  options={[
+                    { value: "limited_company", label: "Limited company" },
+                    { value: "llp", label: "LLP" },
+                    { value: "partnership", label: "Partnership" },
+                    { value: "trust", label: "Trust" },
+                    { value: "charity", label: "Charity" },
+                    { value: "other", label: "Other" },
+                  ]}
+                />
               </div>
               <Field
                 label="Legal name"
@@ -489,26 +486,21 @@ export function ContactForm({
           )}
           <div className="grid gap-2">
             <Label htmlFor="branchId">Responsible branch</Label>
-            <select
-              className={SELECT_CLASS}
+            <OptionSelect
               id="branchId"
               name="branchId"
               required
+              placeholder="Select a branch"
               defaultValue={
                 initial?.branchId ??
                 (branches.length === 1 ? branches[0]?.id : "")
               }
               disabled={Boolean(initial)}
-            >
-              <option value="" disabled>
-                Select a branch
-              </option>
-              {branches.map((branch) => (
-                <option key={branch.id} value={branch.id}>
-                  {branch.name}
-                </option>
-              ))}
-            </select>
+              options={branches.map((branch) => ({
+                value: branch.id,
+                label: branch.name,
+              }))}
+            />
           </div>
         </div>
       </section>
@@ -587,32 +579,31 @@ export function ContactForm({
             <Label htmlFor="preferredCommunication">
               Preferred contact method
             </Label>
-            <select
-              className={SELECT_CLASS}
+            <OptionSelect
               id="preferredCommunication"
               name="preferredCommunication"
+              placeholder="No preference"
               value={preferredCommunication}
-              onChange={(event) =>
-                setPreferredCommunication(event.currentTarget.value)
-              }
-            >
-              <option value="">No preference</option>
-              {availableMethods.email && !restrictions.doNotEmail && (
-                <option value="email">Email</option>
-              )}
-              {availableMethods.telephone && !restrictions.doNotTelephone && (
-                <option value="telephone">Telephone</option>
-              )}
-              {availableMethods.telephone && !restrictions.doNotSms && (
-                <option value="sms">SMS</option>
-              )}
-              {availableMethods.telephone && !restrictions.doNotWhatsApp && (
-                <option value="whatsapp">WhatsApp</option>
-              )}
-              {availableMethods.post && !restrictions.doNotPost && (
-                <option value="post">Post</option>
-              )}
-            </select>
+              onValueChange={setPreferredCommunication}
+              options={[
+                { value: "", label: "No preference" },
+                ...(availableMethods.email && !restrictions.doNotEmail
+                  ? [{ value: "email", label: "Email" }]
+                  : []),
+                ...(availableMethods.telephone && !restrictions.doNotTelephone
+                  ? [{ value: "telephone", label: "Telephone" }]
+                  : []),
+                ...(availableMethods.telephone && !restrictions.doNotSms
+                  ? [{ value: "sms", label: "SMS" }]
+                  : []),
+                ...(availableMethods.telephone && !restrictions.doNotWhatsApp
+                  ? [{ value: "whatsapp", label: "WhatsApp" }]
+                  : []),
+                ...(availableMethods.post && !restrictions.doNotPost
+                  ? [{ value: "post", label: "Post" }]
+                  : []),
+              ]}
+            />
           </div>
           <fieldset className="grid gap-3 sm:grid-cols-2">
             <legend className="mb-2 text-sm font-medium">Do not use</legend>
@@ -676,7 +667,7 @@ export function ContactForm({
           {state.message}
         </p>
       )}
-      <div className="sticky bottom-0 flex justify-end border-t bg-background/95 py-4 backdrop-blur">
+      <div className="sticky bottom-0 flex justify-end border-t bg-background py-4">
         <Button type="submit" disabled={pending}>
           {pending && (
             <LoaderCircle aria-hidden="true" className="animate-spin" />

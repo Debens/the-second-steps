@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { OptionSelect } from "@/components/ui/option-select";
 import { StatusBadge } from "@/components/ui/status-badge";
 import {
   Table,
@@ -117,16 +118,18 @@ export default async function ContactsPage({
               <label className="text-sm font-medium" htmlFor="kind">
                 Type
               </label>
-              <select
-                className="h-10 rounded-xl border border-input bg-muted/60 px-3 text-sm"
+              <OptionSelect
+                className="w-44"
                 id="kind"
                 name="kind"
+                placeholder="All contacts"
                 defaultValue={kind ?? ""}
-              >
-                <option value="">All contacts</option>
-                <option value="person">People</option>
-                <option value="organisation">Organisations</option>
-              </select>
+                options={[
+                  { value: "", label: "All contacts" },
+                  { value: "person", label: "People" },
+                  { value: "organisation", label: "Organisations" },
+                ]}
+              />
             </div>
             <label className="flex h-9 items-center gap-2 text-sm">
               <input

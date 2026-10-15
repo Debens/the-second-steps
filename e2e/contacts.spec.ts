@@ -27,8 +27,11 @@ test("contact list and person creation path are available", async ({
   await expect(page.getByRole("heading", { name: "New person" })).toBeVisible();
   await expect(page.getByLabel("First name")).toBeVisible();
   const branch = page.getByLabel("Responsible branch");
-  await branch.selectOption({ label: "Main Branch" });
-  await expect(branch).toHaveValue(/.+/);
+  await expect(branch).toContainText("Select a branch");
+  await branch.click();
+  await expect(page.getByRole("option", { name: "Main Branch" })).toBeVisible();
+  await page.getByRole("option", { name: "Main Branch" }).click();
+  await expect(branch).toContainText("Main Branch");
   await expect(
     page.getByRole("button", { name: "Create contact" }),
   ).toBeVisible();
