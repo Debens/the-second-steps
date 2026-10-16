@@ -1,0 +1,55 @@
+# Dashboard and general actions (real build)
+
+**Status:** Proposal, approved in direction by the owner on 2026-10-16 (layout G from the design lab; general actions). No implementation has started. The design-lab mock-up is `/design-lab/dashboards`, option G, with notes in `.cursor/plans/dashboards.md`.
+
+## Outcome
+
+Replace today's read-only Overview with the tabbed dashboard the owner chose: **Overview, Pipeline, Schedule and Team tabs** and an **Actions list always visible on the right**, in due order with the most overdue first. Staff add, finish, snooze, hand over and plan actions without leaving the page. **Add action** opens a pop-up. The page is built for later modules, but it shows only real data: nothing invented, and no placeholder tiles for modules that do not exist.
+
+## Owner decisions
+
+- Layout G (tabs plus an actions rail, with a Comfortable/Compact switch) is the direction.
+- **General actions:** an action can stand alone ("ring the council") or be linked to a lead, contact or property; it is not limited to landlord leads.
+- Add action is a pop-up from the dashboard, and actions are listed in due order, most overdue first.
+- A temporary Design lab section in the navigation (development only) links to the lab pages.
+
+## Design
+
+### Two tables, one list
+
+- **Landlord-lead next actions stay in `enquiry_tasks`.** They carry reviewed lead rules (a lead needs an open next action; closing a lead closes its tasks), and migrating them is risky because the migration role cannot see rows under forced row-level security.
+- **General actions go in a new `actions` table:** title, type (call, email, send, chase, other), due date, optional planned start time, assignee (required), status (open, done, cancelled) with who and when it was closed, responsible branch (required, as for leads), and optional links to a lead, contact and property (same-workspace composite foreign keys, links checked when first made, never swapped).
+- **The Add action pop-up chooses the table for the user.** If a lead is picked, it adds a lead next action (so the lead rule holds). Otherwise it creates a general action, optionally linked to a contact or property. The user sees one list.
+- A thin **work-item service** merges both sources into one due-ordered list and exposes the same operations on either: add, complete (optionally setting the next step in one go), snooze (change the due date), hand over (reassign), plan into an hour (a planned start time, which needs one new column on `enquiry_tasks`), and cancel. Later modules either add their own source to the merge or use general actions with links; this is the shared work-item model the roadmap calls SHARED-01.
+
+### Rules to carry over from the lead work
+
+- Assignees must be active, able to work the action, and able to see its branch (as `canAssignEnquiryWork`).
+- The database sets closing times; history for stage changes stays as it is; the app role can never delete.
+- Every id from the browser is validated; text is capped; no browser object is spread into a call carrying the sign-in identity.
+
+### What each tab shows, from real data
+
+- **Actions rail:** the merged list for the signed-in user, in due order (overdue first), with filters (All, Overdue, Today), tick-off with "what happens next?", Plan, snooze, hand over, call or email where the linked contact has one, and Add action.
+- **Overview tab:** headline numbers computed from leads the user can see (open leads, appraisals this week, won this month, share of leads from the last 30 days that reached an appraisal, overdue actions, leads with no next action); "Needs attention" alerts from real conditions (leads with no lead person, leads waiting seven or more days in a stage, overdue actions); today's appraisals with Record outcome; a pipeline snapshot; recent activity from stage history (actor, lead, new stage), limited to what the user can see.
+- **Pipeline tab:** the lead board with move-on, assign and close actions, reusing the lead services.
+- **Schedule tab:** today by the hour, appraisals fixed in place and planned actions dropped into free hours (needs the planned start time).
+- **Team tab:** open and stale leads per colleague, for roles allowed to see colleagues (branch scope applies).
+- Not included until the data exists: viewings, applications, certificates, rent, maintenance, and any fee or money figure (fee calculation is not specified, so none is shown).
+
+## Delivery stages
+
+1. **D1, database and security (Opus):** the `actions` table, row-level security, triggers, a planned-start column on `enquiry_tasks`, permissions, disposable-database isolation tests, an independent security review, then owner approval before applying to shared Supabase.
+2. **D2, services (Sonnet):** the work-item layer, add, complete, snooze, hand over, plan and cancel for both sources; the headline, alert and activity queries; application tests.
+3. **D3, interface (Sonnet):** the tabbed dashboard, actions rail, Add action pop-up and Comfortable/Compact switch on the real Overview; responsive, light and dark; browser checks.
+4. **Checkpoint (Opus review, then handover):** independent review of D2 and D3, full relevant checks, demo data, documentation.
+
+## Open questions for the owner (needed at the start of D1)
+
+- **Who may add and complete actions?** Proposal: every role except Read Only may add actions and finish their own; Branch Manager or higher may hand over or edit other people's; Read Only can see actions in its scope.
+- **Who sees an action?** Proposal: its assignee and its creator always, plus anyone whose branch scope includes the action's responsible branch.
+- **Should the Team tab and the activity feed be limited to managers?** Proposal: the Team tab only for roles that can see colleagues; the activity feed for everyone, limited to records they can see.
+
+## Deliberate exclusions
+
+Recurring actions, reminders by email or SMS, comments on actions, attachments, sub-tasks, a calendar sync, and moving existing lead next actions into the new table.
