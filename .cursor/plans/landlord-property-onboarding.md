@@ -241,6 +241,6 @@ CSV import follows stable manual workflows and must be ready before a pilot agen
 
 ## Next approval gate
 
-The next gate is an authenticated responsive/light-dark review of the Chunk 2C contact UI, followed by any focused corrections and the agreed checks. Keep merge, notes, landlord, and property work behind their own chunk gates.
+Chunks 1 to 4 are built (the Chunk 4 properties work was completed on 2026-10-16, with the Edit property and Transfer branch screens deferred). The next gate is owner approval of the Chunk 5 design in `.cursor/plans/enquiries-appraisals-tasks.md`. Keep merge, landlord-summary and later chunk work behind their own chunk gates.
 
 Later decisions, not blockers for Chunk 2: private document storage; native e-signing; detailed ownership checks; address finder; retention/erasure periods; marketing readiness and publishing; communications delivery; CSV mapping/import; and design-partner recruitment.
