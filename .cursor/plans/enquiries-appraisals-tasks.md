@@ -1,6 +1,6 @@
 # Enquiries, appraisals, and tasks (Chunk 5)
 
-**Status:** Proposal awaiting final owner approval (drafted 2026-10-16; all design questions answered the same day). No migration, schema, or application code is authorised until the owner approves this design. Applying any migration to shared development Supabase is a separate approval step after tests and an independent security review.
+**Status:** Approved by the owner on 2026-10-16 (all design questions answered the same day); no implementation has started. Stage 5A (database and security) should be started in a fresh session on Opus. Applying any migration to shared development Supabase is a separate approval step after disposable-database tests and an independent security review.
 
 ## Outcome
 
