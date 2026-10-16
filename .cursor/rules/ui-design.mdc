@@ -37,7 +37,7 @@ Use **shadcn/ui** first (`components/ui`). Add components with `npx shadcn@lates
 - Page content **fills the available width** beside the navigation. Do not centre it with `mx-auto` or cap the page wrapper with `max-w-*`; centre only standalone panels such as sign-in, error, not-found, and short choice screens.
 - Design layouts that scale with the screen instead of stretching one column: add a rail at `2xl:` (the contact record adds a details column), align list data into columns at `md:`, and lay long forms out in two columns at `xl:` on full pages (not in dialogs). Cap line length only for prose and single-column forms.
 - Any element a library hides with an inline `style` attribute is shown on server-rendered pages, because the Content Security Policy blocks inline styles. Hide it with a CSS rule (see the Select input rule in `styles/globals.css`); do not loosen the policy.
-- Reference mock-ups: `/design-lab/contact` (development only).
+- Reference mock-ups: `/design-lab/contact` and `/design-lab/dashboards` (development only; dashboard options are proposals, not adopted).
 
 ## Brand (ADR-017)
 
