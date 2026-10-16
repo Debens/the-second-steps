@@ -10,7 +10,7 @@ The agreed visible pipeline is **New enquiry → Appraisal booked → Appraisal 
 
 ## Progress
 
-- **5A (2026-10-16):** migration `20261016170000_enquiries_appraisals_tasks`, Prisma models, permissions, and `tests/integration/enquiry-security.test.ts` (28 database tests) are written and pass on the disposable database. Not yet applied to shared Supabase: that waits for the independent review and owner approval.
+- **5A (2026-10-16):** migration `20261016170000_enquiries_appraisals_tasks`, Prisma models, permissions, and `tests/integration/enquiry-security.test.ts` (28 database tests) are written and pass on the disposable database. After the independent review and its fixes, the owner approved it and it was applied to shared development Supabase and verified on 2026-10-16 (catalog check plus a live property check). **Next: 5B services** (Sonnet is sufficient; the security-critical part is done).
 - **Implementation change to note:** the starter lists are not inserted by the migration or at workspace creation. Under forced row-level security a migration cannot see existing workspaces, so the application adds the starter entries the first time an agency uses its lists (5B), inside that agency's own security context. The outcome for users is the same.
 - **Also built in 5A:** properties, like contacts, now carry a protected open-enquiry count, so a property with an open enquiry cannot be archived (the agreed rule applies to both).
 - **Independent review of 5A (2026-10-16, separate Opus agent):** no cross-agency or cross-branch leak; the property-review lessons held. Fixed before any shared application:
