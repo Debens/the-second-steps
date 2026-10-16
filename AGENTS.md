@@ -76,7 +76,7 @@ The login page (`app/login/`) and protected dashboard shell (`app/dashboard/`) a
 | Roles | `docs/PERMISSIONS.md` |
 | Lettings lifecycle | `docs/WORKFLOWS.md` |
 | Integrations | `docs/INTEGRATIONS.md` |
-| Decision log | `docs/DECISIONS.md` |
+| Decision log | `docs/adr/README.md` |
 | Phases | `docs/ROADMAP.md` |
 
 <!-- BEGIN:nextjs-agent-rules -->
