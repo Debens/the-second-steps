@@ -2,6 +2,34 @@
 
 **Status:** Approved by the owner on 2026-10-16, including the starter feature list. Stage 4A (database and security) is complete: disposable-database tests pass, an independent Opus review ran on 2026-10-16 (see the review notes below), and with owner approval the migration was applied to shared development Supabase and verified on 2026-10-16. Next: 4B services. 4B must show a friendly message when archiving a contact who still owns a property.
 
+## Handover (2026-10-16)
+
+**Built and live in development:** properties, owners (with a lead landlord and full ownership history), branch transfers, notes, duplicate-address warnings and search, in the database, services and screens. Everything is applied to shared development Supabase, committed and pushed.
+
+**Where things are**
+
+- Screens: Properties in the navigation (`app/dashboard/w/[workspaceSlug]/properties/`), a Properties section on each contact, and the **Manage owners** dialog on the property record.
+- Logic: `core/properties/` (rules in `domain/`, database work in `application/`). Contact services are reused for owner search and quick-add.
+- Database: migrations `20261016100000_properties_and_ownership` and `20261016140000_property_integrity_hardening`. The app can never delete property data, and every table is workspace-scoped with row-level security.
+- Tests: `tests/integration/property-security.test.ts` (database rules), `tests/integration/property-application.test.ts` (services), `core/properties/domain/property.test.ts`, and `e2e/properties.spec.ts` (browser, read-only). Run `npm run test:integration` (needs Docker) for the first two.
+- Demo data: nine fictional properties and three extra contacts in the Oakfield sandbox workspace, plus one archived browser-check property ("Zzz Browser Check Close").
+
+**Not built yet**
+
+- **Edit property** and **Transfer branch** screens. `updateProperty` and `transferPropertyBranch` already exist and are tested, so only the dialogs remain.
+- Recording a past owner directly (today an owner is added as current, then ended).
+- Photos, listings, rent, property journey, the Landlords area (Chunk 8), property merge, CSV import and address lookup (see "Deliberate exclusions").
+
+**Things to know before changing this area**
+
+- New server actions must read browser-supplied values by name and validate ids (`core/properties/domain/ids.ts`). Never spread a browser object into a call carrying `authSubject`.
+- A change that writes more than once must throw `PropertyRollback` after its first write, or the earlier writes are kept.
+- The branch-transfer safeguard needs the transfer record inserted with plain SQL, because it relies on the database's own transaction time.
+- Restart the dev server after `prisma generate`, or pages fail with "Cannot read properties of undefined".
+- The ownership count on contacts is maintained only by a database trigger. Do not write it from the application.
+
+**Open decisions for the owner:** whether ending an ownership should remove the owner's branch visibility, whether a user may learn that a contact owns a property they cannot see, and whether role checks should also be enforced in the database. Details are under "Independent security review".
+
 ## Implementation notes (4A, 2026-10-16)
 
 - **Current-owner archive rule:** the person archiving a contact may not be able to see the owned property, so a visibility-limited lookup could miss it. Contacts carry `current_property_ownership_count`, kept by a database trigger on ownership changes and never writable by the application; a check constraint stops an archived or merged contact having current ownerships.
