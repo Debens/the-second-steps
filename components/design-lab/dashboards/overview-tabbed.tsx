@@ -34,10 +34,12 @@ import {
   MODULE_LABEL,
   RowMenu,
   SCHEDULE,
+  sortByDue,
   type Task,
   type useOverviewState,
 } from "./overview-state";
 import { cn } from "cn";
+import { AddActionDialog } from "./add-action-dialog";
 
 type State = ReturnType<typeof useOverviewState>;
 type Tab = "overview" | "pipeline" | "schedule" | "team";
@@ -821,10 +823,10 @@ function TeamTab({
 function ActionsRail({ state, dense }: { state: State; dense: boolean }) {
   const { allTasks, api } = state;
   const [filter, setFilter] = useState<RailFilter>("all");
-  const [draft, setDraft] = useState("");
   const open = allTasks.filter((task) => task.state === "open");
-  const shown = allTasks.filter(
-    (task) => filter === "all" || task.group === filter,
+  // Due order: the most overdue at the top.
+  const shown = sortByDue(
+    allTasks.filter((task) => filter === "all" || task.group === filter),
   );
   const free = HOURS.filter(
     (hour) =>
@@ -842,6 +844,9 @@ function ActionsRail({ state, dense }: { state: State; dense: boolean }) {
           <Badge variant="secondary" className="tabular-nums">
             {open.length}
           </Badge>
+          <span className="ml-auto">
+            <AddActionDialog onAdd={api.addTask} />
+          </span>
         </div>
         <FilterChips
           label="Show"
@@ -861,32 +866,6 @@ function ActionsRail({ state, dense }: { state: State; dense: boolean }) {
             },
           ]}
         />
-        <form
-          className="flex gap-2"
-          onSubmit={(event) => {
-            event.preventDefault();
-            if (!draft.trim()) return;
-            api.addTask(draft.trim());
-            setDraft("");
-          }}
-        >
-          <Input
-            aria-label="Add an action"
-            placeholder="Add an action…"
-            value={draft}
-            onChange={(event) => setDraft(event.target.value)}
-            className="h-8"
-          />
-          <Button
-            type="submit"
-            size="sm"
-            variant="outline"
-            disabled={!draft.trim()}
-          >
-            <Plus aria-hidden="true" />
-            Add
-          </Button>
-        </form>
       </div>
       <ul className="divide-y">
         {shown.map((task) =>

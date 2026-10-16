@@ -47,10 +47,25 @@ export type Task = {
   group: Group;
   state: "open" | "done";
   slot?: string;
+  /** Calendar due date, so the list can be put in due order. */
+  dueDate: string;
   /** Which part of the product the work comes from. */
   module: Module;
 };
-export type NextStep = { id: string; label: string; due: string };
+export type NextStep = {
+  id: string;
+  label: string;
+  due: string;
+  date: string;
+};
+export type NewActionInput = {
+  title: string;
+  kind: Kind;
+  lead: string;
+  place: string;
+  dueDate: string;
+  assignee: string;
+};
 export type Unactioned = {
   id: string;
   lead: string;
@@ -78,13 +93,76 @@ export const GROUP_TITLE: Record<Group, string> = {
   week: "Coming up",
 };
 
+/* "Today" is fixed so the mock-ups read the same whenever they are opened. */
+export const TODAY_ISO = "2026-10-16";
+const DAY_MS = 86_400_000;
+const SNOOZE_DATES: Record<string, string> = {
+  Tomorrow: "2026-10-17",
+  "Mon 19 Oct": "2026-10-19",
+  "Mon 26 Oct": "2026-10-26",
+  "Today (unplanned)": TODAY_ISO,
+};
+
+export function dueLabel(date: string) {
+  const days = Math.round((Date.parse(date) - Date.parse(TODAY_ISO)) / DAY_MS);
+  if (days < 0) return `${-days} day${days === -1 ? "" : "s"} overdue`;
+  if (days === 0) return "Today";
+  if (days === 1) return "Tomorrow";
+  return new Date(date).toLocaleDateString("en-GB", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    timeZone: "UTC",
+  });
+}
+
+/** The due text, group and date together, always from one calendar date. */
+export function dueFields(date: string): {
+  dueDate: string;
+  due: string;
+  group: Group;
+} {
+  return {
+    dueDate: date,
+    due: dueLabel(date),
+    group: date < TODAY_ISO ? "overdue" : date === TODAY_ISO ? "today" : "week",
+  };
+}
+
+/** Most overdue first, then soonest. */
+export function sortByDue<T extends { dueDate: string }>(items: readonly T[]) {
+  return [...items].sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+}
+
 export const NEXT_STEPS: NextStep[] = [
-  { id: "n1", label: "Call again in 2 days", due: "Tue 20 Oct" },
-  { id: "n2", label: "Send terms tomorrow", due: "Tomorrow" },
-  { id: "n3", label: "Chase next week", due: "Mon 26 Oct" },
+  {
+    id: "n1",
+    label: "Call again in 2 days",
+    due: "Tue 20 Oct",
+    date: "2026-10-20",
+  },
+  {
+    id: "n2",
+    label: "Send terms tomorrow",
+    due: "Tomorrow",
+    date: "2026-10-17",
+  },
+  { id: "n3", label: "Chase next week", due: "Mon 26 Oct", date: "2026-10-26" },
 ];
 
-const START: Task[] = [
+const DUE_DATES: Record<string, string> = {
+  t1: "2026-10-13",
+  t2: "2026-10-15",
+  t3: "2026-10-16",
+  t4: "2026-10-16",
+  t5: "2026-10-17",
+  t6: "2026-10-19",
+  p1: "2026-10-15",
+  p2: "2026-10-16",
+  p3: "2026-10-17",
+};
+
+const START_RAW: Omit<Task, "dueDate">[] = [
   {
     id: "t1",
     kind: "send",
@@ -155,7 +233,7 @@ const START: Task[] = [
 
 /* Work from modules that do not exist yet. Shown only in the combined layout
    to prove one page can hold work from every part of the product. */
-const PREVIEW: Task[] = [
+const PREVIEW_RAW: Omit<Task, "dueDate">[] = [
   {
     id: "p1",
     kind: "chase",
@@ -190,6 +268,11 @@ const PREVIEW: Task[] = [
     module: "maintenance",
   },
 ];
+
+const withDates = (rows: Omit<Task, "dueDate">[]): Task[] =>
+  rows.map((row) => ({ ...row, dueDate: DUE_DATES[row.id] }));
+const START = withDates(START_RAW);
+const PREVIEW = withDates(PREVIEW_RAW);
 
 const UNACTIONED: Unactioned[] = [
   {
@@ -250,8 +333,16 @@ export function useOverviewState() {
       );
     },
     snooze(task: Task, label: string) {
-      const previous = { due: task.due, group: task.group, slot: task.slot };
-      patch(task.id, { due: label, group: "week", slot: undefined });
+      const previous = {
+        due: task.due,
+        group: task.group,
+        dueDate: task.dueDate,
+        slot: task.slot,
+      };
+      patch(task.id, {
+        ...dueFields(SNOOZE_DATES[label] ?? "2026-10-19"),
+        slot: undefined,
+      });
       toast.show(`Moved to ${label}`, () => patch(task.id, previous));
     },
     reassign(task: Task, name: string) {
@@ -266,8 +357,7 @@ export function useOverviewState() {
           ...task,
           id: `${task.id}-${step.id}`,
           title: step.label,
-          due: step.due,
-          group: "week",
+          ...dueFields(step.date),
           state: "open",
           slot: undefined,
         },
@@ -288,8 +378,17 @@ export function useOverviewState() {
       );
     },
     schedule(task: Task, slot: string) {
-      const previous = { slot: task.slot, group: task.group, due: task.due };
-      patch(task.id, { slot, group: "today", due: `Today, ${slot}` });
+      const previous = {
+        slot: task.slot,
+        group: task.group,
+        due: task.due,
+        dueDate: task.dueDate,
+      };
+      patch(task.id, {
+        ...dueFields(TODAY_ISO),
+        slot,
+        due: `Today, ${slot}`,
+      });
       toast.show(`Planned for ${slot}`, () => patch(task.id, previous));
     },
     addNext(lead: Unactioned, step: NextStep) {
@@ -316,8 +415,9 @@ export function useOverviewState() {
             ids.includes(task.id)
               ? {
                   ...task,
-                  due: label ?? "Tomorrow",
-                  group: "week",
+                  ...dueFields(
+                    SNOOZE_DATES[label ?? "Tomorrow"] ?? "2026-10-17",
+                  ),
                   slot: undefined,
                 }
               : task,
@@ -336,23 +436,27 @@ export function useOverviewState() {
         () => setTasks(previous),
       );
     },
-    addTask(title: string) {
+    addTask(input: NewActionInput) {
+      const assignee = STAFF.find((person) => person.id === input.assignee);
+      if (assignee && assignee.id !== "olivia") {
+        toast.show(`Action assigned to ${assignee.name}: ${input.title}`);
+        return;
+      }
       const id = `quick-${Date.now()}`;
       setTasks((current) => [
         {
           id,
-          kind: "call",
-          title,
-          lead: "Quick action",
-          place: "Added just now",
-          due: "Today",
-          group: "today",
+          kind: input.kind,
+          title: input.title,
+          lead: input.lead || "No linked lead",
+          place: input.place || "Added just now",
+          ...dueFields(input.dueDate),
           state: "open",
           module: "leads",
         },
         ...current,
       ]);
-      toast.show(`Added: ${title}`, () =>
+      toast.show(`Added: ${input.title}`, () =>
         setTasks((current) => current.filter((task) => task.id !== id)),
       );
     },
