@@ -12,13 +12,13 @@ const PERSONAS = [
   {
     email: "owner@zayto.local",
     expectedUrl: /\/dashboard\/w\/oakfield-lettings-demo$/,
-    expectedHeading: "Dashboard",
+    expectedHeading: "Needs attention",
     deniedUrl: "/platform",
   },
   {
     email: "branch.manager@zayto.local",
     expectedUrl: /\/dashboard\/w\/oakfield-lettings-demo$/,
-    expectedHeading: "Dashboard",
+    expectedHeading: "Needs attention",
     deniedUrl: "/platform",
   },
   {

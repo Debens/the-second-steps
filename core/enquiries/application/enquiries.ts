@@ -1,8 +1,13 @@
 import "server-only";
 
 import { withVerifiedIdentity } from "@/core/access/data/database-context";
+import { DATABASE_ROLE_TO_SYSTEM_ROLE } from "@/core/access/data/role-mapping";
 import { hasPermission } from "@/core/access/domain/role";
-import { hasBranchAccess } from "@/core/access/domain/scope";
+import { validateRoleCombination } from "@/core/access/domain/role";
+import {
+  hasBranchAccess,
+  validateMembershipScope,
+} from "@/core/access/domain/scope";
 import { resolveContactActor } from "@/core/contacts/application/contact-actor";
 import type { Prisma } from "@/core/db/generated/client";
 import {
@@ -649,6 +654,14 @@ export async function listEnquiries(
         include: {
           responsibleBranch: { select: { id: true, name: true } },
           leadSource: { select: { id: true, name: true } },
+          leadMembership: {
+            select: {
+              id: true,
+              userIdentity: {
+                select: { firstName: true, lastName: true, primaryEmail: true },
+              },
+            },
+          },
           appraisals: {
             where: { status: AppraisalStatus.SCHEDULED },
             orderBy: { scheduledAt: "asc" },
@@ -678,6 +691,20 @@ export async function listEnquiries(
     postcode: enquiry.postcode,
     branch: enquiry.responsibleBranch,
     leadSource: enquiry.leadSource,
+    lead: enquiry.leadMembership
+      ? {
+          membershipId: enquiry.leadMembership.id,
+          name:
+            [
+              enquiry.leadMembership.userIdentity.firstName,
+              enquiry.leadMembership.userIdentity.lastName,
+            ]
+              .filter(Boolean)
+              .join(" ") ||
+            enquiry.leadMembership.userIdentity.primaryEmail ||
+            "Unnamed user",
+        }
+      : null,
     appraisal: enquiry.appraisals[0] ?? null,
     nextAction: enquiry.tasks[0] ?? null,
     updatedAt: enquiry.updatedAt,
@@ -709,4 +736,74 @@ export async function getEnquiry(
       });
     },
   );
+}
+
+/** Active enquiry workers the actor is allowed to see, with their branch scope. */
+export async function listEnquiryAssignees(input: EnquiryActorInput) {
+  const result = await withVerifiedIdentity(
+    input.authSubject,
+    async (transaction, identity) => {
+      const actor = await resolveContactActor(transaction, {
+        userIdentityId: identity.userIdentityId,
+        workspaceSlug: input.workspaceSlug,
+      });
+      if (!actor || !hasPermission(actor.roles, "enquiry.read")) return null;
+      const memberships = await transaction.membership.findMany({
+        where: { workspaceId: actor.workspaceId, status: "ACTIVE" },
+        select: {
+          id: true,
+          scopeMode: true,
+          roles: { select: { roleCode: true } },
+          branchAccess: { select: { branchId: true } },
+          userIdentity: {
+            select: { firstName: true, lastName: true, primaryEmail: true },
+          },
+        },
+        orderBy: { createdAt: "asc" },
+      });
+      return memberships.flatMap((membership) => {
+        const roles = validateRoleCombination(
+          membership.roles.map(
+            ({ roleCode }) => DATABASE_ROLE_TO_SYSTEM_ROLE[roleCode],
+          ),
+        );
+        const scope = validateMembershipScope(
+          membership.scopeMode === "WORKSPACE"
+            ? { kind: "workspace" }
+            : {
+                kind: "named_branches",
+                branchIds: membership.branchAccess.map(
+                  ({ branchId }) => branchId,
+                ),
+              },
+        );
+        if (
+          !roles.ok ||
+          !scope.ok ||
+          !hasPermission(roles.roles, "enquiry.update") ||
+          !membership.userIdentity
+        ) {
+          return [];
+        }
+        const name = [
+          membership.userIdentity.firstName,
+          membership.userIdentity.lastName,
+        ]
+          .filter(Boolean)
+          .join(" ");
+        return [
+          {
+            membershipId: membership.id,
+            name:
+              name || membership.userIdentity.primaryEmail || "Unnamed user",
+            branchIds:
+              scope.scope.kind === "workspace"
+                ? null
+                : [...scope.scope.branchIds],
+          },
+        ];
+      });
+    },
+  );
+  return result ?? [];
 }

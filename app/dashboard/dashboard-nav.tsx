@@ -1,6 +1,13 @@
 "use client";
 
-import { Building2, ContactRound, Home, Menu, Settings } from "lucide-react";
+import {
+  Building2,
+  ContactRound,
+  Home,
+  Inbox,
+  Menu,
+  Settings,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -26,6 +33,7 @@ function NavigationItems({
   const base = `/dashboard/w/${workspaceSlug}`;
   const items = [
     { label: "Overview", icon: Home, href: base },
+    { label: "Enquiries", icon: Inbox, href: `${base}/enquiries` },
     { label: "Properties", icon: Building2, href: `${base}/properties` },
     { label: "Contacts", icon: ContactRound, href: `${base}/contacts` },
     { label: "Settings", icon: Settings, href: `${base}/settings` },

@@ -16,6 +16,7 @@ import {
   closeEnquiry,
   createEnquiry,
   getEnquiry,
+  listEnquiryAssignees,
   listEnquiries,
   reopenEnquiry,
 } from "@/core/enquiries/application/enquiries";
@@ -260,6 +261,31 @@ afterAll(async () => {
 });
 
 describe("enquiry application layer", () => {
+  it("lists only active members who can be assigned enquiry work", async () => {
+    const negotiatorAssignees = await listEnquiryAssignees(as("negotiatorA"));
+    expect(negotiatorAssignees.map(({ membershipId }) => membershipId)).toEqual(
+      [memberships.negotiatorA],
+    );
+
+    const assignees = await listEnquiryAssignees(as("owner"));
+    expect(assignees.map(({ membershipId }) => membershipId).sort()).toEqual(
+      [
+        memberships.owner,
+        memberships.managerA,
+        memberships.negotiatorA,
+        memberships.negotiatorB,
+      ].sort(),
+    );
+    expect(
+      assignees.find(
+        ({ membershipId }) => membershipId === memberships.managerA,
+      ),
+    ).toMatchObject({ branchIds: [ids.branchA] });
+    expect(
+      assignees.find(({ membershipId }) => membershipId === memberships.owner),
+    ).toMatchObject({ branchIds: null });
+  });
+
   it("adds starter lists once and reserves list management for agency admins", async () => {
     const first = await listEnquirySettings(as("negotiatorA"));
     expect(first?.leadSources.map(({ name }) => name)).toContain("Rightmove");
