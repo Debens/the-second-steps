@@ -9,7 +9,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getWorkspaceAccessContext } from "@/core/access/application/access-context";
-import { requireMfaUser } from "@/core/auth/mfa";
+import { requireMfaUserWith } from "@/core/auth/mfa";
 import { getEnquiryNeedsAttention } from "@/core/enquiries/application/enquiry-tasks";
 
 // Due dates are calendar dates stored at UTC midnight; received times are
@@ -37,15 +37,18 @@ export default async function WorkspaceDashboardPage({
 }) {
   const { workspaceSlug } = await params;
   const path = `/dashboard/w/${workspaceSlug}`;
-  const user = await requireMfaUser(path, { workspaceSlug });
-  const [context, attention] = await Promise.all([
-    getWorkspaceAccessContext(user.id, workspaceSlug),
-    getEnquiryNeedsAttention({
-      authSubject: user.id,
-      workspaceSlug,
-      upcomingDays: 7,
-    }),
-  ]);
+  const {
+    data: [context, attention],
+  } = await requireMfaUserWith(path, { workspaceSlug }, (user) =>
+    Promise.all([
+      getWorkspaceAccessContext(user.id, workspaceSlug),
+      getEnquiryNeedsAttention({
+        authSubject: user.id,
+        workspaceSlug,
+        upcomingDays: 7,
+      }),
+    ]),
+  );
   if (!context) redirect("/access-denied");
   const enquiriesPath = `${path}/enquiries`;
   const overdue = attention.tasks.filter(
