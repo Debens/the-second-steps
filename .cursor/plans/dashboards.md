@@ -24,6 +24,10 @@ Shared interaction rules shown in every option: one primary action per row with 
 
 The owner liked A (Inbox) and E (Day plan) and asked to merge them. **F. Inbox + day plan** is that merge: a ranked inbox on the left, the day by the hour on the right, and a **Plan** button on every row that drops the work into a free hour. It also carries a module tag and filter chips, with a few sample items from later modules (viewings, pre-tenancy, maintenance) mixed in to show one page can hold work from the whole product.
 
+## Feedback on F and option G (2026-10-16)
+
+The owner was not sure about F (one long column) and asked for tabs or a denser page, an Actions list down the right-hand side, and any other useful dashboard content. **G. Tabs + actions rail** answers that: a search bar and New menu on top; tabs for Overview, Pipeline, Schedule and Team; the Actions list always visible on the right (below the tabs on desktop, first on phones) with filters, Plan, snooze, hand-over and quick add; a Comfortable/Compact density switch; and, on the Overview tab, headline numbers, actionable alerts, today's schedule, a pipeline snapshot, recent activity, and a preview strip for later modules (viewings, applications, certificates, rent). Owner to review.
+
 ## Direction for later modules
 
 The Overview is a **personal, cross-module "My day"** page, not a landlord-lead page. Every module contributes work items to the same inbox and day plan, tagged with its module. Each module also gets its own **role dashboard** reached from the navigation (for example the lead pipeline for managers, move-in progress for coordinators, portfolio and compliance for property managers, an agency overview for owners). Building this properly needs a **shared work-item model** (roadmap SHARED-01, Tasks and activity): a common shape for an action (what, due, owner, linked record, source module, status) that each module registers its own action types and allowed quick actions against. Today only landlord-lead next actions exist (the enquiry_tasks table), so the first real build should keep that table but read it through a thin work-item layer, not a one-off.

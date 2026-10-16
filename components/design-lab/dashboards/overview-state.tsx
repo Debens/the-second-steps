@@ -336,6 +336,26 @@ export function useOverviewState() {
         () => setTasks(previous),
       );
     },
+    addTask(title: string) {
+      const id = `quick-${Date.now()}`;
+      setTasks((current) => [
+        {
+          id,
+          kind: "call",
+          title,
+          lead: "Quick action",
+          place: "Added just now",
+          due: "Today",
+          group: "today",
+          state: "open",
+          module: "leads",
+        },
+        ...current,
+      ]);
+      toast.show(`Added: ${title}`, () =>
+        setTasks((current) => current.filter((task) => task.id !== id)),
+      );
+    },
     unplan(task: Task) {
       const previous = { slot: task.slot, due: task.due };
       patch(task.id, { slot: undefined });
@@ -437,7 +457,15 @@ export function DoneRow({ task, api }: { task: Task; api: OverviewApi }) {
   );
 }
 
-export function ContactButton({ task, api }: { task: Task; api: OverviewApi }) {
+export function ContactButton({
+  task,
+  api,
+  iconOnly,
+}: {
+  task: Task;
+  api: OverviewApi;
+  iconOnly?: boolean;
+}) {
   if (task.kind !== "call" && task.kind !== "email") return null;
   const Icon = KIND_ICON[task.kind];
   return (
@@ -448,9 +476,11 @@ export function ContactButton({ task, api }: { task: Task; api: OverviewApi }) {
       aria-label={`${task.kind === "call" ? "Call" : "Email"} ${task.lead}`}
     >
       <Icon aria-hidden="true" />
-      <span className="hidden md:inline">
-        {task.kind === "call" ? "Call" : "Email"}
-      </span>
+      {!iconOnly && (
+        <span className="hidden md:inline">
+          {task.kind === "call" ? "Call" : "Email"}
+        </span>
+      )}
     </Button>
   );
 }
