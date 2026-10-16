@@ -1,6 +1,6 @@
 # Properties and ownership (Chunk 4)
 
-**Status:** Approved by the owner on 2026-10-16, including the starter feature list. Stage 4A (database and security) is written and awaits disposable-database test results and an Opus security review. Applying the migration to shared development Supabase is a separate owner approval step.
+**Status:** Approved by the owner on 2026-10-16, including the starter feature list. Stage 4A (database and security) is complete: disposable-database tests pass, the Opus review is done, and with owner approval the migration was applied to shared development Supabase and verified on 2026-10-16. Next: 4B services. 4B must show a friendly message when archiving a contact who still owns a property.
 
 ## Implementation notes (4A, 2026-10-16)
 
