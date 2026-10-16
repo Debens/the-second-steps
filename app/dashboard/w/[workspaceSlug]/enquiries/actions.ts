@@ -3,10 +3,12 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { requireMfaUser } from "@/core/auth/mfa";
-import { createEnquiry } from "@/core/enquiries/application/enquiries";
 import {
   closeEnquiry,
+  createEnquiry,
+  getEnquiry,
   reopenEnquiry,
+  updateEnquiry,
 } from "@/core/enquiries/application/enquiries";
 import {
   addEnquiryTask,
@@ -41,6 +43,15 @@ export type QuickEnquiryState = {
   status: "idle" | "error";
   message: string;
   fieldErrors?: Partial<Record<QuickEnquiryField, string>>;
+};
+
+export type EditEnquiryField =
+  EnquirerField | "leadSourceId" | "leadMembershipId";
+
+export type EditEnquiryState = {
+  status: "idle" | "error";
+  message: string;
+  fieldErrors?: Partial<Record<EditEnquiryField, string>>;
 };
 
 export type EnquiryActionState = {
@@ -153,6 +164,74 @@ export async function createEnquiryAction(
   revalidatePath(path);
   revalidatePath(`/dashboard/w/${workspaceSlug}`);
   redirect(`${path}?created=${result.enquiryId}`);
+}
+
+export async function updateEnquiryAction(
+  workspaceSlug: string,
+  enquiryId: string,
+  _previousState: EditEnquiryState,
+  formData: FormData,
+): Promise<EditEnquiryState> {
+  const path = recordPath(workspaceSlug, enquiryId);
+  const user = await requireMfaUser(`${path}/edit`, { workspaceSlug });
+  const current = await getEnquiry({
+    authSubject: user.id,
+    workspaceSlug,
+    enquiryId,
+  });
+  if (!current) {
+    return {
+      status: "error",
+      message:
+        "This landlord lead could not be found or is no longer available.",
+    };
+  }
+  const enquirer = {
+    name: text(formData, "name"),
+    email: text(formData, "email"),
+    telephone: text(formData, "telephone"),
+    addressBuilding: text(formData, "addressBuilding"),
+    addressStreet: text(formData, "addressStreet"),
+    postcode: text(formData, "postcode"),
+    summary: text(formData, "summary"),
+  };
+  const leadSourceId = text(formData, "leadSourceId");
+  const leadMembershipId = text(formData, "leadMembershipId");
+  const validation = validateEnquirer(enquirer, {
+    hasContact: Boolean(current.contactId),
+    hasProperty: Boolean(current.propertyId),
+  });
+  const fieldErrors: EditEnquiryState["fieldErrors"] = validation.ok
+    ? {}
+    : { ...validation.errors };
+  if (leadSourceId && !isUuid(leadSourceId)) {
+    fieldErrors.leadSourceId = "Choose a lead source from the list.";
+  }
+  if (leadMembershipId && !isUuid(leadMembershipId)) {
+    fieldErrors.leadMembershipId = "Choose a staff member from the list.";
+  }
+  if (Object.keys(fieldErrors).length) {
+    return {
+      status: "error",
+      message: "Check the highlighted details and try again.",
+      fieldErrors,
+    };
+  }
+  const result = await updateEnquiry({
+    authSubject: user.id,
+    workspaceSlug,
+    enquiryId,
+    enquirer,
+    leadSourceId: leadSourceId || null,
+    leadMembershipId: leadMembershipId || null,
+  });
+  if (!result.ok) {
+    return { status: "error", message: failureMessage(result.error) };
+  }
+  revalidatePath(path);
+  revalidatePath(`/dashboard/w/${workspaceSlug}/enquiries`);
+  revalidatePath(`/dashboard/w/${workspaceSlug}`);
+  redirect(`${path}?updated=yes`);
 }
 
 function failureMessage(error: string) {

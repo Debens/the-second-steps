@@ -64,3 +64,51 @@ test("landlord-lead settings support mobile dark mode without overflow", async (
   );
   expect(overflow).toBeLessThanOrEqual(0);
 });
+
+test("an open landlord lead can be reviewed for editing without saving", async ({
+  page,
+}) => {
+  await signInAsOwner(page);
+  await page.goto(`${WORKSPACE}/enquiries?stage=new_enquiry`);
+  await page.locator("tbody tr").first().getByRole("link").click();
+  await expect(
+    page.getByRole("button", { name: "Edit details" }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Edit details" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Edit landlord lead" }),
+  ).toBeVisible();
+  await expect(page.getByLabel("Landlord name")).not.toHaveValue("");
+  await expect(
+    page.getByText("Responsible branch", { exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Save changes" }),
+  ).toBeVisible();
+  await page.getByLabel("Postcode").fill("not a postcode");
+  await page.getByRole("button", { name: "Save changes" }).click();
+  await expect(page.getByText("Enter a valid UK postcode.")).toBeVisible();
+  await page.reload();
+  await expect(
+    page.getByRole("heading", { name: "Edit landlord lead" }),
+  ).toBeVisible();
+  await page.screenshot({
+    path: "test-results/landlord-lead-edit-desktop-light.png",
+    fullPage: true,
+  });
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.getByRole("button", { name: "Dark theme" }).click();
+  await expect(page.locator("html")).toHaveClass(/dark/);
+  const overflow = await page.evaluate(
+    () => document.documentElement.scrollWidth - window.innerWidth,
+  );
+  expect(overflow).toBeLessThanOrEqual(0);
+  await page.screenshot({
+    path: "test-results/landlord-lead-edit-mobile-dark.png",
+    fullPage: true,
+  });
+  await page.getByRole("button", { name: "Cancel" }).click();
+  await expect(
+    page.getByRole("button", { name: "Edit details" }),
+  ).toBeVisible();
+});

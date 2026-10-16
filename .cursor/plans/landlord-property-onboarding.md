@@ -241,6 +241,6 @@ CSV import follows stable manual workflows and must be ready before a pilot agen
 
 ## Next approval gate
 
-Chunks 1 to 5C are built (with the documented deferred screens and browser-write fixture). ADR-031 subsequently clarified the Chunk 5 staff-facing name as **Landlord leads**. The next gate is the Chunk 5 checkpoint and UI terminology update before Chunk 6 instructions. Keep merge, landlord-summary and later chunk work behind their own chunk gates.
+Chunks 1 to 5C are built, the Chunk 5 checkpoint is complete, and ADR-031's **Landlord leads** terminology is applied. The browser-write fixture remains optional and does not block progress. The next approval gate is the Chunk 6 instructions-and-terms design. Keep merge, landlord-summary and later chunk work behind their own chunk gates.
 
 Later decisions, not blockers for Chunk 2: private document storage; native e-signing; detailed ownership checks; address finder; retention/erasure periods; marketing readiness and publishing; communications delivery; CSV mapping/import; and design-partner recruitment.

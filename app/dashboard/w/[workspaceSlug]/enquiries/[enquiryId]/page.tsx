@@ -9,6 +9,7 @@ import {
   Mail,
   MapPin,
   Phone,
+  Pencil,
   Plus,
   StickyNote,
   UserCheck,
@@ -84,7 +85,10 @@ export default async function EnquiryPage({
   searchParams,
 }: {
   params: Promise<{ workspaceSlug: string; enquiryId: string }>;
-  searchParams: Promise<{ error?: string | string[] }>;
+  searchParams: Promise<{
+    error?: string | string[];
+    updated?: string | string[];
+  }>;
 }) {
   const { workspaceSlug, enquiryId } = await params;
   if (!isUuid(enquiryId)) notFound();
@@ -144,6 +148,14 @@ export default async function EnquiryPage({
           The next action could not be changed. Refresh the page and try again.
         </div>
       )}
+      {query.updated === "yes" && (
+        <div
+          className="rounded-lg bg-success-soft p-4 text-sm text-success"
+          role="status"
+        >
+          Landlord lead updated.
+        </div>
+      )}
       <div className="grid grid-cols-[minmax(0,1fr)] gap-x-10 gap-y-8 lg:grid-cols-[18rem_minmax(0,1fr)] 2xl:grid-cols-[20rem_minmax(0,1fr)_22rem]">
         <header className="grid content-start gap-6 lg:col-start-1 lg:row-start-1">
           <div className="flex items-center gap-4 lg:flex-col lg:items-start">
@@ -170,31 +182,43 @@ export default async function EnquiryPage({
               </div>
             </div>
           </div>
-          {(canCloseFrom(stage) ||
-            (context.permissions.has("enquiry.reopen") &&
-              (stage === "lost" || stage === "postponed"))) && (
-            <EnquiryStageActions
-              closeAction={closeEnquiryAction.bind(
-                null,
-                workspaceSlug,
-                enquiryId,
-              )}
-              reopenAction={reopenEnquiryAction.bind(
-                null,
-                workspaceSlug,
-                enquiryId,
-              )}
-              canClose={canUpdate && canCloseFrom(stage)}
-              canWin={canWinFrom(stage)}
-              canReopen={
-                context.permissions.has("enquiry.reopen") &&
-                (stage === "lost" || stage === "postponed")
-              }
-              reasons={settings.outcomeReasons.filter(
-                ({ status }) => status === "active",
-              )}
-            />
-          )}
+          <div className="flex flex-wrap gap-2">
+            {canUpdate && isOpenStage(stage) && (
+              <Button
+                variant="outline"
+                render={<Link href={`${path}/edit`} />}
+                nativeButton={false}
+              >
+                <Pencil aria-hidden="true" />
+                Edit details
+              </Button>
+            )}
+            {(canCloseFrom(stage) ||
+              (context.permissions.has("enquiry.reopen") &&
+                (stage === "lost" || stage === "postponed"))) && (
+              <EnquiryStageActions
+                closeAction={closeEnquiryAction.bind(
+                  null,
+                  workspaceSlug,
+                  enquiryId,
+                )}
+                reopenAction={reopenEnquiryAction.bind(
+                  null,
+                  workspaceSlug,
+                  enquiryId,
+                )}
+                canClose={canUpdate && canCloseFrom(stage)}
+                canWin={canWinFrom(stage)}
+                canReopen={
+                  context.permissions.has("enquiry.reopen") &&
+                  (stage === "lost" || stage === "postponed")
+                }
+                reasons={settings.outcomeReasons.filter(
+                  ({ status }) => status === "active",
+                )}
+              />
+            )}
+          </div>
           <dl className="grid gap-5 border-t pt-6">
             <Detail
               label="Telephone"

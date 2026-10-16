@@ -1,6 +1,6 @@
 # Landlord leads, appraisals, and tasks (Chunk 5)
 
-**Status:** Approved and implemented through 5C. On 2026-10-16 ADR-031 clarified that this is specifically the **Landlord leads** workflow, not applicant enquiries, and the staff-facing terminology was updated. Internal database/code names remain temporarily. The checkpoint's independent review is done and its fixes are tested; the colleague-names migration was applied to shared Supabase and verified on 2026-10-16 (owner approved). Demo data was added on 2026-10-16 through the real services as Olivia Hart (a one-off script, removed afterwards): ten fictional landlord leads in the Oakfield sandbox workspace covering every state (new with a next action, new with none, an overdue action, a Riverside lead for Ruby, an appraisal today, an appraisal next week, completed and awaiting a decision, won, lost with a reason, postponed with a follow-up date), with five fictional contacts and properties created at booking. The starter lead-source and reason lists now exist in that workspace. Browser checks for leads, properties and contacts pass serially (13 passed). A browser-write decision and the handover remain.
+**Status:** Approved and implemented through 5C. On 2026-10-16 ADR-031 clarified that this is specifically the **Landlord leads** workflow, not applicant enquiries, and the staff-facing terminology was updated. Internal database/code names remain temporarily. The checkpoint's independent review is done and its fixes are tested; the colleague-names migration was applied to shared Supabase and verified on 2026-10-16 (owner approved). Demo data was added on 2026-10-16 through the real services as Olivia Hart (a one-off script, removed afterwards): ten fictional landlord leads in the Oakfield sandbox workspace covering every state (new with a next action, new with none, an overdue action, a Riverside lead for Ruby, an appraisal today, an appraisal next week, completed and awaiting a decision, won, lost with a reason, postponed with a follow-up date), with five fictional contacts and properties created at booking. The starter lead-source and reason lists now exist in that workspace. Staff can also edit an open lead's captured landlord, property, source, summary and responsible-person details without changing its branch or silently changing linked contact/property records. Browser checks for leads, properties and contacts pass serially. A browser-write fixture remains optional.
 
 ## Outcome
 
@@ -36,11 +36,11 @@ The agreed visible pipeline is **New lead → Appraisal booked → Appraisal com
 
 ## Handover (2026-10-16)
 
-**Built and live in development:** landlord leads (internally still "enquiries"), appraisals, next actions, outcomes with reasons, and the agency's editable lead-source and reason lists, in the database, services and screens. Everything is applied to shared development Supabase, committed and pushed.
+**Built and live in development:** landlord leads (internally still "enquiries"), editable lead details, appraisals, next actions, outcomes with reasons, and the agency's editable lead-source and reason lists, in the database, services and screens. The database foundation and checkpoint fixes are applied to shared development Supabase.
 
 **Where things are**
 
-- Screens: **Landlord leads** in the navigation (`app/dashboard/w/[workspaceSlug]/enquiries/`: list, quick lead, record page, book-appraisal page), the Overview "Needs attention" panels (`app/dashboard/w/[workspaceSlug]/page.tsx`), and lists under Settings (`settings/enquiries/`). Components are in `components/enquiries/`.
+- Screens: **Landlord leads** in the navigation (`app/dashboard/w/[workspaceSlug]/enquiries/`: list, quick lead, record page, edit page, book-appraisal page), the Overview "Needs attention" panels (`app/dashboard/w/[workspaceSlug]/page.tsx`), and lists under Settings (`settings/enquiries/`). Components are in `components/enquiries/`.
 - Logic: `core/enquiries/` (rules in `domain/`; `application/` holds `enquiries.ts` for create, edit, list and stage changes, `appraisals.ts` for booking, completing and cancelling, `enquiry-tasks.ts` for next actions and the Overview query, `enquiry-lists.ts` for settings and starter lists, and `enquiry-shared.ts` for the shared actor, rollback and assignment checks).
 - Database: migrations `20261016170000_enquiries_appraisals_tasks` and `20261016190000_lead_worker_colleague_names`. The app can never delete lead data, and every table is workspace- and branch-scoped with row-level security.
 - Tests: `tests/integration/enquiry-security.test.ts` (database rules, 42), `tests/integration/enquiry-application.test.ts` (services and review follow-ups), `core/enquiries/domain/enquiry.test.ts` (13), and `e2e/enquiries.spec.ts` (browser, read-only). Run `npm run test:integration` (needs Docker) for the database ones; run browser checks with `--workers=1`.
@@ -50,7 +50,6 @@ The agreed visible pipeline is **New lead → Appraisal booked → Appraisal com
 
 - Branch transfer for leads (design: reuse the property pattern), a notes timeline on leads, reminders by email or SMS, web-form and portal lead capture, CSV import, and creating the instruction from a won lead (Chunk 6).
 - Browser tests that save a lead, move a stage or finish a booking (these would leave data in the shared demo agency; they are covered by the database-backed service tests instead, and a cleanable fixture is optional).
-- **Edit lead details** has a tested service (`updateEnquiry`) but no screen or server action yet, so a lead's name, contact details, address, summary, source and lead person cannot be changed on screen after it is created. This is the main gap; add it next.
 
 **Things to know before changing this area**
 
@@ -152,7 +151,7 @@ Append-only: `enquiryId`, `fromStage`, `toStage`, `reason`, actor, timestamp. Wr
 
 - **Landlord leads** in the navigation: a list with stage, landlord, address or postcode, lead source, branch, appraisal date, next action and due date (overdue marked), with filters for stage, branch and assigned staff. Lost and postponed are hidden by default behind **Include lost and postponed**.
 - **Quick landlord lead** form: name, phone or email, address or postcode, lead source, branch, and an optional first next action. Saves in one step. A visible "incomplete" flag appears if no next action is set.
-- **Landlord-lead record** in the ADR-030 profile-sidebar layout: stage progress and the actions allowed at the current stage, next actions with due dates, appraisals (book, record outcome), details, and stage history. Booking an appraisal opens a short review of duplicate contact and property matches before the real records are created or linked.
+- **Landlord-lead record** in the ADR-030 profile-sidebar layout: stage progress and the actions allowed at the current stage, editable captured details for open leads, next actions with due dates, appraisals (book, record outcome), details, and stage history. Booking an appraisal opens a short review of duplicate contact and property matches before the real records are created or linked.
 - **Overview** gains a "Needs attention" area: new landlord leads awaiting action, today's appraisals, and overdue and upcoming next actions for the signed-in user.
 - **Settings:** a small page to edit lead sources and outcome reasons (add, rename, reorder, hide).
 - Light and dark themes, phone, tablet and desktop.
