@@ -77,12 +77,12 @@ export function EnquiryStageActions({
         <Dialog open={closeOpen} onOpenChange={setCloseOpen}>
           <DialogTrigger render={<Button />}>
             <Trophy aria-hidden="true" />
-            Record outcome
+            {canWin ? "Record lead outcome" : "Close landlord lead"}
           </DialogTrigger>
           <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-lg">
             <form action={closeFormAction} className="grid gap-5">
               <DialogHeader>
-                <DialogTitle>Record landlord-lead outcome</DialogTitle>
+                <DialogTitle>Record lead outcome</DialogTitle>
                 <DialogDescription>
                   This closes open next actions and any scheduled appraisal.
                   Lost and postponed landlord leads can be reopened later.

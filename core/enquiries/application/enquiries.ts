@@ -728,6 +728,14 @@ export async function getEnquiry(
         include: {
           responsibleBranch: { select: { id: true, name: true } },
           leadSource: { select: { id: true, name: true } },
+          leadMembership: {
+            select: {
+              id: true,
+              userIdentity: {
+                select: { firstName: true, lastName: true, primaryEmail: true },
+              },
+            },
+          },
           outcomeReason: { select: { id: true, name: true } },
           appraisals: { orderBy: { scheduledAt: "desc" } },
           tasks: { orderBy: [{ status: "asc" }, { dueOn: "asc" }] },

@@ -20,7 +20,12 @@ test("properties list is reachable from the navigation", async ({ page }) => {
   await expect(
     page.getByRole("heading", { name: "Properties", exact: true }),
   ).toBeVisible();
-  await expect(page.getByLabel("Search properties")).toBeVisible();
+  const search = page.getByLabel("Search properties");
+  await expect(search).toBeVisible();
+  await search.fill("no matching property");
+  await page.getByRole("button", { name: "Apply", exact: true }).click();
+  await page.getByRole("button", { name: "Clear filters" }).click();
+  await expect(search).toHaveValue("");
   await expect(
     page.getByRole("button", { name: "New property" }),
   ).toBeVisible();

@@ -119,9 +119,20 @@ export default async function PropertiesPage({
           />
           Include archived
         </label>
-        <Button type="submit" variant="outline">
-          Apply
-        </Button>
+        <div className="flex gap-2">
+          <Button type="submit" variant="outline">
+            Apply
+          </Button>
+          {filtering && (
+            <Button
+              variant="ghost"
+              render={<Link href={path} />}
+              nativeButton={false}
+            >
+              Clear filters
+            </Button>
+          )}
+        </div>
       </form>
       {properties.length === 0 ? (
         <Card>

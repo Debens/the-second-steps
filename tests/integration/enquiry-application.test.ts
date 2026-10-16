@@ -327,6 +327,7 @@ describe("enquiry application layer", () => {
       {
         id: enquiryId,
         reference: expect.stringMatching(/^ENQ-/),
+        leadMembership: { id: memberships.negotiatorA },
         tasks: [{ title: "Call landlord" }],
       },
     );

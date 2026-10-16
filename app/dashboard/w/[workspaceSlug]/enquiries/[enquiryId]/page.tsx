@@ -11,6 +11,7 @@ import {
   Phone,
   Plus,
   StickyNote,
+  UserCheck,
   UserRound,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
@@ -118,6 +119,16 @@ export default async function EnquiryPage({
   const latestScheduled = enquiry.appraisals.find(
     ({ status }) => status === "SCHEDULED",
   );
+  const assignedTo = enquiry.leadMembership
+    ? [
+        enquiry.leadMembership.userIdentity.firstName,
+        enquiry.leadMembership.userIdentity.lastName,
+      ]
+        .filter(Boolean)
+        .join(" ") ||
+      enquiry.leadMembership.userIdentity.primaryEmail ||
+      "Unnamed user"
+    : "Unassigned";
 
   return (
     <div className="grid gap-6">
@@ -195,8 +206,23 @@ export default async function EnquiryPage({
               label="Telephone"
               value={enquiry.enquirerTelephone}
               icon={Phone}
+              href={
+                enquiry.enquirerTelephone
+                  ? `tel:${enquiry.enquirerTelephone}`
+                  : undefined
+              }
             />
-            <Detail label="Email" value={enquiry.enquirerEmail} icon={Mail} />
+            <Detail
+              label="Email"
+              value={enquiry.enquirerEmail}
+              icon={Mail}
+              href={
+                enquiry.enquirerEmail
+                  ? `mailto:${enquiry.enquirerEmail}`
+                  : undefined
+              }
+            />
+            <Detail label="Assigned to" value={assignedTo} icon={UserCheck} />
             <Detail
               label="Responsible branch"
               value={enquiry.responsibleBranch.name}
@@ -268,7 +294,8 @@ export default async function EnquiryPage({
               </ul>
             ) : (
               <div className="rounded-lg bg-warning-soft p-4 text-sm text-warning">
-                No open next action. Add one so this enquiry is not forgotten.
+                No open next action. Add one so this landlord lead is not
+                forgotten.
               </div>
             )}
             {closedTasks.length > 0 && (
@@ -296,7 +323,8 @@ export default async function EnquiryPage({
               <div>
                 <h2 className="text-base font-semibold">Appraisals</h2>
                 <p className="text-sm text-muted-foreground">
-                  Book visits and keep the recommendation with the enquiry.
+                  Book visits and keep the recommendation with the landlord
+                  lead.
                 </p>
               </div>
               {canUpdate && stage === "new_enquiry" && (
@@ -449,10 +477,12 @@ function Detail({
   label,
   value,
   icon: Icon,
+  href,
 }: {
   label: string;
   value: string | null | undefined;
   icon: LucideIcon;
+  href?: string;
 }) {
   return (
     <div className="flex gap-3">
@@ -463,7 +493,16 @@ function Detail({
       <div className="min-w-0">
         <dt className="text-xs text-muted-foreground">{label}</dt>
         <dd className="mt-0.5 text-sm font-medium [overflow-wrap:anywhere]">
-          {value || "Not recorded"}
+          {value && href ? (
+            <a
+              className="text-primary underline-offset-4 hover:underline focus-visible:rounded-sm focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring/40"
+              href={href}
+            >
+              {value}
+            </a>
+          ) : (
+            value || "Not recorded"
+          )}
         </dd>
       </div>
     </div>

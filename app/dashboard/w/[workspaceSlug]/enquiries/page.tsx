@@ -209,9 +209,20 @@ export default async function EnquiriesPage({
           />
           Include lost and postponed
         </label>
-        <Button type="submit" variant="outline">
-          Apply
-        </Button>
+        <div className="flex gap-2">
+          <Button type="submit" variant="outline">
+            Apply
+          </Button>
+          {filtering && (
+            <Button
+              variant="ghost"
+              render={<Link href={path} />}
+              nativeButton={false}
+            >
+              Clear filters
+            </Button>
+          )}
+        </div>
       </form>
       {enquiries.length === 0 ? (
         <Card>
