@@ -1,6 +1,6 @@
 # Enquiries, appraisals, and tasks (Chunk 5)
 
-**Status:** Proposal awaiting owner approval (drafted 2026-10-16). No migration, schema, or application code is authorised until the owner approves this design. Applying any migration to shared development Supabase is a separate approval step after tests and an independent security review.
+**Status:** Proposal awaiting final owner approval (drafted 2026-10-16; all design questions answered the same day). No migration, schema, or application code is authorised until the owner approves this design. Applying any migration to shared development Supabase is a separate approval step after tests and an independent security review.
 
 ## Outcome
 
@@ -19,6 +19,9 @@ Decided on 2026-10-16:
 - **Next actions** apply to enquiries and appraisals only in this chunk. A general to-do feature for any record is a later addition.
 - **Who can work enquiries:** the same people who can create properties (Account Owner, Agency Admin, Branch Manager, Negotiator, Property Manager). Accounts and Read Only can only view. Branch Manager or higher can reopen lost or postponed enquiries and edit the agency's lists.
 - **Lost and postponed reasons** are chosen from an editable list, with an optional note. A starter list is pre-filled.
+- **No notes timeline on enquiries at first.** An enquiry has a short summary, its stage history and its next actions. A notes timeline can be added later in the same way as for properties.
+- **One simple proposed fee** on an appraisal (percentage or fixed amount, VAT inclusive or exclusive). Full fee structures come with instructions in Chunk 6.
+- **Enquiry branch transfer is deferred**, as for properties. It will reuse the property pattern (Branch Manager or higher, with a reason) when needed.
 
 ## Data design
 
@@ -108,10 +111,4 @@ Append-only: `enquiryId`, `fromStage`, `toStage`, `reason`, actor, timestamp. Wr
 
 ## Deliberate exclusions
 
-Creating the instruction (Chunk 6), fees beyond a single proposed fee, e-signing, calendar or email sync, outbound reminders (email or SMS), a general to-do feature for any record, enquiry notes timeline (open question below), web-form or portal lead capture, and CSV import.
-
-## Open points for the owner
-
-- **Notes on enquiries:** the summary field and stage history may be enough for now. A dated notes timeline like contacts and properties could be added if staff will want it from the start.
-- **Appraisal fee fields:** the proposed fee is kept simple (percentage or fixed, VAT inclusive or exclusive) and is superseded by instruction terms in Chunk 6.
-- **Branch transfer for enquiries:** proposed to reuse the property pattern (Branch Manager or higher, with a reason), but the screen can wait as it did for properties.
+Creating the instruction (Chunk 6), fees beyond a single proposed fee, e-signing, calendar or email sync, outbound reminders (email or SMS), a general to-do feature for any record, an enquiry notes timeline, enquiry branch transfer, web-form or portal lead capture, and CSV import.
