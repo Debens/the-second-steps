@@ -83,8 +83,17 @@ describe("workspace roles", () => {
         "enquiry.read",
         "enquiry.create",
         "enquiry.update",
+        "action.read",
+        "action.manage",
       ]),
     );
+  });
+
+  it("lets every role see actions and every role except Read Only manage them", () => {
+    for (const role of SYSTEM_ROLES) {
+      expect(hasPermission([role], "action.read")).toBe(true);
+      expect(hasPermission([role], "action.manage")).toBe(role !== "read_only");
+    }
   });
 
   it("lets property creators work enquiries and keeps lists and reopening with managers", () => {

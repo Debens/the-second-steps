@@ -56,6 +56,8 @@ const ROLE_PERMISSIONS: Readonly<Record<SystemRole, readonly Permission[]>> = {
     "enquiry.update",
     "enquiry.reopen",
     "enquiry.settings.manage",
+    "action.read",
+    "action.manage",
   ],
   agency_admin: [
     "workspace.read",
@@ -89,6 +91,8 @@ const ROLE_PERMISSIONS: Readonly<Record<SystemRole, readonly Permission[]>> = {
     "enquiry.update",
     "enquiry.reopen",
     "enquiry.settings.manage",
+    "action.read",
+    "action.manage",
   ],
   branch_manager: [
     "workspace.read",
@@ -114,6 +118,8 @@ const ROLE_PERMISSIONS: Readonly<Record<SystemRole, readonly Permission[]>> = {
     "enquiry.create",
     "enquiry.update",
     "enquiry.reopen",
+    "action.read",
+    "action.manage",
   ],
   negotiator: [
     "workspace.read",
@@ -129,6 +135,8 @@ const ROLE_PERMISSIONS: Readonly<Record<SystemRole, readonly Permission[]>> = {
     "enquiry.read",
     "enquiry.create",
     "enquiry.update",
+    "action.read",
+    "action.manage",
   ],
   property_manager: [
     "workspace.read",
@@ -144,6 +152,8 @@ const ROLE_PERMISSIONS: Readonly<Record<SystemRole, readonly Permission[]>> = {
     "enquiry.read",
     "enquiry.create",
     "enquiry.update",
+    "action.read",
+    "action.manage",
   ],
   accounts: [
     "workspace.read",
@@ -155,6 +165,8 @@ const ROLE_PERMISSIONS: Readonly<Record<SystemRole, readonly Permission[]>> = {
     "property.update",
     "property.note.create",
     "enquiry.read",
+    "action.read",
+    "action.manage",
   ],
   read_only: [
     "workspace.read",
@@ -163,6 +175,7 @@ const ROLE_PERMISSIONS: Readonly<Record<SystemRole, readonly Permission[]>> = {
     "contact.read",
     "property.read",
     "enquiry.read",
+    "action.read",
   ],
 };
 

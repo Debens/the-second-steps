@@ -31,6 +31,8 @@ export const PERMISSIONS = [
   "enquiry.update",
   "enquiry.reopen",
   "enquiry.settings.manage",
+  "action.read",
+  "action.manage",
 ] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];
