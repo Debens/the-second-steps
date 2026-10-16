@@ -1,0 +1,14 @@
+# Runs the Zayto proof of concept in a container.
+#   1. Copy .env.docker.example to .env.docker and fill in the values.
+#   2. docker compose -f compose.app.yaml up --build
+#   3. Open http://localhost:3000
+# See docs/DOCKER.md.
+services:
+  app:
+    build: .
+    image: zayto-app:poc
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env.docker
+    restart: unless-stopped

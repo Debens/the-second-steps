@@ -5,6 +5,7 @@ node_modules/
 # Environment files hold secrets. Only the example file is shared.
 .env*
 !.env.example
+!.env.docker.example
 
 # Test output
 playwright-report/
