@@ -34,6 +34,8 @@ import {
   propertyDeny,
   withPropertyActor,
   type ActorInput,
+  type PropertyActor,
+  type PropertyTransaction,
   type PropertyWriteResult,
 } from "./property-shared";
 
@@ -80,63 +82,72 @@ export type NewPropertyInput = {
 export async function createProperty(
   input: ActorInput & NewPropertyInput,
 ): Promise<PropertyWriteResult> {
-  const action = "property.create";
   return withPropertyActor(input, async (transaction, actor) => {
-    if (!hasPermission(actor.roles, "property.create")) {
-      return propertyDeny(transaction, actor, action, "access_denied");
-    }
-    const details = validatePropertyDetails(input.details);
-    const ownerSelection = validateOwnerSelection(
-      input.owners.map((owner, index) => ({
-        contactId: "contactId" in owner ? owner.contactId : `new-${index}`,
-        isLead: owner.isLead,
-      })),
-    );
-    if (!details.ok || !ownerSelection.ok) {
-      return propertyDeny(transaction, actor, action, "invalid_input");
-    }
-    if (!hasBranchAccess(actor.scope, input.branchId)) {
-      return propertyDeny(transaction, actor, action, "access_denied");
-    }
-    const branch = await transaction.branch.findFirst({
-      where: {
-        id: input.branchId,
-        workspaceId: actor.workspaceId,
-        status: "ACTIVE",
-      },
-      select: { id: true },
-    });
-    if (!branch) {
-      return propertyDeny(transaction, actor, action, "invalid_input");
-    }
-
-    const property = await transaction.property.create({
-      data: {
-        workspaceId: actor.workspaceId,
-        reference: createPropertyReference(),
-        responsibleBranchId: branch.id,
-        createdByMembershipId: actor.membershipId,
-        ...propertyData(details.data),
-      },
-      select: { id: true, responsibleBranchId: true },
-    });
-    for (const owner of input.owners) {
-      await recordOwnerInTransaction(transaction, actor, property, owner, {
-        demoteExistingLead: false,
-      });
-    }
-    await propertyAudit(transaction, actor, {
-      action,
-      outcome: "SUCCEEDED",
-      targetId: property.id,
-      metadata: {
-        branchId: branch.id,
-        propertyType: details.data.propertyType,
-        ownerCount: String(input.owners.length),
-      },
-    });
-    return { ok: true, propertyId: property.id };
+    return createPropertyInTransaction(transaction, actor, input);
   });
+}
+
+/** Creates a property and its owners inside an existing verified transaction. */
+export async function createPropertyInTransaction(
+  transaction: PropertyTransaction,
+  actor: PropertyActor,
+  input: NewPropertyInput,
+): Promise<PropertyWriteResult> {
+  const action = "property.create";
+  if (!hasPermission(actor.roles, "property.create")) {
+    return propertyDeny(transaction, actor, action, "access_denied");
+  }
+  const details = validatePropertyDetails(input.details);
+  const ownerSelection = validateOwnerSelection(
+    input.owners.map((owner, index) => ({
+      contactId: "contactId" in owner ? owner.contactId : `new-${index}`,
+      isLead: owner.isLead,
+    })),
+  );
+  if (!details.ok || !ownerSelection.ok) {
+    return propertyDeny(transaction, actor, action, "invalid_input");
+  }
+  if (!hasBranchAccess(actor.scope, input.branchId)) {
+    return propertyDeny(transaction, actor, action, "access_denied");
+  }
+  const branch = await transaction.branch.findFirst({
+    where: {
+      id: input.branchId,
+      workspaceId: actor.workspaceId,
+      status: "ACTIVE",
+    },
+    select: { id: true },
+  });
+  if (!branch) {
+    return propertyDeny(transaction, actor, action, "invalid_input");
+  }
+
+  const property = await transaction.property.create({
+    data: {
+      workspaceId: actor.workspaceId,
+      reference: createPropertyReference(),
+      responsibleBranchId: branch.id,
+      createdByMembershipId: actor.membershipId,
+      ...propertyData(details.data),
+    },
+    select: { id: true, responsibleBranchId: true },
+  });
+  for (const owner of input.owners) {
+    await recordOwnerInTransaction(transaction, actor, property, owner, {
+      demoteExistingLead: false,
+    });
+  }
+  await propertyAudit(transaction, actor, {
+    action,
+    outcome: "SUCCEEDED",
+    targetId: property.id,
+    metadata: {
+      branchId: branch.id,
+      propertyType: details.data.propertyType,
+      ownerCount: String(input.owners.length),
+    },
+  });
+  return { ok: true, propertyId: property.id };
 }
 
 export async function updateProperty(

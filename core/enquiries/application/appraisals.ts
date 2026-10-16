@@ -1,0 +1,698 @@
+import "server-only";
+
+import { hasPermission } from "@/core/access/domain/role";
+import {
+  createContactInTransaction,
+  type NewContactInput,
+} from "@/core/contacts/application/contacts";
+import {
+  normalizeEmail,
+  normalizePostcode,
+  normalizeTelephone,
+} from "@/core/contacts/domain/contact";
+import {
+  AppraisalStatus,
+  ContactPointKind,
+  EnquiryStage,
+  FeeKind,
+  LettingServiceType,
+  VatTreatment,
+} from "@/core/db/generated/enums";
+import {
+  createPropertyInTransaction,
+  findDuplicateProperties,
+} from "@/core/properties/application/properties";
+import { recordOwnerInTransaction } from "@/core/properties/application/property-ownership";
+import { PropertyRollback } from "@/core/properties/application/property-shared";
+import {
+  classifyAddressDuplicate,
+  validatePropertyDetails,
+  type PropertyDetailsInput,
+} from "@/core/properties/domain/property";
+import { isUuid } from "@/core/properties/domain/ids";
+import {
+  validateAppraisalOutcome,
+  validateReason,
+  type AppraisalOutcomeInput,
+} from "../domain/enquiry";
+import { changeEnquiryStageInTransaction } from "./enquiries";
+import {
+  canAssignEnquiryWork,
+  EnquiryRollback,
+  enquiryAudit,
+  enquiryDeny,
+  lockEnquiry,
+  withEnquiryActor,
+  type EnquiryActor,
+  type EnquiryActorInput,
+  type EnquiryTransaction,
+} from "./enquiry-shared";
+
+type BookingContactInput =
+  | Omit<Extract<NewContactInput, { kind: "person" }>, "branchId">
+  | Omit<Extract<NewContactInput, { kind: "organisation" }>, "branchId">;
+
+type ContactChoice =
+  | { kind: "existing"; contactId: string }
+  | {
+      kind: "new";
+      contact: BookingContactInput;
+      reviewedDuplicateIds: readonly string[];
+    };
+
+type PropertyChoice =
+  | { kind: "existing"; propertyId: string }
+  | {
+      kind: "new";
+      property: PropertyDetailsInput;
+      reviewedDuplicateIds: readonly string[];
+    };
+
+async function translatePropertyRollback<T>(operation: () => Promise<T>) {
+  try {
+    return await operation();
+  } catch (error) {
+    if (error instanceof PropertyRollback) {
+      throw new EnquiryRollback(
+        error.error === "ownership_not_found" ? "invalid_state" : error.error,
+      );
+    }
+    throw error;
+  }
+}
+
+function contactName(input: BookingContactInput) {
+  return input.kind === "person"
+    ? `${input.details.firstName} ${input.details.lastName}`
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, " ")
+        .trim()
+    : input.details.legalName
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, " ")
+        .trim();
+}
+
+async function unreviewedContactDuplicates(
+  transaction: EnquiryTransaction,
+  actor: EnquiryActor,
+  input: Extract<ContactChoice, { kind: "new" }>,
+) {
+  const email = input.contact.contactPoints
+    .filter((point) => point.kind === "email")
+    .map((point) => normalizeEmail(point.value))
+    .find(Boolean);
+  const telephone = input.contact.contactPoints
+    .filter((point) => point.kind === "telephone")
+    .map((point) => normalizeTelephone(point.value))
+    .find(Boolean);
+  const postcode = input.contact.addresses
+    .map((address) => normalizePostcode(address.postcode))
+    .find(Boolean);
+  if (!email && !telephone && !postcode) return [];
+  const candidates = await transaction.contact.findMany({
+    where: {
+      workspaceId: actor.workspaceId,
+      OR: [
+        ...(email
+          ? [
+              {
+                contactPoints: {
+                  some: {
+                    kind: ContactPointKind.EMAIL,
+                    normalizedValue: email,
+                    archivedAt: null,
+                  },
+                },
+              },
+            ]
+          : []),
+        ...(telephone
+          ? [
+              {
+                contactPoints: {
+                  some: {
+                    kind: ContactPointKind.TELEPHONE,
+                    normalizedValue: telephone,
+                    archivedAt: null,
+                  },
+                },
+              },
+            ]
+          : []),
+        ...(postcode
+          ? [{ addresses: { some: { postcode, archivedAt: null } } }]
+          : []),
+      ],
+    },
+    include: {
+      contactPoints: { where: { archivedAt: null } },
+      addresses: { where: { archivedAt: null } },
+    },
+  });
+  const name = contactName(input.contact);
+  const reviewed = new Set(input.reviewedDuplicateIds);
+  return candidates.filter((candidate) => {
+    const exact = candidate.contactPoints.some(
+      (point) =>
+        (email && point.normalizedValue === email) ||
+        (telephone && point.normalizedValue === telephone),
+    );
+    const candidateName = (
+      candidate.kind === "PERSON"
+        ? `${candidate.firstName ?? ""} ${candidate.lastName ?? ""}`
+        : (candidate.legalName ?? "")
+    )
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, " ")
+      .trim();
+    const sameNameAndPostcode = Boolean(
+      name &&
+      postcode &&
+      name === candidateName &&
+      candidate.addresses.some(
+        (address) => normalizePostcode(address.postcode) === postcode,
+      ),
+    );
+    return (exact || sameNameAndPostcode) && !reviewed.has(candidate.id);
+  });
+}
+
+async function unreviewedPropertyDuplicates(
+  transaction: EnquiryTransaction,
+  actor: EnquiryActor,
+  input: Extract<PropertyChoice, { kind: "new" }>,
+) {
+  const details = validatePropertyDetails(input.property);
+  if (!details.ok) return null;
+  const candidates = await transaction.property.findMany({
+    where: { workspaceId: actor.workspaceId, postcode: details.data.postcode },
+    select: { id: true, normalizedAddressKey: true },
+  });
+  const reviewed = new Set(input.reviewedDuplicateIds);
+  return candidates.filter(
+    (candidate) =>
+      classifyAddressDuplicate(
+        details.data.normalizedAddressKey,
+        candidate.normalizedAddressKey,
+      ) !== "none" && !reviewed.has(candidate.id),
+  );
+}
+
+export async function reviewAppraisalBookingDuplicates(
+  input: EnquiryActorInput & {
+    contact: BookingContactInput;
+    property: PropertyDetailsInput;
+  },
+) {
+  const contactEmail = input.contact.contactPoints.find(
+    (point) => point.kind === "email",
+  )?.value;
+  const contactTelephone = input.contact.contactPoints.find(
+    (point) => point.kind === "telephone",
+  )?.value;
+  const contactPostcode = input.contact.addresses[0]?.postcode;
+  const [{ findDuplicateContacts }, propertyMatches] = await Promise.all([
+    import("@/core/contacts/application/contacts"),
+    findDuplicateProperties({
+      ...input,
+      building: input.property.addressBuilding,
+      street: input.property.addressStreet,
+      postcode: input.property.postcode,
+    }),
+  ]);
+  const contactMatches = await findDuplicateContacts({
+    ...input,
+    name: contactName(input.contact),
+    email: contactEmail,
+    telephone: contactTelephone,
+    postcode: contactPostcode,
+  });
+  return { contactMatches, propertyMatches };
+}
+
+export function bookAppraisal(
+  input: EnquiryActorInput & {
+    enquiryId: string;
+    scheduledAt: Date;
+    assignedMembershipId: string;
+    contact: ContactChoice;
+    property: PropertyChoice;
+  },
+) {
+  const action = "enquiry.appraisal.book";
+  return withEnquiryActor(input, async (transaction, actor) => {
+    if (!hasPermission(actor.roles, "enquiry.update")) {
+      return enquiryDeny(
+        transaction,
+        actor,
+        action,
+        "access_denied",
+        input.enquiryId,
+      );
+    }
+    if (
+      !isUuid(input.enquiryId) ||
+      !isUuid(input.assignedMembershipId) ||
+      !["existing", "new"].includes(input.contact.kind) ||
+      !["existing", "new"].includes(input.property.kind) ||
+      !(input.scheduledAt instanceof Date) ||
+      Number.isNaN(input.scheduledAt.getTime())
+    ) {
+      return enquiryDeny(
+        transaction,
+        actor,
+        action,
+        "invalid_input",
+        input.enquiryId,
+      );
+    }
+    await lockEnquiry(transaction, actor, input.enquiryId);
+    const enquiry = await transaction.enquiry.findFirst({
+      where: { id: input.enquiryId, workspaceId: actor.workspaceId },
+      select: {
+        id: true,
+        stage: true,
+        responsibleBranchId: true,
+        contactId: true,
+        propertyId: true,
+      },
+    });
+    if (!enquiry)
+      return { ok: false as const, error: "enquiry_not_found" as const };
+    if (enquiry.stage !== EnquiryStage.NEW_ENQUIRY) {
+      return enquiryDeny(
+        transaction,
+        actor,
+        action,
+        "invalid_state",
+        enquiry.id,
+      );
+    }
+    if (
+      !(await canAssignEnquiryWork(
+        transaction,
+        actor,
+        input.assignedMembershipId,
+        enquiry.responsibleBranchId,
+      ))
+    ) {
+      return enquiryDeny(
+        transaction,
+        actor,
+        action,
+        "invalid_input",
+        enquiry.id,
+      );
+    }
+
+    let contactId: string;
+    if (input.contact.kind === "existing") {
+      if (
+        !isUuid(input.contact.contactId) ||
+        (enquiry.contactId && enquiry.contactId !== input.contact.contactId)
+      ) {
+        return enquiryDeny(
+          transaction,
+          actor,
+          action,
+          "invalid_input",
+          enquiry.id,
+        );
+      }
+      const contact = await transaction.contact.findFirst({
+        where: {
+          id: input.contact.contactId,
+          workspaceId: actor.workspaceId,
+          status: "ACTIVE",
+        },
+        select: { id: true },
+      });
+      if (!contact)
+        return enquiryDeny(
+          transaction,
+          actor,
+          action,
+          "contact_not_found",
+          enquiry.id,
+        );
+      contactId = contact.id;
+    } else {
+      if (enquiry.contactId)
+        return enquiryDeny(
+          transaction,
+          actor,
+          action,
+          "invalid_state",
+          enquiry.id,
+        );
+      const duplicates = await unreviewedContactDuplicates(
+        transaction,
+        actor,
+        input.contact,
+      );
+      if (duplicates.length)
+        return enquiryDeny(
+          transaction,
+          actor,
+          action,
+          "duplicate_review_required",
+          enquiry.id,
+        );
+      const created = await createContactInTransaction(transaction, actor, {
+        ...input.contact.contact,
+        branchId: enquiry.responsibleBranchId,
+      });
+      if (!created.ok) throw new EnquiryRollback(created.error);
+      contactId = created.contactId;
+    }
+
+    let propertyId: string;
+    if (input.property.kind === "existing") {
+      if (
+        !isUuid(input.property.propertyId) ||
+        (enquiry.propertyId && enquiry.propertyId !== input.property.propertyId)
+      ) {
+        throw new EnquiryRollback("invalid_input");
+      }
+      const property = await transaction.property.findFirst({
+        where: {
+          id: input.property.propertyId,
+          workspaceId: actor.workspaceId,
+          status: "ACTIVE",
+        },
+        select: { id: true, responsibleBranchId: true },
+      });
+      if (!property) throw new EnquiryRollback("property_not_found");
+      propertyId = property.id;
+      const ownership = await transaction.propertyOwnership.findFirst({
+        where: {
+          workspaceId: actor.workspaceId,
+          propertyId,
+          contactId,
+          endedAt: null,
+        },
+        select: { id: true },
+      });
+      if (!ownership) {
+        const lead = await transaction.propertyOwnership.findFirst({
+          where: {
+            workspaceId: actor.workspaceId,
+            propertyId,
+            isLead: true,
+            endedAt: null,
+          },
+          select: { id: true },
+        });
+        await translatePropertyRollback(() =>
+          recordOwnerInTransaction(
+            transaction,
+            actor,
+            {
+              id: propertyId,
+              responsibleBranchId: property.responsibleBranchId,
+            },
+            { contactId, isLead: !lead, startedOn: "" },
+            { demoteExistingLead: false },
+          ),
+        );
+      }
+    } else {
+      if (enquiry.propertyId) throw new EnquiryRollback("invalid_state");
+      const duplicates = await unreviewedPropertyDuplicates(
+        transaction,
+        actor,
+        input.property,
+      );
+      if (duplicates === null) throw new EnquiryRollback("invalid_input");
+      if (duplicates.length)
+        throw new EnquiryRollback("duplicate_review_required");
+      const propertyInput = input.property.property;
+      const created = await translatePropertyRollback(() =>
+        createPropertyInTransaction(transaction, actor, {
+          branchId: enquiry.responsibleBranchId,
+          details: propertyInput,
+          owners: [{ contactId, isLead: true, startedOn: "" }],
+        }),
+      );
+      if (!created.ok) {
+        throw new EnquiryRollback(
+          created.error === "ownership_not_found"
+            ? "invalid_state"
+            : created.error,
+        );
+      }
+      propertyId = created.propertyId;
+    }
+
+    const appraisal = await transaction.appraisal.create({
+      data: {
+        workspaceId: actor.workspaceId,
+        enquiryId: enquiry.id,
+        scheduledAt: input.scheduledAt,
+        assignedMembershipId: input.assignedMembershipId,
+        createdByMembershipId: actor.membershipId,
+      },
+      select: { id: true },
+    });
+    await transaction.enquiry.update({
+      where: { id: enquiry.id },
+      data: { contactId, propertyId },
+    });
+    await changeEnquiryStageInTransaction(
+      transaction,
+      actor,
+      enquiry,
+      "appraisal_booked",
+      null,
+    );
+    await enquiryAudit(transaction, actor, {
+      action,
+      outcome: "SUCCEEDED",
+      targetId: enquiry.id,
+      metadata: { appraisalId: appraisal.id, contactId, propertyId },
+    });
+    return {
+      ok: true as const,
+      enquiryId: enquiry.id,
+      appraisalId: appraisal.id,
+      contactId,
+      propertyId,
+    };
+  });
+}
+
+const SERVICE = {
+  let_only: LettingServiceType.LET_ONLY,
+  rent_collection: LettingServiceType.RENT_COLLECTION,
+  fully_managed: LettingServiceType.FULLY_MANAGED,
+} as const;
+const FEE_KIND = {
+  percentage: FeeKind.PERCENTAGE,
+  fixed: FeeKind.FIXED,
+} as const;
+const VAT = {
+  inclusive: VatTreatment.INCLUSIVE,
+  exclusive: VatTreatment.EXCLUSIVE,
+} as const;
+
+export function completeAppraisal(
+  input: EnquiryActorInput & {
+    enquiryId: string;
+    appraisalId: string;
+    outcome: AppraisalOutcomeInput;
+  },
+) {
+  const action = "enquiry.appraisal.complete";
+  return withEnquiryActor(input, async (transaction, actor) => {
+    if (!hasPermission(actor.roles, "enquiry.update")) {
+      return enquiryDeny(
+        transaction,
+        actor,
+        action,
+        "access_denied",
+        input.enquiryId,
+      );
+    }
+    const outcome = validateAppraisalOutcome(input.outcome);
+    if (!isUuid(input.enquiryId) || !isUuid(input.appraisalId) || !outcome.ok) {
+      return enquiryDeny(
+        transaction,
+        actor,
+        action,
+        "invalid_input",
+        input.enquiryId,
+      );
+    }
+    await lockEnquiry(transaction, actor, input.enquiryId);
+    const enquiry = await transaction.enquiry.findFirst({
+      where: { id: input.enquiryId, workspaceId: actor.workspaceId },
+      select: { id: true, stage: true, leadSourceId: true },
+    });
+    if (!enquiry)
+      return { ok: false as const, error: "enquiry_not_found" as const };
+    const appraisal = await transaction.appraisal.findFirst({
+      where: {
+        id: input.appraisalId,
+        enquiryId: enquiry.id,
+        workspaceId: actor.workspaceId,
+      },
+      select: { id: true, status: true },
+    });
+    if (!appraisal)
+      return { ok: false as const, error: "appraisal_not_found" as const };
+    if (
+      enquiry.stage !== EnquiryStage.APPRAISAL_BOOKED ||
+      appraisal.status !== AppraisalStatus.SCHEDULED ||
+      !enquiry.leadSourceId
+    ) {
+      return enquiryDeny(
+        transaction,
+        actor,
+        action,
+        "invalid_state",
+        enquiry.id,
+      );
+    }
+    await transaction.appraisal.update({
+      where: { id: appraisal.id },
+      data: {
+        status: AppraisalStatus.COMPLETED,
+        completedAt: new Date(),
+        expectedMonthlyRentPence: outcome.data.expectedMonthlyRentPence,
+        recommendedService: outcome.data.recommendedService
+          ? SERVICE[outcome.data.recommendedService]
+          : null,
+        feeKind: outcome.data.feeKind ? FEE_KIND[outcome.data.feeKind] : null,
+        feeValue: outcome.data.feeValue,
+        feeVat: outcome.data.feeVat ? VAT[outcome.data.feeVat] : null,
+        notes: outcome.data.notes,
+      },
+    });
+    await changeEnquiryStageInTransaction(
+      transaction,
+      actor,
+      enquiry,
+      "appraisal_completed",
+      null,
+    );
+    await enquiryAudit(transaction, actor, {
+      action,
+      outcome: "SUCCEEDED",
+      targetId: enquiry.id,
+      metadata: { appraisalId: appraisal.id },
+    });
+    return {
+      ok: true as const,
+      enquiryId: enquiry.id,
+      appraisalId: appraisal.id,
+    };
+  });
+}
+
+function finishWithoutCompletion(
+  input: EnquiryActorInput & {
+    enquiryId: string;
+    appraisalId: string;
+    reason: string;
+  },
+  status:
+    typeof AppraisalStatus.CANCELLED | typeof AppraisalStatus.DID_NOT_ATTEND,
+) {
+  const action =
+    status === AppraisalStatus.CANCELLED
+      ? "enquiry.appraisal.cancel"
+      : "enquiry.appraisal.did_not_attend";
+  return withEnquiryActor(input, async (transaction, actor) => {
+    if (!hasPermission(actor.roles, "enquiry.update")) {
+      return enquiryDeny(
+        transaction,
+        actor,
+        action,
+        "access_denied",
+        input.enquiryId,
+      );
+    }
+    const reason = validateReason(input.reason);
+    if (!isUuid(input.enquiryId) || !isUuid(input.appraisalId) || !reason.ok) {
+      return enquiryDeny(
+        transaction,
+        actor,
+        action,
+        "invalid_input",
+        input.enquiryId,
+      );
+    }
+    await lockEnquiry(transaction, actor, input.enquiryId);
+    const enquiry = await transaction.enquiry.findFirst({
+      where: { id: input.enquiryId, workspaceId: actor.workspaceId },
+      select: { id: true, stage: true },
+    });
+    if (!enquiry)
+      return { ok: false as const, error: "enquiry_not_found" as const };
+    const appraisal = await transaction.appraisal.findFirst({
+      where: {
+        id: input.appraisalId,
+        enquiryId: enquiry.id,
+        workspaceId: actor.workspaceId,
+      },
+      select: { id: true, status: true },
+    });
+    if (!appraisal)
+      return { ok: false as const, error: "appraisal_not_found" as const };
+    if (
+      enquiry.stage !== EnquiryStage.APPRAISAL_BOOKED ||
+      appraisal.status !== AppraisalStatus.SCHEDULED
+    ) {
+      return enquiryDeny(
+        transaction,
+        actor,
+        action,
+        "invalid_state",
+        enquiry.id,
+      );
+    }
+    await transaction.appraisal.update({
+      where: { id: appraisal.id },
+      data: { status },
+    });
+    await changeEnquiryStageInTransaction(
+      transaction,
+      actor,
+      enquiry,
+      "new_enquiry",
+      reason.reason,
+    );
+    await enquiryAudit(transaction, actor, {
+      action,
+      outcome: "SUCCEEDED",
+      targetId: enquiry.id,
+      metadata: { appraisalId: appraisal.id },
+    });
+    return {
+      ok: true as const,
+      enquiryId: enquiry.id,
+      appraisalId: appraisal.id,
+    };
+  });
+}
+
+export function cancelAppraisal(
+  input: EnquiryActorInput & {
+    enquiryId: string;
+    appraisalId: string;
+    reason: string;
+  },
+) {
+  return finishWithoutCompletion(input, AppraisalStatus.CANCELLED);
+}
+
+export function recordAppraisalDidNotAttend(
+  input: EnquiryActorInput & {
+    enquiryId: string;
+    appraisalId: string;
+    reason: string;
+  },
+) {
+  return finishWithoutCompletion(input, AppraisalStatus.DID_NOT_ATTEND);
+}
