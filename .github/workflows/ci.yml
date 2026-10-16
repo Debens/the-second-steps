@@ -25,10 +25,10 @@ jobs:
       DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/zayto_ci
       MIGRATION_DATABASE_URL: postgresql://ci:ci@127.0.0.1:5432/zayto_ci
       DATABASE_SSL_MODE: verify-full
-      NEXT_PUBLIC_SUPABASE_URL: https://ci.invalid
-      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ci-placeholder
+      SUPABASE_URL: https://ci.invalid
+      SUPABASE_PUBLISHABLE_KEY: ci-placeholder
       SUPABASE_SECRET_KEY: ci-placeholder
-      NEXT_PUBLIC_APP_URL: http://127.0.0.1:3000
+      APP_URL: http://127.0.0.1:3000
       REQUIRE_STAFF_MFA: "false"
     steps:
       - name: Check out repository
