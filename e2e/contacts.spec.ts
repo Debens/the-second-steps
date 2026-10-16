@@ -126,6 +126,9 @@ test("the whole contact row opens the record", async ({ page }) => {
     .filter({ hasText: "Eleanor Price" })
     .getByRole("cell")
     .last();
+  // The row may be below the fold when the list is long, and the click below
+  // uses screen coordinates, so bring it into view first.
+  await cell.scrollIntoViewIfNeeded();
   const box = await cell.boundingBox();
   await page.mouse.click(box!.x + box!.width / 2, box!.y + box!.height / 2);
   await expect(
