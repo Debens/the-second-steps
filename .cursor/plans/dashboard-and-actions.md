@@ -44,11 +44,13 @@ Replace today's read-only Overview with the tabbed dashboard the owner chose: **
 3. **D3, interface (Sonnet):** the tabbed dashboard, actions rail, Add action pop-up and Comfortable/Compact switch on the real Overview; responsive, light and dark; browser checks.
 4. **Checkpoint (Opus review, then handover):** independent review of D2 and D3, full relevant checks, demo data, documentation.
 
-## Open questions for the owner (needed at the start of D1)
+## Access decisions (owner, 2026-10-16)
 
-- **Who may add and complete actions?** Proposal: every role except Read Only may add actions and finish their own; Branch Manager or higher may hand over or edit other people's; Read Only can see actions in its scope.
-- **Who sees an action?** Proposal: its assignee and its creator always, plus anyone whose branch scope includes the action's responsible branch.
-- **Should the Team tab and the activity feed be limited to managers?** Proposal: the Team tab only for roles that can see colleagues; the activity feed for everyone, limited to records they can see.
+- **Add and finish own actions:** every role except Read Only (Account Owner, Agency Admin, Branch Manager, Negotiator, Property Manager, Accounts). Read Only can view actions in its scope.
+- **Change someone else's action** (hand over, edit, finish or cancel): anyone who can add actions, for actions in a branch they can see. The new assignee must still be active, able to add actions and able to see the action's branch.
+- **Who sees an action:** its assignee and its creator always, plus anyone whose branch scope includes the action's responsible branch (workspace-wide staff see all).
+- **Team tab:** roles that work landlord leads (Account Owner, Agency Admin, Branch Manager, Negotiator, Property Manager), for colleagues in their branches.
+- **Recent activity:** everyone, limited to records they can see.
 
 ## Deliberate exclusions
 
