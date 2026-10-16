@@ -52,8 +52,9 @@ async function ensureStarterLists(
     }),
   ]);
   let inserted = false;
+  // Concurrent first uses both try; only the one that adds rows audits it.
   if (leadCount === 0) {
-    await transaction.leadSource.createMany({
+    const added = await transaction.leadSource.createMany({
       data: STARTER_LEAD_SOURCES.map((name, sortOrder) => ({
         workspaceId: actor.workspaceId,
         name,
@@ -61,10 +62,10 @@ async function ensureStarterLists(
       })),
       skipDuplicates: true,
     });
-    inserted = true;
+    inserted ||= added.count > 0;
   }
   if (lostCount === 0) {
-    await transaction.enquiryOutcomeReason.createMany({
+    const added = await transaction.enquiryOutcomeReason.createMany({
       data: STARTER_LOST_REASONS.map((name, sortOrder) => ({
         workspaceId: actor.workspaceId,
         name,
@@ -73,10 +74,10 @@ async function ensureStarterLists(
       })),
       skipDuplicates: true,
     });
-    inserted = true;
+    inserted ||= added.count > 0;
   }
   if (postponedCount === 0) {
-    await transaction.enquiryOutcomeReason.createMany({
+    const added = await transaction.enquiryOutcomeReason.createMany({
       data: STARTER_POSTPONED_REASONS.map((name, sortOrder) => ({
         workspaceId: actor.workspaceId,
         name,
@@ -85,7 +86,7 @@ async function ensureStarterLists(
       })),
       skipDuplicates: true,
     });
-    inserted = true;
+    inserted ||= added.count > 0;
   }
   if (inserted) {
     await enquiryAudit(transaction, actor, {
@@ -105,7 +106,14 @@ export async function listEnquirySettings(input: EnquiryActorInput) {
         "access_denied",
       );
     }
-    await ensureStarterLists(transaction, actor);
+    // Only staff who use the lists add the starter entries, so read-only
+    // roles never write.
+    if (
+      hasPermission(actor.roles, "enquiry.create") ||
+      hasPermission(actor.roles, "enquiry.settings.manage")
+    ) {
+      await ensureStarterLists(transaction, actor);
+    }
     const [leadSources, outcomeReasons] = await Promise.all([
       transaction.leadSource.findMany({
         where: { workspaceId: actor.workspaceId },
@@ -224,7 +232,8 @@ export function updateEnquiryListItem(
       !isUuid(input.itemId) ||
       !name.ok ||
       !Number.isInteger(input.sortOrder) ||
-      input.sortOrder < 0
+      input.sortOrder < 0 ||
+      input.sortOrder > 10_000
     ) {
       return enquiryDeny(
         transaction,

@@ -1,6 +1,6 @@
 # Landlord leads, appraisals, and tasks (Chunk 5)
 
-**Status:** Approved and implemented through 5C. On 2026-10-16 ADR-031 clarified that this is specifically the **Landlord leads** workflow, not applicant enquiries, and the staff-facing terminology was updated. Internal database/code names remain temporarily. The checkpoint remains next.
+**Status:** Approved and implemented through 5C. On 2026-10-16 ADR-031 clarified that this is specifically the **Landlord leads** workflow, not applicant enquiries, and the staff-facing terminology was updated. Internal database/code names remain temporarily. The checkpoint's independent review is done and its fixes are tested; applying the colleague-names migration to shared Supabase, demo data, a browser-write decision and the handover remain.
 
 ## Outcome
 
@@ -13,6 +13,17 @@ The agreed visible pipeline is **New lead → Appraisal booked → Appraisal com
 - **5A (2026-10-16):** migration `20261016170000_enquiries_appraisals_tasks`, Prisma models, permissions, and `tests/integration/enquiry-security.test.ts` (28 database tests) are written and pass on the disposable database. After the independent review and its fixes, the owner approved it and it was applied to shared development Supabase and verified on 2026-10-16 (catalog check plus a live property check). **Next: 5B services** (Sonnet is sufficient; the security-critical part is done).
 - **5B complete (2026-10-16):** enquiry domain rules now have 13 focused unit tests. The workspace-scoped services cover first-use starter lists and settings, enquiry create/update/list/get, locked stage changes with permanent history, closing and manager reopening, appraisal booking with explicit duplicate review and atomic contact/property conversion, completion/cancellation/did-not-attend, next actions, and the Overview needs-attention query. Assignees must be active, hold `enquiry.update`, and see the enquiry's branch. `tests/integration/enquiry-application.test.ts` covers list permissions, branch scope, assignment, conversion rollback, stage history, appraisal outcomes and tasks. `npm run check` passes (180 tests) and the disposable-database integration suite passes (149 tests). Next: 5C interface; the later Chunk 5 checkpoint still requires browser checks and the planned independent security review.
 - **5C implemented (2026-10-16):** Enquiries navigation, responsive list and filters, quick capture, the profile-sidebar record, next-action and outcome controls, duplicate-aware appraisal booking and outcome capture, Overview attention panels, and admin-managed enquiry lists are present. Staff choices preserve the existing staff-directory RLS boundary: roles without directory visibility can assign only identities the database allows them to see. `npm run check` passes (180 unit tests), the disposable-database suite passes (150 tests), `npm run build` passes, and all non-mutating browser checks pass (26 passed, 2 explicitly gated tests skipped) when run serially because parallel sandbox sign-ins collide. The new browser checks cover navigation, quick-capture fields, Overview, settings, mobile and dark mode. Saving a quick enquiry, stage progression and the final duplicate-selection booking remain deliberately unmutated in shared-browser tests; their write paths are covered by the disposable-database application tests. Next: the Chunk 5 checkpoint, including the planned independent security review and a decision on an isolated or cleanable browser-write fixture.
+- **Checkpoint independent review of 5B/5C (2026-10-16, separate Opus agent):** no cross-agency or cross-branch leak; identity, workspace scoping, the assignment rule, stage locking and booking rollback held. Fixed with tests (disposable suite now 159 tests):
+  - lead list, record and booking pages crashed for Negotiators and Property Managers viewing a colleague's lead, because the database hides colleague identities from those roles; names now fall back to "A colleague", and (owner decision below) lead workers can now see colleagues who share a branch (migration `20261016190000_lead_worker_colleague_names`);
+  - archiving a contact or property linked to an open lead now gives a clear "has an open landlord lead" message instead of a raw error;
+  - the server duplicate check now uses the same candidates as the review shown to staff, so booking cannot get stuck on a match staff never saw;
+  - editing a lead re-checks only changed choices (a later-hidden lead source or a lead who lost access no longer blocks edits);
+  - read-only roles no longer write the starter lists, and a concurrent first use audits once;
+  - list sort order, reviewed-duplicate ids and appraisal times (one year back to two years ahead) are capped;
+  - the Overview shows received dates in UK time and "+" when a capped list may be incomplete;
+  - cancelling an appraisal or recording "did not attend" cancels that appraisal's open next actions.
+  - Not changed: the default list still includes won leads (as designed); reopening a lead whose contact or property was later archived is refused with the generic message (rare; revisit with Chunk 6).
+  - New tests cover a colleague viewing a lead, other-branch staff attempting every change, assignment to suspended or other-branch staff, booking with real other-branch records, the archive refusals, read-only seeding, editing after a source is hidden, and cancelled-appraisal actions.
 - **Implementation change to note:** the starter lists are not inserted by the migration or at workspace creation. Under forced row-level security a migration cannot see existing workspaces, so the application adds the starter entries the first time an agency uses its lists (5B), inside that agency's own security context. The outcome for users is the same.
 - **Also built in 5A:** properties, like contacts, now carry a protected open-enquiry count, so a property with an open enquiry cannot be archived (the agreed rule applies to both).
 - **Independent review of 5A (2026-10-16, separate Opus agent):** no cross-agency or cross-branch leak; the property-review lessons held. Fixed before any shared application:
@@ -37,6 +48,11 @@ Decided on 2026-10-16:
 - **No notes timeline on enquiries at first.** An enquiry has a short summary, its stage history and its next actions. A notes timeline can be added later in the same way as for properties.
 - **One simple proposed fee** on an appraisal (percentage or fixed amount, VAT inclusive or exclusive). Full fee structures come with instructions in Chunk 6.
 - **Enquiry branch transfer is deferred**, as for properties. It will reuse the property pattern (Branch Manager or higher, with a reason) when needed.
+
+Decided at the checkpoint review (2026-10-16):
+
+- **Booking can add an owner.** Anyone who can book an appraisal may, by booking on an existing property, record the landlord as an owner of it (the lead owner if it has none). This deliberately does not require `property.ownership.manage`; it is audited as an ownership change.
+- **Lead workers see colleagues' names within their branches.** Negotiators and Property Managers, like managers, can see the names and work email of colleagues who share a branch (or who have agency-wide access), so they can hand over leads, appraisals and next actions. Staff-listing screens remain gated by their own permissions.
 
 ## Data design
 

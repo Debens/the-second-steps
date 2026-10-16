@@ -230,7 +230,7 @@ function changePropertyArchiveState(
     }
     const property = await transaction.property.findFirst({
       where: { id: input.propertyId, workspaceId: actor.workspaceId },
-      select: { id: true, status: true },
+      select: { id: true, status: true, currentOpenEnquiryCount: true },
     });
     if (!property) return { ok: false, error: "property_not_found" };
     if (property.status !== expected) {
@@ -239,6 +239,17 @@ function changePropertyArchiveState(
         actor,
         action,
         "invalid_state",
+        property.id,
+      );
+    }
+    // The database counts open landlord leads even where this user cannot
+    // see them, and would refuse the archive with a raw error.
+    if (!input.reactivate && property.currentOpenEnquiryCount > 0) {
+      return propertyDeny(
+        transaction,
+        actor,
+        action,
+        "has_open_enquiry",
         property.id,
       );
     }

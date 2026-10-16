@@ -331,13 +331,16 @@ export async function bookAppraisalAction(
 
   const contactChoice = text(formData, "contactChoice");
   const propertyChoice = text(formData, "propertyChoice");
+  // The review never shows more than 20 contacts or 50 properties.
   const reviewedContactIds = formData
     .getAll("reviewedContactId")
+    .slice(0, 20)
     .filter(
       (value): value is string => typeof value === "string" && isUuid(value),
     );
   const reviewedPropertyIds = formData
     .getAll("reviewedPropertyId")
+    .slice(0, 50)
     .filter(
       (value): value is string => typeof value === "string" && isUuid(value),
     );

@@ -1,7 +1,10 @@
 import { randomUUID } from "node:crypto";
 import { Pool, type PoolClient } from "pg";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
-import { createContact } from "@/core/contacts/application/contacts";
+import {
+  archiveContact,
+  createContact,
+} from "@/core/contacts/application/contacts";
 import {
   bookAppraisal,
   cancelAppraisal,
@@ -19,13 +22,17 @@ import {
   listEnquiryAssignees,
   listEnquiries,
   reopenEnquiry,
+  updateEnquiry,
 } from "@/core/enquiries/application/enquiries";
 import {
   addEnquiryTask,
   completeEnquiryTask,
   getEnquiryNeedsAttention,
 } from "@/core/enquiries/application/enquiry-tasks";
-import { createProperty } from "@/core/properties/application/properties";
+import {
+  archiveProperty,
+  createProperty,
+} from "@/core/properties/application/properties";
 import type { PropertyDetailsInput } from "@/core/properties/domain/property";
 import { db } from "@/core/db/client";
 
@@ -63,6 +70,11 @@ const users = {
     workspaceScope: false,
     branches: ["branchA"],
   },
+  negotiatorA2: {
+    role: "negotiator",
+    workspaceScope: false,
+    branches: ["branchA"],
+  },
   negotiatorB: {
     role: "negotiator",
     workspaceScope: false,
@@ -88,9 +100,9 @@ const memberships = Object.fromEntries(
 async function addUser(client: PoolClient, name: UserName) {
   const identityId = randomUUID();
   await client.query(
-    `INSERT INTO "user_identities" ("id", "updated_at")
-     VALUES ($1::uuid, CURRENT_TIMESTAMP)`,
-    [identityId],
+    `INSERT INTO "user_identities" ("id", "first_name", "updated_at")
+     VALUES ($1::uuid, $2, CURRENT_TIMESTAMP)`,
+    [identityId, name],
   );
   await client.query(
     `INSERT INTO "authentication_provider_links"
@@ -263,8 +275,17 @@ afterAll(async () => {
 describe("enquiry application layer", () => {
   it("lists only active members who can be assigned enquiry work", async () => {
     const negotiatorAssignees = await listEnquiryAssignees(as("negotiatorA"));
-    expect(negotiatorAssignees.map(({ membershipId }) => membershipId)).toEqual(
-      [memberships.negotiatorA],
+    // Lead workers see colleagues who share a branch (owner decision,
+    // 2026-10-16), but not staff who work only in other branches.
+    expect(
+      negotiatorAssignees.map(({ membershipId }) => membershipId).sort(),
+    ).toEqual(
+      [
+        memberships.owner,
+        memberships.managerA,
+        memberships.negotiatorA,
+        memberships.negotiatorA2,
+      ].sort(),
     );
 
     const assignees = await listEnquiryAssignees(as("owner"));
@@ -273,6 +294,7 @@ describe("enquiry application layer", () => {
         memberships.owner,
         memberships.managerA,
         memberships.negotiatorA,
+        memberships.negotiatorA2,
         memberships.negotiatorB,
       ].sort(),
     );
@@ -585,5 +607,228 @@ describe("enquiry application layer", () => {
         })
       ).tasks,
     ).toEqual([]);
+  });
+});
+
+describe("Chunk 5 review follow-ups", () => {
+  async function linkedRecords(branch: "branchA" | "branchB" = "branchA") {
+    const by = branch === "branchA" ? "managerA" : "negotiatorB";
+    const contact = await createContact({
+      ...as(by),
+      branchId: ids[branch],
+      ...newContact,
+    });
+    if (!contact.ok) throw new Error("Contact setup failed.");
+    const property = await createProperty({
+      ...as(by),
+      branchId: ids[branch],
+      details: propertyDetails,
+      owners: [{ contactId: contact.contactId, isLead: true, startedOn: "" }],
+    });
+    if (!property.ok) throw new Error("Property setup failed.");
+    return { contactId: contact.contactId, propertyId: property.propertyId };
+  }
+
+  it("shows a colleague's lead by name, or as a colleague when the role cannot see names", async () => {
+    await makeEnquiry();
+    const asColleague = await listEnquiries(as("negotiatorA2"));
+    expect(asColleague[0]?.lead).toMatchObject({ name: "negotiatorA" });
+    // Accounts cannot see staff identities; the list must still load.
+    const asAccounts = await listEnquiries(as("accountsA"));
+    expect(asAccounts[0]?.lead).toMatchObject({ name: "A colleague" });
+  });
+
+  it("refuses every change to another branch's lead", async () => {
+    const enquiryId = await makeEnquiry({ firstTask: true });
+    const notFound = { ok: false, error: "enquiry_not_found" };
+    await expect(
+      updateEnquiry({ ...as("negotiatorB"), enquiryId, enquirer }),
+    ).resolves.toEqual(notFound);
+    await expect(
+      closeEnquiry({
+        ...as("negotiatorB"),
+        enquiryId,
+        outcome: "won",
+      }),
+    ).resolves.toMatchObject({ ok: false });
+    await expect(
+      addEnquiryTask({
+        ...as("negotiatorB"),
+        enquiryId,
+        title: "Take over",
+        dueOn: "2026-10-16",
+        assignedMembershipId: memberships.negotiatorB,
+      }),
+    ).resolves.toEqual(notFound);
+    await expect(
+      bookAppraisal({
+        ...as("negotiatorB"),
+        enquiryId,
+        scheduledAt: new Date(Date.now() + 86_400_000),
+        assignedMembershipId: memberships.negotiatorB,
+        contact: { kind: "new", contact: newContact, reviewedDuplicateIds: [] },
+        property: {
+          kind: "new",
+          property: propertyDetails,
+          reviewedDuplicateIds: [],
+        },
+      }),
+    ).resolves.toEqual(notFound);
+    expect(await count(`SELECT count(*) AS n FROM "appraisals"`)).toBe(0);
+  });
+
+  it("assigns work only to active colleagues who can see the lead's branch", async () => {
+    const enquiryId = await makeEnquiry();
+    const task = (assignee: UserName) =>
+      addEnquiryTask({
+        ...as("negotiatorA"),
+        enquiryId,
+        title: "Call",
+        dueOn: "2026-10-16",
+        assignedMembershipId: memberships[assignee],
+      });
+    await expect(task("negotiatorA2")).resolves.toMatchObject({ ok: true });
+    await expect(task("negotiatorB")).resolves.toEqual({
+      ok: false,
+      error: "invalid_input",
+    });
+    await adminPool.query(
+      `UPDATE "memberships" SET "status" = 'suspended' WHERE "id" = $1::uuid`,
+      [memberships.negotiatorA2],
+    );
+    await expect(task("negotiatorA2")).resolves.toEqual({
+      ok: false,
+      error: "invalid_input",
+    });
+  });
+
+  it("will not book with a real contact or property from another branch", async () => {
+    const other = await linkedRecords("branchB");
+    const mine = await linkedRecords("branchA");
+    const enquiryId = await makeEnquiry();
+    const base = {
+      ...as("negotiatorA"),
+      enquiryId,
+      scheduledAt: new Date(Date.now() + 86_400_000),
+      assignedMembershipId: memberships.negotiatorA,
+    };
+    await expect(
+      bookAppraisal({
+        ...base,
+        contact: { kind: "existing", contactId: other.contactId },
+        property: { kind: "existing", propertyId: mine.propertyId },
+      }),
+    ).resolves.toEqual({ ok: false, error: "contact_not_found" });
+    await expect(
+      bookAppraisal({
+        ...base,
+        contact: { kind: "existing", contactId: mine.contactId },
+        property: { kind: "existing", propertyId: other.propertyId },
+      }),
+    ).resolves.toEqual({ ok: false, error: "property_not_found" });
+    expect(await count(`SELECT count(*) AS n FROM "appraisals"`)).toBe(0);
+  });
+
+  it("refuses booking times far in the past or future", async () => {
+    const mine = await linkedRecords();
+    const enquiryId = await makeEnquiry();
+    await expect(
+      bookAppraisal({
+        ...as("negotiatorA"),
+        enquiryId,
+        scheduledAt: new Date("2099-01-01T09:00:00Z"),
+        assignedMembershipId: memberships.negotiatorA,
+        contact: { kind: "existing", contactId: mine.contactId },
+        property: { kind: "existing", propertyId: mine.propertyId },
+      }),
+    ).resolves.toEqual({ ok: false, error: "invalid_input" });
+  });
+
+  it("explains that a contact or property with an open lead cannot be archived", async () => {
+    const mine = await linkedRecords();
+    // The contact no longer owns the property but is still on an open lead.
+    const contactOnly = await createContact({
+      ...as("managerA"),
+      branchId: ids.branchA,
+      ...newContact,
+      contactPoints: [],
+    });
+    if (!contactOnly.ok) throw new Error("Contact setup failed.");
+    const result = await createEnquiry({
+      ...as("negotiatorA"),
+      branchId: ids.branchA,
+      enquirer,
+      contactId: contactOnly.contactId,
+      propertyId: mine.propertyId,
+      firstTask: null,
+    });
+    expect(result).toMatchObject({ ok: true });
+    await expect(
+      archiveContact({ ...as("managerA"), contactId: contactOnly.contactId }),
+    ).resolves.toEqual({ ok: false, error: "has_open_enquiry" });
+    await expect(
+      archiveProperty({ ...as("managerA"), propertyId: mine.propertyId }),
+    ).resolves.toEqual({ ok: false, error: "has_open_enquiry" });
+  });
+
+  it("does not let read-only roles write the starter lists", async () => {
+    const settings = await listEnquirySettings(as("accountsA"));
+    expect(settings?.leadSources).toEqual([]);
+    expect(await count(`SELECT count(*) AS n FROM "lead_sources"`)).toBe(0);
+  });
+
+  it("keeps editing a lead whose source was later hidden", async () => {
+    const settings = await listEnquirySettings(as("negotiatorA"));
+    const source = settings!.leadSources[0];
+    const enquiryId = await makeEnquiry({ leadSourceId: source.id });
+    await updateEnquiryListItem({
+      ...as("owner"),
+      kind: "lead_source",
+      itemId: source.id,
+      name: source.name,
+      hidden: true,
+      sortOrder: 0,
+    });
+    await expect(
+      updateEnquiry({
+        ...as("negotiatorA"),
+        enquiryId,
+        enquirer: { ...enquirer, summary: "Updated" },
+        leadSourceId: source.id,
+        leadMembershipId: memberships.negotiatorA,
+      }),
+    ).resolves.toEqual({ ok: true, enquiryId });
+  });
+
+  it("closes a cancelled appraisal's next actions", async () => {
+    const mine = await linkedRecords();
+    const enquiryId = await makeEnquiry();
+    const booking = await bookAppraisal({
+      ...as("negotiatorA"),
+      enquiryId,
+      scheduledAt: new Date(Date.now() + 86_400_000),
+      assignedMembershipId: memberships.negotiatorA,
+      contact: { kind: "existing", contactId: mine.contactId },
+      property: { kind: "existing", propertyId: mine.propertyId },
+    });
+    if (!booking.ok) throw new Error(`Booking failed: ${booking.error}`);
+    const task = await addEnquiryTask({
+      ...as("negotiatorA"),
+      enquiryId,
+      appraisalId: booking.appraisalId,
+      title: "Confirm access",
+      dueOn: "2026-10-16",
+      assignedMembershipId: memberships.negotiatorA,
+    });
+    expect(task).toMatchObject({ ok: true });
+    await cancelAppraisal({
+      ...as("negotiatorA"),
+      enquiryId,
+      appraisalId: booking.appraisalId,
+      reason: "Landlord cancelled",
+    });
+    expect(await getEnquiry({ ...as("negotiatorA"), enquiryId })).toMatchObject(
+      { tasks: [{ title: "Confirm access", status: "CANCELLED" }] },
+    );
   });
 });

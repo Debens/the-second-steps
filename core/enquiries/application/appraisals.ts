@@ -13,7 +13,9 @@ import {
 import {
   AppraisalStatus,
   ContactPointKind,
+  ContactStatus,
   EnquiryStage,
+  EnquiryTaskStatus,
   FeeKind,
   LettingServiceType,
   VatTreatment,
@@ -74,11 +76,27 @@ async function translatePropertyRollback<T>(operation: () => Promise<T>) {
   } catch (error) {
     if (error instanceof PropertyRollback) {
       throw new EnquiryRollback(
-        error.error === "ownership_not_found" ? "invalid_state" : error.error,
+        error.error === "ownership_not_found" ||
+          error.error === "has_open_enquiry"
+          ? "invalid_state"
+          : error.error,
       );
     }
     throw error;
   }
+}
+
+const DAY_MS = 86_400_000;
+
+/** Up to a year back (recorded late) and two years ahead. */
+function appraisalTimeIsReasonable(scheduledAt: Date) {
+  const time = scheduledAt.getTime();
+  const now = Date.now();
+  return (
+    !Number.isNaN(time) &&
+    time >= now - 366 * DAY_MS &&
+    time <= now + 731 * DAY_MS
+  );
 }
 
 function contactName(input: BookingContactInput) {
@@ -110,9 +128,13 @@ async function unreviewedContactDuplicates(
     .map((address) => normalizePostcode(address.postcode))
     .find(Boolean);
   if (!email && !telephone && !postcode) return [];
+  // Same candidates as the duplicate review shown to staff (findDuplicateContacts):
+  // active and archived contacts only, the 20 most recently updated. Anything
+  // wider could demand a review of a match staff were never shown.
   const candidates = await transaction.contact.findMany({
     where: {
       workspaceId: actor.workspaceId,
+      status: { in: [ContactStatus.ACTIVE, ContactStatus.ARCHIVED] },
       OR: [
         ...(email
           ? [
@@ -149,6 +171,8 @@ async function unreviewedContactDuplicates(
       contactPoints: { where: { archivedAt: null } },
       addresses: { where: { archivedAt: null } },
     },
+    orderBy: [{ updatedAt: "desc" }, { id: "asc" }],
+    take: 20,
   });
   const name = contactName(input.contact);
   const reviewed = new Set(input.reviewedDuplicateIds);
@@ -188,6 +212,9 @@ async function unreviewedPropertyDuplicates(
   const candidates = await transaction.property.findMany({
     where: { workspaceId: actor.workspaceId, postcode: details.data.postcode },
     select: { id: true, normalizedAddressKey: true },
+    // Same candidates as the review shown to staff (findDuplicateProperties).
+    orderBy: [{ updatedAt: "desc" }, { id: "asc" }],
+    take: 50,
   });
   const reviewed = new Set(input.reviewedDuplicateIds);
   return candidates.filter(
@@ -257,7 +284,7 @@ export function bookAppraisal(
       !["existing", "new"].includes(input.contact.kind) ||
       !["existing", "new"].includes(input.property.kind) ||
       !(input.scheduledAt instanceof Date) ||
-      Number.isNaN(input.scheduledAt.getTime())
+      !appraisalTimeIsReasonable(input.scheduledAt)
     ) {
       return enquiryDeny(
         transaction,
@@ -437,7 +464,8 @@ export function bookAppraisal(
       );
       if (!created.ok) {
         throw new EnquiryRollback(
-          created.error === "ownership_not_found"
+          created.error === "ownership_not_found" ||
+            created.error === "has_open_enquiry"
             ? "invalid_state"
             : created.error,
         );
@@ -655,6 +683,20 @@ function finishWithoutCompletion(
     await transaction.appraisal.update({
       where: { id: appraisal.id },
       data: { status },
+    });
+    // Next actions for a visit that will not happen no longer apply.
+    await transaction.enquiryTask.updateMany({
+      where: {
+        workspaceId: actor.workspaceId,
+        enquiryId: enquiry.id,
+        appraisalId: appraisal.id,
+        status: EnquiryTaskStatus.OPEN,
+      },
+      data: {
+        status: EnquiryTaskStatus.CANCELLED,
+        closedAt: new Date(),
+        closedByMembershipId: actor.membershipId,
+      },
     });
     await changeEnquiryStageInTransaction(
       transaction,

@@ -126,6 +126,24 @@ function isConflict(error: unknown) {
   );
 }
 
+/**
+ * A colleague's display name. The database hides identities a role may not
+ * see, so the identity can be missing; never assume it is there.
+ */
+export function staffName(
+  identity: {
+    firstName: string | null;
+    lastName: string | null;
+    primaryEmail: string | null;
+  } | null,
+) {
+  if (!identity) return "A colleague";
+  const name = [identity.firstName, identity.lastName]
+    .filter(Boolean)
+    .join(" ");
+  return name || identity.primaryEmail || "Unnamed user";
+}
+
 export async function lockEnquiry(
   transaction: EnquiryTransaction,
   actor: EnquiryActor,

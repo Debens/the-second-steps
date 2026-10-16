@@ -20,7 +20,8 @@ export type PropertyWriteError =
   | "contact_not_found"
   | "ownership_not_found"
   | "invalid_input"
-  | "invalid_state";
+  | "invalid_state"
+  | "has_open_enquiry";
 
 export type PropertyFailure = { ok: false; error: PropertyWriteError };
 

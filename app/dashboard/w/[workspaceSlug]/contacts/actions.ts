@@ -426,9 +426,11 @@ export async function changeContactArchiveAction(
       })
     : await archiveContact({ authSubject: user.id, workspaceSlug, contactId });
   if (!result.ok) {
-    redirect(
-      `${path}?error=${result.error === "owns_property" ? "owns_property" : "archive"}`,
-    );
+    const error =
+      result.error === "owns_property" || result.error === "has_open_enquiry"
+        ? result.error
+        : "archive";
+    redirect(`${path}?error=${error}`);
   }
   revalidatePath(path);
   revalidatePath(`/dashboard/w/${workspaceSlug}/contacts`);

@@ -126,6 +126,15 @@ export default async function PropertyPage({
           again.
         </div>
       )}
+      {query.error === "has_open_enquiry" && (
+        <div
+          className="rounded-lg bg-destructive/10 p-4 text-sm text-destructive"
+          role="alert"
+        >
+          This property is linked to an open landlord lead, so it cannot be
+          archived yet. Close the lead as won, lost or postponed first.
+        </div>
+      )}
       {/* Phones: identity, working area, details. Large screens: a profile
           column, the working area, and a details rail that use the width. */}
       <div className="grid grid-cols-[minmax(0,1fr)] gap-x-10 gap-y-8 lg:grid-cols-[18rem_minmax(0,1fr)] 2xl:grid-cols-[20rem_minmax(0,1fr)_22rem]">

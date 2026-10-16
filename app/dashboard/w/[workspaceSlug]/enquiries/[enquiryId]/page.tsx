@@ -41,6 +41,7 @@ import {
   getEnquiry,
   listEnquiryAssignees,
 } from "@/core/enquiries/application/enquiries";
+import { staffName } from "@/core/enquiries/application/enquiry-shared";
 import {
   canCloseFrom,
   canWinFrom,
@@ -120,14 +121,7 @@ export default async function EnquiryPage({
     ({ status }) => status === "SCHEDULED",
   );
   const assignedTo = enquiry.leadMembership
-    ? [
-        enquiry.leadMembership.userIdentity.firstName,
-        enquiry.leadMembership.userIdentity.lastName,
-      ]
-        .filter(Boolean)
-        .join(" ") ||
-      enquiry.leadMembership.userIdentity.primaryEmail ||
-      "Unnamed user"
+    ? staffName(enquiry.leadMembership.userIdentity)
     : "Unassigned";
 
   return (

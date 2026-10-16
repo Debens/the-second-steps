@@ -146,7 +146,11 @@ export async function changePropertyArchiveAction(
   const result = reactivate
     ? await reactivateProperty(input)
     : await archiveProperty(input);
-  if (!result.ok) redirect(`${path}?error=archive`);
+  if (!result.ok) {
+    redirect(
+      `${path}?error=${result.error === "has_open_enquiry" ? "has_open_enquiry" : "archive"}`,
+    );
+  }
   revalidatePath(path);
   revalidatePath(`/dashboard/w/${workspaceSlug}/properties`);
   redirect(path);

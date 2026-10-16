@@ -475,12 +475,25 @@ describe("database and workspace access hardening", () => {
       await client.query("SELECT set_config('app.workspace_id', $1, true)", [
         ids.workspaceA,
       ]);
-      const noDirectoryPermission = await client.query<{ id: string }>(
+      // Lead workers (here a Negotiator) see colleagues who share a branch so
+      // they can hand over work (owner decision, 2026-10-16), but never staff
+      // only in other branches or in another workspace. Roles outside this
+      // rule (for example Accounts) are covered in enquiry-application tests.
+      const leadWorker = await client.query<{ id: string }>(
         `SELECT "id" FROM "user_identities" ORDER BY "id"`,
       );
-      expect(noDirectoryPermission.rows).toEqual([
-        { id: ids.sameBranchIdentity },
-      ]);
+      const leadWorkerIds = leadWorker.rows.map(({ id }) => id);
+      expect(leadWorkerIds).toEqual(
+        expect.arrayContaining([
+          ids.managerIdentity,
+          ids.ownerOneIdentity,
+          ids.sameBranchIdentity,
+          ids.overlappingIdentity,
+          ids.workspaceWideIdentity,
+        ]),
+      );
+      expect(leadWorkerIds).not.toContain(ids.otherBranchIdentity);
+      expect(leadWorkerIds).not.toContain(ids.workspaceBOwnerIdentity);
       await client.query("ROLLBACK");
     } finally {
       await client.query("ROLLBACK").catch(() => undefined);

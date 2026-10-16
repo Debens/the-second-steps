@@ -35,6 +35,7 @@ import {
   enquiryAudit,
   enquiryDeny,
   lockEnquiry,
+  staffName,
   withEnquiryActor,
   type EnquiryActor,
   type EnquiryActorInput,
@@ -295,12 +296,20 @@ export function updateEnquiry(
       hasContact: Boolean(contactId),
       hasProperty: Boolean(propertyId),
     });
+    // Only new choices are checked, as in the database: a lead source hidden
+    // later, a lead who has since lost access, or a linked record moved to
+    // another branch must not stop staff editing their own enquiry.
+    const changed = <T>(next: T | null | undefined, current: T | null) =>
+      next && next !== current ? next : null;
     const selections = await validateSelections(transaction, actor, {
       branchId: enquiry.responsibleBranchId,
-      contactId,
-      propertyId,
-      leadSourceId: input.leadSourceId,
-      leadMembershipId: input.leadMembershipId,
+      contactId: changed(contactId, enquiry.contactId),
+      propertyId: changed(propertyId, enquiry.propertyId),
+      leadSourceId: changed(input.leadSourceId, enquiry.leadSourceId),
+      leadMembershipId: changed(
+        input.leadMembershipId,
+        enquiry.leadMembershipId,
+      ),
     });
     if (!enquirer.ok || !selections) {
       return enquiryDeny(
@@ -694,15 +703,7 @@ export async function listEnquiries(
     lead: enquiry.leadMembership
       ? {
           membershipId: enquiry.leadMembership.id,
-          name:
-            [
-              enquiry.leadMembership.userIdentity.firstName,
-              enquiry.leadMembership.userIdentity.lastName,
-            ]
-              .filter(Boolean)
-              .join(" ") ||
-            enquiry.leadMembership.userIdentity.primaryEmail ||
-            "Unnamed user",
+          name: staffName(enquiry.leadMembership.userIdentity),
         }
       : null,
     appraisal: enquiry.appraisals[0] ?? null,
@@ -793,17 +794,10 @@ export async function listEnquiryAssignees(input: EnquiryActorInput) {
         ) {
           return [];
         }
-        const name = [
-          membership.userIdentity.firstName,
-          membership.userIdentity.lastName,
-        ]
-          .filter(Boolean)
-          .join(" ");
         return [
           {
             membershipId: membership.id,
-            name:
-              name || membership.userIdentity.primaryEmail || "Unnamed user",
+            name: staffName(membership.userIdentity),
             branchIds:
               scope.scope.kind === "workspace"
                 ? null

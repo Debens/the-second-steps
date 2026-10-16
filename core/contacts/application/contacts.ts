@@ -784,9 +784,13 @@ export async function updateOrganisationIdentity(input: {
   return result ?? { ok: false, error: "access_denied" };
 }
 
-/** Archiving can also be refused because the contact still owns a property. */
+/**
+ * Archiving can also be refused because the contact still owns a property or
+ * is linked to an open landlord lead.
+ */
 export type ContactArchiveResult =
-  ContactWriteResult | { ok: false; error: "owns_property" };
+  | ContactWriteResult
+  | { ok: false; error: "owns_property" | "has_open_enquiry" };
 
 async function changeContactArchiveState(input: {
   authSubject: string;
@@ -824,22 +828,31 @@ async function changeContactArchiveState(input: {
           id: true,
           status: true,
           currentPropertyOwnershipCount: true,
+          currentOpenEnquiryCount: true,
         },
       });
       if (!contact) return { ok: false, error: "contact_not_found" };
       if (contact.status !== expectedStatus) {
         return deny(transaction, actor, action, "invalid_state", contact.id);
       }
-      // The database counts current ownerships even for properties this user
-      // cannot see, and would refuse the archive with a raw error.
-      if (!input.reactivate && contact.currentPropertyOwnershipCount > 0) {
+      // The database counts current ownerships and open landlord leads even
+      // where this user cannot see them, and would refuse the archive with a
+      // raw error.
+      const blocker = input.reactivate
+        ? null
+        : contact.currentPropertyOwnershipCount > 0
+          ? "owns_property"
+          : contact.currentOpenEnquiryCount > 0
+            ? "has_open_enquiry"
+            : null;
+      if (blocker) {
         await audit(transaction, actor, {
           action,
           outcome: "DENIED",
           targetId: contact.id,
-          metadata: { reason: "owns_property" },
+          metadata: { reason: blocker },
         });
-        return { ok: false, error: "owns_property" };
+        return { ok: false, error: blocker };
       }
       await transaction.contact.update({
         where: { id: contact.id },
