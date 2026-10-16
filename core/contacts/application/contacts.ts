@@ -172,6 +172,7 @@ export async function audit(
   input: {
     action: string;
     outcome: "SUCCEEDED" | "DENIED";
+    targetType?: "contact" | "property";
     targetId?: string;
     metadata?: Record<string, string | string[]>;
   },
@@ -183,7 +184,7 @@ export async function audit(
       actorMembershipId: actor.membershipId,
       action: input.action,
       outcome: input.outcome,
-      targetType: "contact",
+      targetType: input.targetType ?? "contact",
       targetId: input.targetId,
       requestId: randomUUID(),
       metadata: input.metadata,
