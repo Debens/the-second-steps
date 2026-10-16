@@ -349,7 +349,7 @@ export function ActionMenu({
         {text ? (
           <>
             {TriggerIcon && <TriggerIcon aria-hidden="true" />}
-            {text}
+            <span className="hidden md:inline">{text}</span>
           </>
         ) : (
           <MoreHorizontal aria-hidden="true" />

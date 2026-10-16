@@ -6,6 +6,7 @@ import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { LeadPipeline } from "./lead-pipeline";
+import { OverviewCombined } from "./overview-combined";
 import { OverviewDayPlan } from "./overview-day-plan";
 import { OverviewFocus } from "./overview-focus";
 import { OverviewInbox } from "./overview-inbox";
@@ -15,7 +16,7 @@ import { OverviewTiles } from "./overview-tiles";
 import { AvailabilityBadge, DesignNotes, TODAY_LABEL } from "./shared";
 import { TenancyProgression } from "./tenancy-progression";
 
-type OverviewId = "inbox" | "focus" | "table" | "tiles" | "plan";
+type OverviewId = "combined" | "inbox" | "focus" | "table" | "tiles" | "plan";
 type RoleId = "pipeline" | "progress";
 type VariantId = OverviewId | RoleId;
 
@@ -27,6 +28,16 @@ const OVERVIEWS: {
   best: string;
   tradeoff: string;
 }[] = [
+  {
+    id: "combined",
+    letter: "F",
+    label: "Inbox + day plan",
+    summary:
+      "A and E together: one ranked inbox on the left, and the day by the hour on the right. Press Plan on any row to drop it into a free hour. Filter chips let work from every module share the page.",
+    best: "Everyone, once more than one module exists. It is the one that scales.",
+    tradeoff:
+      "The busiest option, and the day plan needs a real calendar behind it.",
+  },
   {
     id: "inbox",
     letter: "A",
@@ -95,12 +106,13 @@ const ROLES: { id: RoleId; label: string; summary: string }[] = [
 ];
 
 export function DashboardLab() {
-  const [variant, setVariant] = useState<VariantId>("inbox");
+  const [variant, setVariant] = useState<VariantId>("combined");
   const state = useOverviewState();
   const overview = OVERVIEWS.find((item) => item.id === variant);
   const role = ROLES.find((item) => item.id === variant);
 
   const layouts: Record<OverviewId, ReactNode> = {
+    combined: <OverviewCombined state={state} />,
     inbox: <OverviewInbox state={state} />,
     focus: <OverviewFocus state={state} />,
     table: <OverviewTable state={state} />,
@@ -177,7 +189,7 @@ export function DashboardLab() {
         )}
 
         {overview ? (
-          <div className="grid gap-6">
+          <div className="grid grid-cols-[minmax(0,1fr)] gap-6">
             <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">{TODAY_LABEL}</p>

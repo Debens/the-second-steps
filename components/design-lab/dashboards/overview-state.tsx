@@ -27,6 +27,14 @@ import { ActionMenu, STAFF, useUndoToast } from "./shared";
 /* One set of sample data and one set of working actions, shared by every
    Overview layout, so the options differ only in layout. */
 
+export type Module = "leads" | "viewings" | "pretenancy" | "maintenance";
+export const MODULE_LABEL: Record<Module, string> = {
+  leads: "Landlord leads",
+  viewings: "Viewings",
+  pretenancy: "Pre-tenancy",
+  maintenance: "Maintenance",
+};
+
 export type Kind = "call" | "email" | "send" | "chase";
 export type Group = "overdue" | "today" | "week";
 export type Task = {
@@ -39,6 +47,8 @@ export type Task = {
   group: Group;
   state: "open" | "done";
   slot?: string;
+  /** Which part of the product the work comes from. */
+  module: Module;
 };
 export type NextStep = { id: string; label: string; due: string };
 export type Unactioned = {
@@ -84,6 +94,7 @@ const START: Task[] = [
     due: "3 days overdue",
     group: "overdue",
     state: "open",
+    module: "leads",
   },
   {
     id: "t2",
@@ -94,6 +105,7 @@ const START: Task[] = [
     due: "Yesterday",
     group: "overdue",
     state: "open",
+    module: "leads",
   },
   {
     id: "t3",
@@ -104,6 +116,7 @@ const START: Task[] = [
     due: "Today",
     group: "today",
     state: "open",
+    module: "leads",
   },
   {
     id: "t4",
@@ -114,6 +127,7 @@ const START: Task[] = [
     due: "Today",
     group: "today",
     state: "open",
+    module: "leads",
   },
   {
     id: "t5",
@@ -124,6 +138,7 @@ const START: Task[] = [
     due: "Tomorrow",
     group: "week",
     state: "open",
+    module: "leads",
   },
   {
     id: "t6",
@@ -134,6 +149,45 @@ const START: Task[] = [
     due: "Mon 19 Oct",
     group: "week",
     state: "open",
+    module: "leads",
+  },
+];
+
+/* Work from modules that do not exist yet. Shown only in the combined layout
+   to prove one page can hold work from every part of the product. */
+const PREVIEW: Task[] = [
+  {
+    id: "p1",
+    kind: "chase",
+    title: "Chase referencing for J. Mensah",
+    lead: "Application, 3 Park View",
+    place: "3 Park View, M14 5DR",
+    due: "Yesterday",
+    group: "overdue",
+    state: "open",
+    module: "pretenancy",
+  },
+  {
+    id: "p2",
+    kind: "call",
+    title: "Confirm viewing, 4pm tomorrow",
+    lead: "Applicant M. Reyes",
+    place: "14 Oak Lane, M20 2PQ",
+    due: "Today",
+    group: "today",
+    state: "open",
+    module: "viewings",
+  },
+  {
+    id: "p3",
+    kind: "send",
+    title: "Approve boiler repair quote (£480)",
+    lead: "Landlord Priyanka Rao",
+    place: "12 Hall Gardens, M16 7UP",
+    due: "Tomorrow",
+    group: "week",
+    state: "open",
+    module: "maintenance",
   },
 ];
 
@@ -170,7 +224,9 @@ export const SCHEDULE: Visit[] = [
 ];
 
 export function useOverviewState() {
-  const [tasks, setTasks] = useState(START);
+  const [all, setTasks] = useState([...START, ...PREVIEW]);
+  // The original layouts only ever see landlord-lead work.
+  const tasks = all.filter((task) => task.module === "leads");
   const [unactioned, setUnactioned] = useState(UNACTIONED);
   const [outcomeFor, setOutcomeFor] = useState<string | null>(null);
   const [recorded, setRecorded] = useState<string[]>([]);
@@ -199,7 +255,7 @@ export function useOverviewState() {
       toast.show(`Moved to ${label}`, () => patch(task.id, previous));
     },
     reassign(task: Task, name: string) {
-      const previous = tasks;
+      const previous = all;
       setTasks((current) => current.filter((item) => item.id !== task.id));
       toast.show(`Handed to ${name}`, () => setTasks(previous));
     },
@@ -247,7 +303,7 @@ export function useOverviewState() {
       action: "done" | "snooze" | "reassign",
       label?: string,
     ) {
-      const previous = tasks;
+      const previous = all;
       if (action === "done") {
         setTasks((current) =>
           current.map((task) =>
@@ -280,6 +336,11 @@ export function useOverviewState() {
         () => setTasks(previous),
       );
     },
+    unplan(task: Task) {
+      const previous = { slot: task.slot, due: task.due };
+      patch(task.id, { slot: undefined });
+      toast.show("Taken out of the plan", () => patch(task.id, previous));
+    },
     book(name: string) {
       toast.show(`Book an appraisal for ${name} (mock-up)`);
     },
@@ -290,6 +351,7 @@ export function useOverviewState() {
 
   return {
     tasks,
+    allTasks: all,
     open,
     count,
     unactioned,
