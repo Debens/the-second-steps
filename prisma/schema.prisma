@@ -167,6 +167,90 @@ enum ContactAddressKind {
   @@map("contact_address_kind")
 }
 
+enum PropertyStatus {
+  ACTIVE   @map("active")
+  ARCHIVED @map("archived")
+
+  @@map("property_status")
+}
+
+enum PropertyType {
+  DETACHED      @map("detached")
+  SEMI_DETACHED @map("semi_detached")
+  TERRACED      @map("terraced")
+  BUNGALOW      @map("bungalow")
+  FLAT          @map("flat")
+  MAISONETTE    @map("maisonette")
+  ROOM          @map("room")
+  OTHER         @map("other")
+
+  @@map("property_type")
+}
+
+enum FurnishedStatus {
+  FURNISHED      @map("furnished")
+  PART_FURNISHED @map("part_furnished")
+  UNFURNISHED    @map("unfurnished")
+  FLEXIBLE       @map("flexible")
+
+  @@map("furnished_status")
+}
+
+enum FloorAreaUnit {
+  SQ_FT @map("sq_ft")
+  SQ_M  @map("sq_m")
+
+  @@map("floor_area_unit")
+}
+
+enum CouncilTaxBand {
+  A @map("A")
+  B @map("B")
+  C @map("C")
+  D @map("D")
+  E @map("E")
+  F @map("F")
+  G @map("G")
+  H @map("H")
+
+  @@map("council_tax_band")
+}
+
+enum PropertyFeature {
+  PRIVATE_GARDEN        @map("private_garden")
+  COMMUNAL_GARDEN       @map("communal_garden")
+  BALCONY               @map("balcony")
+  TERRACE               @map("terrace")
+  PATIO                 @map("patio")
+  OFF_STREET_PARKING    @map("off_street_parking")
+  ALLOCATED_PARKING     @map("allocated_parking")
+  GARAGE                @map("garage")
+  ON_STREET_PARKING     @map("on_street_parking")
+  PERMIT_PARKING        @map("permit_parking")
+  EV_CHARGING           @map("ev_charging")
+  LIFT                  @map("lift")
+  CONCIERGE             @map("concierge")
+  BIKE_STORAGE          @map("bike_storage")
+  WHEELCHAIR_ACCESSIBLE @map("wheelchair_accessible")
+  GAS_CENTRAL_HEATING   @map("gas_central_heating")
+  ELECTRIC_HEATING      @map("electric_heating")
+  UNDERFLOOR_HEATING    @map("underfloor_heating")
+  EN_SUITE              @map("en_suite")
+  UTILITY_ROOM          @map("utility_room")
+  DISHWASHER            @map("dishwasher")
+  WASHING_MACHINE       @map("washing_machine")
+  FIREPLACE             @map("fireplace")
+
+  @@map("property_feature")
+}
+
+enum PropertyNoteStatus {
+  ACTIVE @map("active")
+  VOIDED @map("voided")
+
+  @@map("property_note_status")
+}
+
 model UserIdentity {
   id                      String                         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   firstName               String?                        @map("first_name") @db.VarChar(100)
@@ -226,6 +310,7 @@ model Workspace {
   auditEvents          AuditEvent[]
   featureFlagOverrides WorkspaceFeatureFlagOverride[]
   contacts             Contact[]
+  properties           Property[]
 
   @@map("workspaces")
 }
@@ -248,6 +333,9 @@ model Branch {
   access       MembershipBranchAccess[]
   contactLinks ContactBranchLink[]
   contactNotes ContactNote[]
+  properties   Property[]
+  transfersOut PropertyBranchTransfer[] @relation("PropertyTransferFrom")
+  transfersIn  PropertyBranchTransfer[] @relation("PropertyTransferTo")
 
   @@unique([workspaceId, id])
   @@unique([workspaceId, name])
@@ -275,6 +363,12 @@ model Membership {
   contactNotesCreated       ContactNote[]            @relation("ContactNoteCreatedBy")
   contactNotesVoided        ContactNote[]            @relation("ContactNoteVoidedBy")
   contactNoteRevisions      ContactNoteRevision[]    @relation("ContactNoteEditedBy")
+  propertiesCreated         Property[]               @relation("PropertyCreatedBy")
+  propertyTransfers         PropertyBranchTransfer[] @relation("PropertyTransferredBy")
+  propertyOwnershipsCreated PropertyOwnership[]      @relation("PropertyOwnershipCreatedBy")
+  propertyNotesCreated      PropertyNote[]           @relation("PropertyNoteCreatedBy")
+  propertyNotesVoided       PropertyNote[]           @relation("PropertyNoteVoidedBy")
+  propertyNoteRevisions     PropertyNoteRevision[]   @relation("PropertyNoteEditedBy")
 
   @@unique([workspaceId, userIdentityId])
   @@unique([workspaceId, id])
@@ -413,6 +507,8 @@ model Contact {
   doNotSms                      Boolean                  @default(false) @map("do_not_sms")
   doNotWhatsApp                 Boolean                  @default(false) @map("do_not_whatsapp")
   doNotPost                     Boolean                  @default(false) @map("do_not_post")
+  // Maintained by a database trigger; the application must never write it.
+  currentPropertyOwnershipCount Int                      @default(0) @map("current_property_ownership_count")
   mergedIntoContactId           String?                  @map("merged_into_contact_id") @db.Uuid
   archivedAt                    DateTime?                @map("archived_at") @db.Timestamptz(6)
   createdByMembershipId         String                   @map("created_by_membership_id") @db.Uuid
@@ -428,6 +524,7 @@ model Contact {
   personLinks                   OrganisationPersonLink[] @relation("PersonContact")
   branchLinks                   ContactBranchLink[]
   notes                         ContactNote[]
+  propertyOwnerships            PropertyOwnership[]
 
   @@unique([workspaceId, id])
   @@unique([workspaceId, reference])
@@ -527,28 +624,28 @@ model ContactBranchLink {
 }
 
 model ContactNote {
-  id                    String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  workspaceId           String                    @map("workspace_id") @db.Uuid
-  contactId             String                    @map("contact_id") @db.Uuid
-  branchId              String                    @map("branch_id") @db.Uuid
-  visibility            ContactNoteVisibility     @default(BRANCH)
+  id                    String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workspaceId           String                @map("workspace_id") @db.Uuid
+  contactId             String                @map("contact_id") @db.Uuid
+  branchId              String                @map("branch_id") @db.Uuid
+  visibility            ContactNoteVisibility @default(BRANCH)
   body                  String
-  occurredAt            DateTime                  @default(now()) @map("occurred_at") @db.Timestamptz(6)
-  status                ContactNoteStatus         @default(ACTIVE)
-  lastEditedAt          DateTime?                 @map("last_edited_at") @db.Timestamptz(6)
-  version               Int                       @default(1)
-  voidedAt              DateTime?                 @map("voided_at") @db.Timestamptz(6)
-  voidedByMembershipId  String?                   @map("voided_by_membership_id") @db.Uuid
-  voidReason            String?                   @map("void_reason") @db.VarChar(500)
-  voidedByName          String?                   @map("voided_by_name") @db.VarChar(200)
-  createdByMembershipId String                    @map("created_by_membership_id") @db.Uuid
-  authorName            String                    @map("author_name") @db.VarChar(200)
-  createdAt             DateTime                  @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt             DateTime                  @updatedAt @map("updated_at") @db.Timestamptz(6)
-  contact               Contact                   @relation(fields: [workspaceId, contactId], references: [workspaceId, id], onDelete: Restrict)
-  branch                Branch                    @relation(fields: [workspaceId, branchId], references: [workspaceId, id], onDelete: Restrict)
-  createdByMembership   Membership                @relation("ContactNoteCreatedBy", fields: [workspaceId, createdByMembershipId], references: [workspaceId, id], onDelete: Restrict)
-  voidedByMembership    Membership?               @relation("ContactNoteVoidedBy", fields: [workspaceId, voidedByMembershipId], references: [workspaceId, id], onDelete: Restrict)
+  occurredAt            DateTime              @default(now()) @map("occurred_at") @db.Timestamptz(6)
+  status                ContactNoteStatus     @default(ACTIVE)
+  lastEditedAt          DateTime?             @map("last_edited_at") @db.Timestamptz(6)
+  version               Int                   @default(1)
+  voidedAt              DateTime?             @map("voided_at") @db.Timestamptz(6)
+  voidedByMembershipId  String?               @map("voided_by_membership_id") @db.Uuid
+  voidReason            String?               @map("void_reason") @db.VarChar(500)
+  voidedByName          String?               @map("voided_by_name") @db.VarChar(200)
+  createdByMembershipId String                @map("created_by_membership_id") @db.Uuid
+  authorName            String                @map("author_name") @db.VarChar(200)
+  createdAt             DateTime              @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime              @updatedAt @map("updated_at") @db.Timestamptz(6)
+  contact               Contact               @relation(fields: [workspaceId, contactId], references: [workspaceId, id], onDelete: Restrict)
+  branch                Branch                @relation(fields: [workspaceId, branchId], references: [workspaceId, id], onDelete: Restrict)
+  createdByMembership   Membership            @relation("ContactNoteCreatedBy", fields: [workspaceId, createdByMembershipId], references: [workspaceId, id], onDelete: Restrict)
+  voidedByMembership    Membership?           @relation("ContactNoteVoidedBy", fields: [workspaceId, voidedByMembershipId], references: [workspaceId, id], onDelete: Restrict)
   revisions             ContactNoteRevision[]
 
   @@unique([workspaceId, id])
@@ -575,4 +672,143 @@ model ContactNoteRevision {
   @@index([workspaceId, noteId, createdAt])
   @@index([workspaceId, editedByMembershipId])
   @@map("contact_note_revisions")
+}
+
+model Property {
+  id                    String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workspaceId           String                   @map("workspace_id") @db.Uuid
+  reference             String                   @db.VarChar(20)
+  responsibleBranchId   String                   @map("responsible_branch_id") @db.Uuid
+  status                PropertyStatus           @default(ACTIVE)
+  addressBuilding       String?                  @map("address_building") @db.VarChar(160)
+  addressStreet         String                   @map("address_street") @db.VarChar(160)
+  addressLocality       String?                  @map("address_locality") @db.VarChar(100)
+  townCity              String                   @map("town_city") @db.VarChar(100)
+  county                String?                  @db.VarChar(100)
+  postcode              String                   @db.VarChar(8)
+  countryCode           String                   @default("GB") @map("country_code") @db.Char(2)
+  normalizedAddressKey  String                   @map("normalized_address_key") @db.VarChar(400)
+  propertyType          PropertyType             @map("property_type")
+  bedrooms              Int?                     @db.SmallInt
+  bathrooms             Int?                     @db.SmallInt
+  receptionRooms        Int?                     @map("reception_rooms") @db.SmallInt
+  floorArea             Int?                     @map("floor_area")
+  floorAreaUnit         FloorAreaUnit?           @map("floor_area_unit")
+  furnishedStatus       FurnishedStatus?         @map("furnished_status")
+  features              PropertyFeature[]        @default([])
+  parkingNotes          String?                  @map("parking_notes") @db.VarChar(500)
+  outdoorSpaceNotes     String?                  @map("outdoor_space_notes") @db.VarChar(500)
+  councilTaxBand        CouncilTaxBand?          @map("council_tax_band")
+  generalNotes          String?                  @map("general_notes") @db.VarChar(2000)
+  archivedAt            DateTime?                @map("archived_at") @db.Timestamptz(6)
+  createdByMembershipId String                   @map("created_by_membership_id") @db.Uuid
+  createdAt             DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime                 @updatedAt @map("updated_at") @db.Timestamptz(6)
+  workspace             Workspace                @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  responsibleBranch     Branch                   @relation(fields: [workspaceId, responsibleBranchId], references: [workspaceId, id], onDelete: Restrict)
+  createdByMembership   Membership               @relation("PropertyCreatedBy", fields: [workspaceId, createdByMembershipId], references: [workspaceId, id], onDelete: Restrict)
+  ownerships            PropertyOwnership[]
+  branchTransfers       PropertyBranchTransfer[]
+  notes                 PropertyNote[]
+
+  @@unique([workspaceId, id])
+  @@unique([workspaceId, reference])
+  @@index([workspaceId, responsibleBranchId, status], map: "properties_branch_status_idx")
+  @@index([workspaceId, status, updatedAt(sort: Desc)], map: "properties_status_updated_idx")
+  @@index([workspaceId, postcode], map: "properties_postcode_idx")
+  @@index([workspaceId, normalizedAddressKey], map: "properties_address_key_idx")
+  @@index([workspaceId, createdByMembershipId], map: "properties_creator_idx")
+  @@map("properties")
+}
+
+model PropertyBranchTransfer {
+  id                        String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workspaceId               String     @map("workspace_id") @db.Uuid
+  propertyId                String     @map("property_id") @db.Uuid
+  fromBranchId              String     @map("from_branch_id") @db.Uuid
+  toBranchId                String     @map("to_branch_id") @db.Uuid
+  reason                    String     @db.VarChar(500)
+  transferredByMembershipId String     @map("transferred_by_membership_id") @db.Uuid
+  createdAt                 DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  property                  Property   @relation(fields: [workspaceId, propertyId], references: [workspaceId, id], onDelete: Restrict)
+  fromBranch                Branch     @relation("PropertyTransferFrom", fields: [workspaceId, fromBranchId], references: [workspaceId, id], onDelete: Restrict)
+  toBranch                  Branch     @relation("PropertyTransferTo", fields: [workspaceId, toBranchId], references: [workspaceId, id], onDelete: Restrict)
+  transferredByMembership   Membership @relation("PropertyTransferredBy", fields: [workspaceId, transferredByMembershipId], references: [workspaceId, id], onDelete: Restrict)
+
+  @@unique([workspaceId, id])
+  @@index([workspaceId, propertyId, createdAt], map: "property_branch_transfers_property_idx")
+  @@index([workspaceId, fromBranchId], map: "property_branch_transfers_from_idx")
+  @@index([workspaceId, toBranchId], map: "property_branch_transfers_to_idx")
+  @@index([workspaceId, transferredByMembershipId], map: "property_branch_transfers_actor_idx")
+  @@map("property_branch_transfers")
+}
+
+model PropertyOwnership {
+  id                    String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workspaceId           String     @map("workspace_id") @db.Uuid
+  propertyId            String     @map("property_id") @db.Uuid
+  contactId             String     @map("contact_id") @db.Uuid
+  isLead                Boolean    @default(false) @map("is_lead")
+  startedOn             DateTime?  @map("started_on") @db.Date
+  endedOn               DateTime?  @map("ended_on") @db.Date
+  endedAt               DateTime?  @map("ended_at") @db.Timestamptz(6)
+  endReason             String?    @map("end_reason") @db.VarChar(500)
+  createdByMembershipId String     @map("created_by_membership_id") @db.Uuid
+  createdAt             DateTime   @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime   @updatedAt @map("updated_at") @db.Timestamptz(6)
+  property              Property   @relation(fields: [workspaceId, propertyId], references: [workspaceId, id], onDelete: Restrict)
+  contact               Contact    @relation(fields: [workspaceId, contactId], references: [workspaceId, id], onDelete: Restrict)
+  createdByMembership   Membership @relation("PropertyOwnershipCreatedBy", fields: [workspaceId, createdByMembershipId], references: [workspaceId, id], onDelete: Restrict)
+
+  @@unique([workspaceId, id])
+  @@index([workspaceId, propertyId, endedAt], map: "property_ownerships_property_idx")
+  @@index([workspaceId, contactId, endedAt], map: "property_ownerships_contact_idx")
+  @@index([workspaceId, createdByMembershipId], map: "property_ownerships_creator_idx")
+  @@map("property_ownerships")
+}
+
+model PropertyNote {
+  id                    String                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workspaceId           String                 @map("workspace_id") @db.Uuid
+  propertyId            String                 @map("property_id") @db.Uuid
+  body                  String
+  occurredAt            DateTime               @default(now()) @map("occurred_at") @db.Timestamptz(6)
+  status                PropertyNoteStatus     @default(ACTIVE)
+  lastEditedAt          DateTime?              @map("last_edited_at") @db.Timestamptz(6)
+  version               Int                    @default(1)
+  voidedAt              DateTime?              @map("voided_at") @db.Timestamptz(6)
+  voidedByMembershipId  String?                @map("voided_by_membership_id") @db.Uuid
+  voidReason            String?                @map("void_reason") @db.VarChar(500)
+  voidedByName          String?                @map("voided_by_name") @db.VarChar(200)
+  createdByMembershipId String                 @map("created_by_membership_id") @db.Uuid
+  authorName            String                 @map("author_name") @db.VarChar(200)
+  createdAt             DateTime               @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt             DateTime               @updatedAt @map("updated_at") @db.Timestamptz(6)
+  property              Property               @relation(fields: [workspaceId, propertyId], references: [workspaceId, id], onDelete: Restrict)
+  createdByMembership   Membership             @relation("PropertyNoteCreatedBy", fields: [workspaceId, createdByMembershipId], references: [workspaceId, id], onDelete: Restrict)
+  voidedByMembership    Membership?            @relation("PropertyNoteVoidedBy", fields: [workspaceId, voidedByMembershipId], references: [workspaceId, id], onDelete: Restrict)
+  revisions             PropertyNoteRevision[]
+
+  @@unique([workspaceId, id])
+  @@index([workspaceId, propertyId, status, occurredAt(sort: Desc)], map: "property_notes_timeline_idx")
+  @@index([workspaceId, createdByMembershipId], map: "property_notes_creator_idx")
+  @@map("property_notes")
+}
+
+model PropertyNoteRevision {
+  id                   String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workspaceId          String       @map("workspace_id") @db.Uuid
+  noteId               String       @map("note_id") @db.Uuid
+  previousBody         String       @map("previous_body")
+  previousOccurredAt   DateTime     @map("previous_occurred_at") @db.Timestamptz(6)
+  editReason           String       @map("edit_reason") @db.VarChar(500)
+  editedByMembershipId String       @map("edited_by_membership_id") @db.Uuid
+  createdAt            DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  note                 PropertyNote @relation(fields: [workspaceId, noteId], references: [workspaceId, id], onDelete: Restrict)
+  editedByMembership   Membership   @relation("PropertyNoteEditedBy", fields: [workspaceId, editedByMembershipId], references: [workspaceId, id], onDelete: Restrict)
+
+  @@unique([workspaceId, id])
+  @@index([workspaceId, noteId, createdAt], map: "property_note_revisions_note_idx")
+  @@index([workspaceId, editedByMembershipId], map: "property_note_revisions_editor_idx")
+  @@map("property_note_revisions")
 }

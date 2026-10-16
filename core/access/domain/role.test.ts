@@ -76,8 +76,58 @@ describe("workspace roles", () => {
         "contact.create",
         "contact.update",
         "contact.note.create",
+        "property.read",
+        "property.create",
+        "property.update",
+        "property.note.create",
       ]),
     );
+  });
+
+  it("gives every role property read access but only writers create", () => {
+    for (const role of SYSTEM_ROLES) {
+      expect(hasPermission([role], "property.read")).toBe(true);
+    }
+    for (const role of [
+      "workspace_owner",
+      "agency_admin",
+      "branch_manager",
+      "negotiator",
+      "property_manager",
+    ] as const) {
+      expect(hasPermission([role], "property.create")).toBe(true);
+      expect(hasPermission([role], "property.update")).toBe(true);
+    }
+    expect(hasPermission(["accounts"], "property.create")).toBe(false);
+    expect(hasPermission(["accounts"], "property.update")).toBe(true);
+    expect(hasPermission(["read_only"], "property.update")).toBe(false);
+    expect(hasPermission(["read_only"], "property.note.create")).toBe(false);
+  });
+
+  it("limits property archive, owners, transfers and note corrections to managers", () => {
+    const managerOnly = [
+      "property.archive",
+      "property.ownership.manage",
+      "property.branch.transfer",
+      "property.note.manage",
+    ] as const;
+    for (const permission of managerOnly) {
+      for (const role of [
+        "workspace_owner",
+        "agency_admin",
+        "branch_manager",
+      ] as const) {
+        expect(hasPermission([role], permission)).toBe(true);
+      }
+      for (const role of [
+        "negotiator",
+        "property_manager",
+        "accounts",
+        "read_only",
+      ] as const) {
+        expect(hasPermission([role], permission)).toBe(false);
+      }
+    }
   });
 
   it("limits sensitive contact actions to managers and administrators", () => {

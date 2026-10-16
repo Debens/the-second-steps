@@ -18,6 +18,14 @@ export const PERMISSIONS = [
   "contact.merge",
   "contact.note.create",
   "contact.note.manage",
+  "property.read",
+  "property.create",
+  "property.update",
+  "property.archive",
+  "property.ownership.manage",
+  "property.branch.transfer",
+  "property.note.create",
+  "property.note.manage",
 ] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];

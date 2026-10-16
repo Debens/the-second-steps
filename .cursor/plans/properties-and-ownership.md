@@ -1,6 +1,15 @@
 # Properties and ownership (Chunk 4)
 
-**Status:** Proposal awaiting owner approval. No migration, schema, or application code is authorised until the owner approves this design. Applying the migration to shared development Supabase is a separate approval step after an Opus security review.
+**Status:** Approved by the owner on 2026-10-16, including the starter feature list. Stage 4A (database and security) is written and awaits disposable-database test results and an Opus security review. Applying the migration to shared development Supabase is a separate owner approval step.
+
+## Implementation notes (4A, 2026-10-16)
+
+- **Current-owner archive rule:** the person archiving a contact may not be able to see the owned property, so a visibility-limited lookup could miss it. Contacts carry `current_property_ownership_count`, kept by a database trigger on ownership changes and never writable by the application; a check constraint stops an archived or merged contact having current ownerships.
+- **Branch transfers:** the database refuses a responsible-branch change unless the same actor inserted a matching transfer record in the same transaction. Sharing owners with the new branch is done by the 4B transfer service and tested there.
+- **Owner branch link:** the 4B services create the owner's non-primary branch link before inserting the ownership, because the ownership policy requires the owner to be visible.
+- **Floor area** is stored as a whole number in the chosen unit.
+- **Former owners** can be recorded directly as ended ownerships (with an end reason); only current ownerships count towards the archive rule.
+- **Property notes** have no branch or visibility column: they follow the property's visibility.
 
 ## Outcome
 
