@@ -167,6 +167,7 @@ export default async function ContactPage({
   const preferredChannel =
     contact.preferredCommunicationChannel?.toLowerCase() ?? "No preference";
   const archiveFailed = query.error === "archive";
+  const ownsProperty = query.error === "owns_property";
   const canManageLinks =
     context.permissions.has("contact.sensitive.manage") &&
     contact.status === "ACTIVE";
@@ -241,6 +242,15 @@ export default async function ContactPage({
         >
           The contact status could not be changed. Check your access and try
           again.
+        </div>
+      )}
+      {ownsProperty && (
+        <div
+          className="rounded-lg bg-destructive/10 p-4 text-sm text-destructive"
+          role="alert"
+        >
+          This contact is the current owner of a property, so they cannot be
+          archived yet. End their ownership first, then archive them.
         </div>
       )}
       {/* Phones: identity, working area, details. Large screens: a profile

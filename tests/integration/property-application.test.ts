@@ -1,7 +1,16 @@
 import { randomUUID } from "node:crypto";
 import { Pool, type PoolClient } from "pg";
 import { afterAll, beforeEach, describe, expect, it } from "vitest";
-import { createContact } from "@/core/contacts/application/contacts";
+import {
+  archiveContact,
+  createContact,
+} from "@/core/contacts/application/contacts";
+import {
+  addPropertyNote,
+  editPropertyNote,
+  listPropertyNotes,
+  voidPropertyNote,
+} from "@/core/properties/application/property-notes";
 import {
   archiveProperty,
   createProperty,
@@ -746,6 +755,155 @@ describe("property application layer", () => {
              AND "outcome" = 'succeeded'`,
         ),
       ).toBe(1);
+    });
+  });
+
+  describe("owners and contact archiving", () => {
+    it("refuses to archive a current owner with a clear reason, then allows it after the ownership ends", async () => {
+      const contactId = await createPerson();
+      const propertyId = await makeProperty({
+        owners: [{ contactId, isLead: true, startedOn: "" }],
+      });
+      const archive = { ...as("managerA"), contactId };
+
+      await expect(archiveContact(archive)).resolves.toEqual({
+        ok: false,
+        error: "owns_property",
+      });
+
+      // Once the property moves to Branch B, the Branch A manager can no
+      // longer see it, but must still be stopped from archiving its owner.
+      const ownership = (await getProperty({ ...as("managerA"), propertyId }))!
+        .ownerships[0];
+      await transferPropertyBranch({
+        ...as("managerAB"),
+        propertyId,
+        toBranchId: ids.branchB,
+        reason: "Moved",
+      });
+      await expect(
+        getProperty({ ...as("managerA"), propertyId }),
+      ).resolves.toBeNull();
+      await expect(archiveContact(archive)).resolves.toEqual({
+        ok: false,
+        error: "owns_property",
+      });
+
+      await endPropertyOwnership({
+        ...as("managerAB"),
+        propertyId,
+        ownershipId: ownership.id,
+        reason: "Sold",
+        endedOn: "",
+      });
+      await expect(archiveContact(archive)).resolves.toEqual({
+        ok: true,
+        contactId,
+      });
+    });
+  });
+
+  describe("notes", () => {
+    it("lets writers add notes, managers correct them, and keeps the history", async () => {
+      const propertyId = await makeProperty();
+      const base = { ...as("negotiatorA"), propertyId };
+      const added = await addPropertyNote({
+        ...base,
+        body: "Boiler serviced in March",
+      });
+      if (!added.ok) throw new Error(`Note failed: ${added.error}`);
+
+      await expect(addPropertyNote({ ...base, body: "  " })).resolves.toEqual({
+        ok: false,
+        error: "invalid_input",
+      });
+      await expect(
+        addPropertyNote({ ...as("negotiatorB"), propertyId, body: "Hello" }),
+      ).resolves.toEqual({ ok: false, error: "property_not_found" });
+      await expect(
+        editPropertyNote({
+          ...base,
+          noteId: added.noteId,
+          body: "Boiler serviced in April",
+          occurredAt: null,
+          reason: "Wrong month",
+        }),
+      ).resolves.toEqual({ ok: false, error: "access_denied" });
+
+      const manager = { ...as("managerA"), propertyId, noteId: added.noteId };
+      // The edit form sends back the note's original time unless it is changed.
+      const [original] = (await listPropertyNotes({ ...base }))!;
+      await expect(
+        editPropertyNote({
+          ...manager,
+          body: "Boiler serviced in April",
+          occurredAt: original.occurredAt,
+          reason: "Wrong month",
+        }),
+      ).resolves.toEqual({ ok: true, noteId: added.noteId });
+      await expect(
+        editPropertyNote({
+          ...manager,
+          body: "Boiler serviced in April",
+          occurredAt: original.occurredAt,
+          reason: "No change",
+        }),
+      ).resolves.toEqual({ ok: false, error: "invalid_input" });
+
+      const edited = await listPropertyNotes({
+        ...as("negotiatorA"),
+        propertyId,
+      });
+      expect(edited).toMatchObject([
+        {
+          body: "Boiler serviced in April",
+          edited: true,
+          authorName: expect.any(String),
+          canManage: false,
+        },
+      ]);
+      expect(
+        await count(
+          `SELECT count(*) AS n FROM "property_note_revisions"
+           WHERE "note_id" = $1`,
+          [added.noteId],
+        ),
+      ).toBe(1);
+
+      // Another branch cannot read the notes of a property it cannot see.
+      await expect(
+        listPropertyNotes({ ...as("negotiatorB"), propertyId }),
+      ).resolves.toEqual([]);
+
+      await expect(
+        voidPropertyNote({ ...manager, reason: "" }),
+      ).resolves.toEqual({ ok: false, error: "invalid_input" });
+      await expect(
+        voidPropertyNote({ ...manager, reason: "Added to wrong property" }),
+      ).resolves.toEqual({ ok: true, noteId: added.noteId });
+      await expect(
+        voidPropertyNote({ ...manager, reason: "Again" }),
+      ).resolves.toEqual({ ok: false, error: "invalid_state" });
+      await expect(
+        editPropertyNote({
+          ...manager,
+          body: "Rewritten",
+          occurredAt: null,
+          reason: "Try",
+        }),
+      ).resolves.toEqual({ ok: false, error: "invalid_state" });
+
+      await expect(
+        listPropertyNotes({ ...as("negotiatorA"), propertyId }),
+      ).resolves.toEqual([]);
+      const withVoided = await listPropertyNotes({
+        ...as("managerA"),
+        propertyId,
+        includeVoided: true,
+      });
+      expect(withVoided).toMatchObject([
+        { voided: true, voidReason: "Added to wrong property" },
+      ]);
     });
   });
 });

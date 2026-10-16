@@ -22,8 +22,10 @@ export type PropertyWriteError =
   | "invalid_input"
   | "invalid_state";
 
+export type PropertyFailure = { ok: false; error: PropertyWriteError };
+
 export type PropertyWriteResult =
-  { ok: true; propertyId: string } | { ok: false; error: PropertyWriteError };
+  { ok: true; propertyId: string } | PropertyFailure;
 
 /**
  * Thrown inside a transaction to undo everything written so far. Returning an
@@ -55,7 +57,7 @@ export async function propertyDeny(
   action: string,
   error: PropertyWriteError,
   targetId?: string,
-): Promise<PropertyWriteResult> {
+): Promise<PropertyFailure> {
   await propertyAudit(transaction, actor, {
     action,
     outcome: "DENIED",
@@ -65,17 +67,17 @@ export async function propertyDeny(
   return { ok: false, error };
 }
 
-export async function withPropertyActor(
+export async function withPropertyActor<T extends { ok: true }>(
   input: ActorInput,
   operation: (
     transaction: PropertyTransaction,
     actor: PropertyActor,
-  ) => Promise<PropertyWriteResult>,
-): Promise<PropertyWriteResult> {
+  ) => Promise<T | PropertyFailure>,
+): Promise<T | PropertyFailure> {
   try {
     const result = await withVerifiedIdentity(
       input.authSubject,
-      async (transaction, identity): Promise<PropertyWriteResult> => {
+      async (transaction, identity): Promise<T | PropertyFailure> => {
         const actor = await resolveContactActor(transaction, {
           userIdentityId: identity.userIdentityId,
           workspaceSlug: input.workspaceSlug,

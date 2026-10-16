@@ -784,12 +784,16 @@ export async function updateOrganisationIdentity(input: {
   return result ?? { ok: false, error: "access_denied" };
 }
 
+/** Archiving can also be refused because the contact still owns a property. */
+export type ContactArchiveResult =
+  ContactWriteResult | { ok: false; error: "owns_property" };
+
 async function changeContactArchiveState(input: {
   authSubject: string;
   workspaceSlug: string;
   contactId: string;
   reactivate: boolean;
-}): Promise<ContactWriteResult> {
+}): Promise<ContactArchiveResult> {
   const action = input.reactivate ? "contact.reactivate" : "contact.archive";
   const expectedStatus = input.reactivate
     ? ContactStatus.ARCHIVED
@@ -799,7 +803,7 @@ async function changeContactArchiveState(input: {
     : ContactStatus.ARCHIVED;
   const result = await withVerifiedIdentity(
     input.authSubject,
-    async (transaction, identity): Promise<ContactWriteResult> => {
+    async (transaction, identity): Promise<ContactArchiveResult> => {
       const actor = await resolveContactActor(transaction, {
         userIdentityId: identity.userIdentityId,
         workspaceSlug: input.workspaceSlug,
@@ -816,11 +820,26 @@ async function changeContactArchiveState(input: {
       }
       const contact = await transaction.contact.findFirst({
         where: { id: input.contactId, workspaceId: actor.workspaceId },
-        select: { id: true, status: true },
+        select: {
+          id: true,
+          status: true,
+          currentPropertyOwnershipCount: true,
+        },
       });
       if (!contact) return { ok: false, error: "contact_not_found" };
       if (contact.status !== expectedStatus) {
         return deny(transaction, actor, action, "invalid_state", contact.id);
+      }
+      // The database counts current ownerships even for properties this user
+      // cannot see, and would refuse the archive with a raw error.
+      if (!input.reactivate && contact.currentPropertyOwnershipCount > 0) {
+        await audit(transaction, actor, {
+          action,
+          outcome: "DENIED",
+          targetId: contact.id,
+          metadata: { reason: "owns_property" },
+        });
+        return { ok: false, error: "owns_property" };
       }
       await transaction.contact.update({
         where: { id: contact.id },

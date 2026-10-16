@@ -8,7 +8,9 @@
 - **Branch transfers:** the database refuses a responsible-branch change unless the same actor inserted a matching transfer record in the same transaction. Sharing owners with the new branch is done by the 4B transfer service and tested there.
 - **Owner branch link:** the 4B services create the owner's non-primary branch link before inserting the ownership, because the ownership policy requires the owner to be visible.
 - **Floor area** is stored as a whole number in the chosen unit.
-- **Former owners** can be recorded directly as ended ownerships (with an end reason); only current ownerships count towards the archive rule.
+- **Former owners:** the database permits an ownership to be stored as already ended, but the 4B services only create current ownerships and then end them (with a reason). Recording a past owner directly would be a later addition. Only current ownerships count towards the archive rule.
+- **Contact archive:** archiving a contact who currently owns a property returns `owns_property`, shown on the contact page, instead of a raw database error.
+- **Notes:** blank time means "now", as for contact notes, so the edit form must send the note's original time back.
 - **Property notes** have no branch or visibility column: they follow the property's visibility.
 
 ## Outcome

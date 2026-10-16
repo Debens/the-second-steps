@@ -52,7 +52,7 @@ async function refuse(
   return { ok: false, error };
 }
 
-async function actorName(transaction: Transaction, actor: ContactActor) {
+export async function actorName(transaction: Transaction, actor: ContactActor) {
   const identity = await transaction.userIdentity.findUnique({
     where: { id: actor.userIdentityId },
     select: { firstName: true, lastName: true, primaryEmail: true },
