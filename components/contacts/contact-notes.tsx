@@ -88,9 +88,11 @@ function Message({ state }: { state: NoteFormState }) {
 function NoteFields({
   idPrefix,
   defaults,
+  shareable,
 }: {
   idPrefix: string;
   defaults?: { body: string; occurredAt: string; agencyWide: boolean };
+  shareable: boolean;
 }) {
   return (
     <>
@@ -119,20 +121,28 @@ function NoteFields({
             }
           />
         </div>
-        <label className="flex h-10 items-center gap-2 text-sm">
-          <input
-            type="checkbox"
-            name="shareWithAllBranches"
-            defaultChecked={defaults?.agencyWide}
-          />
-          Share with all branches
-        </label>
+        {shareable && (
+          <label className="flex h-10 items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              name="shareWithAllBranches"
+              defaultChecked={defaults?.agencyWide}
+            />
+            Share with all branches
+          </label>
+        )}
       </div>
     </>
   );
 }
 
-function AddNoteForm({ action }: { action: NoteAction }) {
+function AddNoteForm({
+  action,
+  shareable,
+}: {
+  action: NoteAction;
+  shareable: boolean;
+}) {
   const [state, formAction, pending] = useActionState(action, IDLE);
   const [, startSubmit] = useTransition();
   const formRef = useRef<HTMLFormElement>(null);
@@ -149,7 +159,7 @@ function AddNoteForm({ action }: { action: NoteAction }) {
 
   return (
     <form ref={formRef} onSubmit={submit} className="grid gap-4">
-      <NoteFields idPrefix="add-note" />
+      <NoteFields idPrefix="add-note" shareable={shareable} />
       <Message state={state} />
       <div className="flex flex-wrap items-center gap-3">
         <Button type="submit" disabled={pending}>
@@ -171,9 +181,11 @@ function AddNoteForm({ action }: { action: NoteAction }) {
 function ManageNoteForm({
   note,
   onSaved,
+  shareable,
 }: {
   note: NoteItem;
   onSaved: (open: boolean) => void;
+  shareable: boolean;
 }) {
   const [editState, editAction, editing] = useActionState(
     note.editAction as NoteAction,
@@ -203,6 +215,7 @@ function ManageNoteForm({
       <form onSubmit={submitEdit} className="grid gap-4">
         <NoteFields
           idPrefix={`edit-${note.id}`}
+          shareable={shareable}
           defaults={{
             body: note.body,
             occurredAt: note.occurredAt,
@@ -247,7 +260,7 @@ function ManageNoteForm({
                 name="reason"
                 required
                 maxLength={500}
-                placeholder="For example Added to the wrong contact"
+                placeholder="For example Added to the wrong record"
               />
             </div>
             <Message state={voidState} />
@@ -279,7 +292,13 @@ function ManageNoteForm({
   );
 }
 
-function ManageNoteDialog({ note }: { note: NoteItem }) {
+function ManageNoteDialog({
+  note,
+  shareable,
+}: {
+  note: NoteItem;
+  shareable: boolean;
+}) {
   const [open, setOpen] = useState(false);
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -296,7 +315,9 @@ function ManageNoteDialog({ note }: { note: NoteItem }) {
             The original wording is kept in the note&apos;s history.
           </DialogDescription>
         </DialogHeader>
-        {open && <ManageNoteForm note={note} onSaved={setOpen} />}
+        {open && (
+          <ManageNoteForm note={note} onSaved={setOpen} shareable={shareable} />
+        )}
       </DialogContent>
     </Dialog>
   );
@@ -309,6 +330,7 @@ export function ContactNotes({
   notes,
   showVoided,
   toggleHref,
+  shareable = true,
 }: {
   addAction: NoteAction;
   canAdd: boolean;
@@ -316,10 +338,12 @@ export function ContactNotes({
   notes: readonly NoteItem[];
   showVoided: boolean;
   toggleHref: string;
+  /** Contact notes belong to a branch and can be shared; property notes cannot. */
+  shareable?: boolean;
 }) {
   return (
     <div className="grid grid-cols-[minmax(0,1fr)] gap-6">
-      {canAdd && <AddNoteForm action={addAction} />}
+      {canAdd && <AddNoteForm action={addAction} shareable={shareable} />}
       {canSeeVoided && (
         <Link
           href={toggleHref}
@@ -343,15 +367,17 @@ export function ContactNotes({
                 <time suppressHydrationWarning dateTime={note.occurredAt}>
                   {formatWhen(note.occurredAt)}
                 </time>
-                <span className="inline-flex items-center gap-1">
-                  <GitBranch className="size-3" aria-hidden="true" />
-                  {note.agencyWide ? "All branches" : note.branchName}
-                </span>
+                {shareable && (
+                  <span className="inline-flex items-center gap-1">
+                    <GitBranch className="size-3" aria-hidden="true" />
+                    {note.agencyWide ? "All branches" : note.branchName}
+                  </span>
+                )}
                 {note.edited && <Badge variant="secondary">Edited</Badge>}
                 {note.voided && <Badge variant="secondary">Voided</Badge>}
                 {note.canManage && note.editAction && note.voidAction && (
                   <span className="ml-auto">
-                    <ManageNoteDialog note={note} />
+                    <ManageNoteDialog note={note} shareable={shareable} />
                   </span>
                 )}
               </div>

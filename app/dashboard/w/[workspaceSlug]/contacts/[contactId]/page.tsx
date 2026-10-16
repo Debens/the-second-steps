@@ -5,6 +5,7 @@ import {
   Building2,
   GitBranch,
   Hash,
+  Home,
   Mail,
   MapPin,
   MessageCircle,
@@ -31,6 +32,7 @@ import { getWorkspaceAccessContext } from "@/core/access/application/access-cont
 import { requireMfaUser } from "@/core/auth/mfa";
 import { listContactNotes } from "@/core/contacts/application/contact-notes";
 import { getContact } from "@/core/contacts/application/contacts";
+import { listPropertiesForContact } from "@/core/properties/application/properties";
 import { getWorkspaceBranches } from "@/core/workspace/application/workspace-branches";
 import {
   addContactNoteAction,
@@ -91,7 +93,7 @@ export default async function ContactPage({
   const user = await requireMfaUser(path, { workspaceSlug });
   const query = await searchParams;
   const showVoided = query.voided === "1";
-  const [contact, context, branches, notes] = await Promise.all([
+  const [contact, context, branches, notes, properties] = await Promise.all([
     getContact({ authSubject: user.id, workspaceSlug, contactId }),
     getWorkspaceAccessContext(user.id, workspaceSlug),
     getWorkspaceBranches(user.id, workspaceSlug),
@@ -100,6 +102,11 @@ export default async function ContactPage({
       workspaceSlug,
       contactId,
       includeVoided: showVoided,
+    }),
+    listPropertiesForContact({
+      authSubject: user.id,
+      workspaceSlug,
+      contactId,
     }),
   ]);
   if (!context || !branches) redirect("/access-denied");
@@ -420,6 +427,49 @@ export default async function ContactPage({
                 <p className="text-sm text-muted-foreground">
                   Not linked to any organisation. Link people from the
                   organisation&apos;s record.
+                </p>
+              )}
+            </section>
+          )}
+          {context.permissions.has("property.read") && (
+            <section className="grid gap-4">
+              <h2 className="text-base font-semibold">Properties</h2>
+              {properties.length ? (
+                <ul className="grid divide-y">
+                  {properties.map((owned) => (
+                    <li
+                      key={owned.ownershipId}
+                      className="flex items-center gap-3 py-3 first:pt-0 last:pb-0"
+                    >
+                      <Home
+                        className="size-4 shrink-0 text-muted-foreground"
+                        aria-hidden="true"
+                      />
+                      <div className="min-w-0">
+                        <Link
+                          href={`/dashboard/w/${workspaceSlug}/properties/${owned.propertyId}`}
+                          className="text-sm font-medium underline-offset-4 hover:underline"
+                        >
+                          {owned.addressLine}
+                        </Link>
+                        <p className="text-xs text-muted-foreground">
+                          {[
+                            owned.postcode,
+                            owned.reference,
+                            owned.current
+                              ? owned.isLead
+                                ? "Current owner · Lead landlord"
+                                : "Current owner"
+                              : "Former owner",
+                          ].join(" · ")}
+                        </p>
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  Not recorded as the owner of any property you can see.
                 </p>
               )}
             </section>
