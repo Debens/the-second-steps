@@ -14,6 +14,7 @@ import {
   Settings,
   Users,
 } from "lucide-react";
+import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -655,6 +656,26 @@ function ThemeShowcase({
 export function DesignLab() {
   return (
     <main id="design-lab-top" className={styles.lab}>
+      <nav
+        aria-label="Design lab pages"
+        className="flex flex-wrap gap-x-5 gap-y-1 pb-4 text-sm font-medium"
+      >
+        <Link href="/dashboard" className="text-primary hover:underline">
+          Back to the app
+        </Link>
+        <Link
+          href="/design-lab/dashboards"
+          className="text-primary hover:underline"
+        >
+          Dashboard options
+        </Link>
+        <Link
+          href="/design-lab/contact"
+          className="text-primary hover:underline"
+        >
+          Contact page options
+        </Link>
+      </nav>
       <header className={styles.labHeader}>
         <div>
           <Badge variant="info">Internal proof of concept</Badge>

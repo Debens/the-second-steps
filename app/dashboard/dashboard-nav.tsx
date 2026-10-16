@@ -5,8 +5,11 @@ import {
   ContactRound,
   Home,
   Inbox,
+  LayoutDashboard,
   Menu,
+  Palette,
   Settings,
+  UserSquare,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -21,6 +24,24 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+
+/* Temporary: links to the internal design lab so mock-ups can be reached from
+   a normal sign-in. The lab pages return 404 in production, so this section is
+   hidden there too. Remove it when the lab is no longer needed. */
+const SHOW_DESIGN_LAB = process.env.NODE_ENV !== "production";
+const DESIGN_LAB_ITEMS = [
+  { label: "Design lab home", icon: Palette, href: "/design-lab" },
+  {
+    label: "Dashboard options",
+    icon: LayoutDashboard,
+    href: "/design-lab/dashboards",
+  },
+  {
+    label: "Contact page options",
+    icon: UserSquare,
+    href: "/design-lab/contact",
+  },
+];
 
 function NavigationItems({
   onNavigate,
@@ -40,29 +61,49 @@ function NavigationItems({
   ];
 
   return (
-    <nav aria-label="Main navigation" className="grid gap-1">
-      {items.map(({ href, icon: Icon, label }) => {
-        const active =
-          pathname === href ||
-          (href !== base && pathname.startsWith(`${href}/`));
-        return (
-          <Link
-            key={label}
-            href={href}
-            aria-current={active ? "page" : undefined}
-            onClick={onNavigate}
-            className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
-              active
-                ? "bg-sidebar-accent text-sidebar-accent-foreground"
-                : "text-sidebar-muted-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground"
-            }`}
-          >
-            <Icon aria-hidden="true" className="size-4" />
-            <span>{label}</span>
-          </Link>
-        );
-      })}
-    </nav>
+    <>
+      <nav aria-label="Main navigation" className="grid gap-1">
+        {items.map(({ href, icon: Icon, label }) => {
+          const active =
+            pathname === href ||
+            (href !== base && pathname.startsWith(`${href}/`));
+          return (
+            <Link
+              key={label}
+              href={href}
+              aria-current={active ? "page" : undefined}
+              onClick={onNavigate}
+              className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-colors ${
+                active
+                  ? "bg-sidebar-accent text-sidebar-accent-foreground"
+                  : "text-sidebar-muted-foreground hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground"
+              }`}
+            >
+              <Icon aria-hidden="true" className="size-4" />
+              <span>{label}</span>
+            </Link>
+          );
+        })}
+      </nav>
+      {SHOW_DESIGN_LAB && (
+        <nav aria-label="Design lab (temporary)" className="mt-8 grid gap-1">
+          <p className="px-3 pb-1 text-xs font-medium tracking-wide text-sidebar-muted-foreground uppercase">
+            Design lab · temporary
+          </p>
+          {DESIGN_LAB_ITEMS.map(({ href, icon: Icon, label }) => (
+            <Link
+              key={href}
+              href={href}
+              onClick={onNavigate}
+              className="flex items-center gap-3 rounded-xl px-3 py-2 text-sm text-sidebar-muted-foreground transition-colors hover:bg-sidebar-accent/60 hover:text-sidebar-accent-foreground"
+            >
+              <Icon aria-hidden="true" className="size-4" />
+              <span>{label}</span>
+            </Link>
+          ))}
+        </nav>
+      )}
+    </>
   );
 }
 

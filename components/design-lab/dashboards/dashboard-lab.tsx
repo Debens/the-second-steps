@@ -1,6 +1,7 @@
 "use client";
 
 import { Plus } from "lucide-react";
+import Link from "next/link";
 import { useState, type ReactNode } from "react";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { Badge } from "@/components/ui/badge";
@@ -144,6 +145,12 @@ export function DashboardLab() {
               light and dark, and a narrow window for mobile.
             </p>
           </div>
+          <Link
+            href="/dashboard"
+            className="text-sm font-medium text-primary underline-offset-4 hover:underline"
+          >
+            Back to the app
+          </Link>
           <ThemeToggle />
         </div>
         <nav
