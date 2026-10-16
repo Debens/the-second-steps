@@ -7,6 +7,10 @@
 -- Owner decisions (2026-10-16): every role except Read Only may add actions
 -- and change any action in a branch they can see; an action is visible to its
 -- assignee and creator, and to anyone whose branch scope includes its branch.
+-- After the independent review: someone outside the action's branch (an
+-- assignee who has lost access) may only finish, cancel or hand it over; a
+-- creator outside the branch can see it but not change it; whoever last
+-- handed an action over keeps seeing it.
 
 CREATE TYPE "action_kind" AS ENUM ('call', 'email', 'send', 'chase', 'other');
 CREATE TYPE "action_status" AS ENUM ('open', 'done', 'cancelled');
@@ -25,6 +29,8 @@ CREATE TABLE "actions" (
   "status" "action_status" NOT NULL DEFAULT 'open',
   "closed_at" timestamptz(6),
   "closed_by_membership_id" uuid,
+  -- Set by the database to whoever last changed the assignee.
+  "handed_over_by_membership_id" uuid,
   "created_by_membership_id" uuid NOT NULL,
   "created_at" timestamptz(6) NOT NULL DEFAULT CURRENT_TIMESTAMP,
   "updated_at" timestamptz(6) NOT NULL,
@@ -51,6 +57,10 @@ CREATE TABLE "actions" (
     ON DELETE RESTRICT ON UPDATE CASCADE,
   CONSTRAINT "actions_closed_by_fkey"
     FOREIGN KEY ("workspace_id", "closed_by_membership_id")
+    REFERENCES "memberships"("workspace_id", "id")
+    ON DELETE RESTRICT ON UPDATE CASCADE,
+  CONSTRAINT "actions_handed_over_by_fkey"
+    FOREIGN KEY ("workspace_id", "handed_over_by_membership_id")
     REFERENCES "memberships"("workspace_id", "id")
     ON DELETE RESTRICT ON UPDATE CASCADE,
   CONSTRAINT "actions_created_by_fkey"
@@ -81,6 +91,8 @@ CREATE INDEX "actions_contact_idx"
 ON "actions"("workspace_id", "contact_id");
 CREATE INDEX "actions_property_idx"
 ON "actions"("workspace_id", "property_id");
+CREATE INDEX "actions_handed_over_by_idx"
+ON "actions"("workspace_id", "handed_over_by_membership_id");
 CREATE INDEX "actions_closed_by_idx"
 ON "actions"("workspace_id", "closed_by_membership_id");
 
@@ -155,6 +167,37 @@ BEGIN
       RAISE EXCEPTION 'a linked action contact or property cannot be replaced'
         USING ERRCODE = '23514';
     END IF;
+    -- Outside the action's branch (an assignee who has lost access), the only
+    -- changes allowed are finishing, cancelling and handing it over.
+    IF NOT (
+      current_setting('app.membership_scope_mode', true) = 'workspace'
+      OR OLD."responsible_branch_id" = ANY(
+        COALESCE(
+          NULLIF(current_setting('app.allowed_branch_ids', true), '')::uuid[],
+          ARRAY[]::uuid[]
+        )
+      )
+    ) AND (
+      NEW."title" IS DISTINCT FROM OLD."title"
+      OR NEW."kind" IS DISTINCT FROM OLD."kind"
+      OR NEW."due_on" IS DISTINCT FROM OLD."due_on"
+      OR NEW."planned_for" IS DISTINCT FROM OLD."planned_for"
+      OR NEW."contact_id" IS DISTINCT FROM OLD."contact_id"
+      OR NEW."property_id" IS DISTINCT FROM OLD."property_id"
+    ) THEN
+      RAISE EXCEPTION 'outside its branch an action can only be finished or handed over'
+        USING ERRCODE = '23514';
+    END IF;
+  END IF;
+
+  -- Who handed it over always comes from the database.
+  IF is_new THEN
+    NEW."handed_over_by_membership_id" := NULL;
+  ELSIF NEW."assigned_membership_id" <> OLD."assigned_membership_id" THEN
+    NEW."handed_over_by_membership_id" :=
+      NULLIF(current_setting('app.membership_id', true), '')::uuid;
+  ELSE
+    NEW."handed_over_by_membership_id" := OLD."handed_over_by_membership_id";
   END IF;
 
   IF (is_new OR NEW."assigned_membership_id" <> OLD."assigned_membership_id")
@@ -205,8 +248,8 @@ FOR EACH ROW EXECUTE FUNCTION "public"."enforce_action_rules"();
 ALTER TABLE "actions" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "actions" FORCE ROW LEVEL SECURITY;
 
--- Visible to its assignee and creator, and to anyone whose branch scope
--- includes the action's branch.
+-- Visible to its assignee, its creator and whoever last handed it over, and
+-- to anyone whose branch scope includes the action's branch.
 CREATE POLICY "action_select_in_scope" ON "actions"
 FOR SELECT USING (
   "workspace_id" = NULLIF(current_setting('app.workspace_id', true), '')::uuid
@@ -214,6 +257,8 @@ FOR SELECT USING (
     "assigned_membership_id" =
       NULLIF(current_setting('app.membership_id', true), '')::uuid
     OR "created_by_membership_id" =
+      NULLIF(current_setting('app.membership_id', true), '')::uuid
+    OR "handed_over_by_membership_id" =
       NULLIF(current_setting('app.membership_id', true), '')::uuid
     OR current_setting('app.membership_scope_mode', true) = 'workspace'
     OR "responsible_branch_id" = ANY(
@@ -239,15 +284,15 @@ FOR INSERT WITH CHECK (
   )
 );
 
--- Any visible action may be changed by an active member who is not Read
--- Only; closing records the actor who closed it.
+-- An action in the actor's branch scope, or assigned to the actor, may be
+-- changed by an active member who is not Read Only (outside the branch it
+-- can only be finished or handed over: see enforce_action_rules). A creator
+-- outside the branch can see it but not change it. Closing records the actor.
 CREATE POLICY "action_update_in_scope" ON "actions"
 FOR UPDATE USING (
   "workspace_id" = NULLIF(current_setting('app.workspace_id', true), '')::uuid
   AND (
     "assigned_membership_id" =
-      NULLIF(current_setting('app.membership_id', true), '')::uuid
-    OR "created_by_membership_id" =
       NULLIF(current_setting('app.membership_id', true), '')::uuid
     OR current_setting('app.membership_scope_mode', true) = 'workspace'
     OR "responsible_branch_id" = ANY(

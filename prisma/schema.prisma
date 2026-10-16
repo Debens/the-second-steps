@@ -469,6 +469,7 @@ model Membership {
   actionsAssigned           Action[]                 @relation("ActionAssigned")
   actionsClosed             Action[]                 @relation("ActionClosedBy")
   actionsCreated            Action[]                 @relation("ActionCreatedBy")
+  actionsHandedOver         Action[]                 @relation("ActionHandedOverBy")
 
   @@unique([workspaceId, userIdentityId])
   @@unique([workspaceId, id])
@@ -1090,30 +1091,33 @@ model EnquiryTask {
 // A general action (to-do) not tied to a landlord lead. Lead next actions stay
 // in enquiry_tasks; the dashboard shows both in one list.
 model Action {
-  id                    String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  workspaceId           String       @map("workspace_id") @db.Uuid
-  responsibleBranchId   String       @map("responsible_branch_id") @db.Uuid
-  title                 String       @db.VarChar(200)
-  kind                  ActionKind   @default(OTHER)
-  dueOn                 DateTime     @map("due_on") @db.Date
-  plannedFor            DateTime?    @map("planned_for") @db.Timestamptz(6)
-  assignedMembershipId  String       @map("assigned_membership_id") @db.Uuid
-  contactId             String?      @map("contact_id") @db.Uuid
-  propertyId            String?      @map("property_id") @db.Uuid
-  status                ActionStatus @default(OPEN)
+  id                       String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  workspaceId              String       @map("workspace_id") @db.Uuid
+  responsibleBranchId      String       @map("responsible_branch_id") @db.Uuid
+  title                    String       @db.VarChar(200)
+  kind                     ActionKind   @default(OTHER)
+  dueOn                    DateTime     @map("due_on") @db.Date
+  plannedFor               DateTime?    @map("planned_for") @db.Timestamptz(6)
+  assignedMembershipId     String       @map("assigned_membership_id") @db.Uuid
+  contactId                String?      @map("contact_id") @db.Uuid
+  propertyId               String?      @map("property_id") @db.Uuid
+  status                   ActionStatus @default(OPEN)
   // Set by a database trigger when the action is closed.
-  closedAt              DateTime?    @map("closed_at") @db.Timestamptz(6)
-  closedByMembershipId  String?      @map("closed_by_membership_id") @db.Uuid
-  createdByMembershipId String       @map("created_by_membership_id") @db.Uuid
-  createdAt             DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
-  updatedAt             DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
-  workspace             Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
-  responsibleBranch     Branch       @relation(fields: [workspaceId, responsibleBranchId], references: [workspaceId, id], onDelete: Restrict)
-  assignedMembership    Membership   @relation("ActionAssigned", fields: [workspaceId, assignedMembershipId], references: [workspaceId, id], onDelete: Restrict)
-  contact               Contact?     @relation(fields: [workspaceId, contactId], references: [workspaceId, id], onDelete: Restrict)
-  property              Property?    @relation(fields: [workspaceId, propertyId], references: [workspaceId, id], onDelete: Restrict)
-  closedByMembership    Membership?  @relation("ActionClosedBy", fields: [workspaceId, closedByMembershipId], references: [workspaceId, id], onDelete: Restrict)
-  createdByMembership   Membership   @relation("ActionCreatedBy", fields: [workspaceId, createdByMembershipId], references: [workspaceId, id], onDelete: Restrict)
+  closedAt                 DateTime?    @map("closed_at") @db.Timestamptz(6)
+  closedByMembershipId     String?      @map("closed_by_membership_id") @db.Uuid
+  // Set by a database trigger to whoever last changed the assignee.
+  handedOverByMembershipId String?      @map("handed_over_by_membership_id") @db.Uuid
+  createdByMembershipId    String       @map("created_by_membership_id") @db.Uuid
+  createdAt                DateTime     @default(now()) @map("created_at") @db.Timestamptz(6)
+  updatedAt                DateTime     @updatedAt @map("updated_at") @db.Timestamptz(6)
+  workspace                Workspace    @relation(fields: [workspaceId], references: [id], onDelete: Restrict)
+  responsibleBranch        Branch       @relation(fields: [workspaceId, responsibleBranchId], references: [workspaceId, id], onDelete: Restrict)
+  assignedMembership       Membership   @relation("ActionAssigned", fields: [workspaceId, assignedMembershipId], references: [workspaceId, id], onDelete: Restrict)
+  contact                  Contact?     @relation(fields: [workspaceId, contactId], references: [workspaceId, id], onDelete: Restrict)
+  property                 Property?    @relation(fields: [workspaceId, propertyId], references: [workspaceId, id], onDelete: Restrict)
+  closedByMembership       Membership?  @relation("ActionClosedBy", fields: [workspaceId, closedByMembershipId], references: [workspaceId, id], onDelete: Restrict)
+  handedOverByMembership   Membership?  @relation("ActionHandedOverBy", fields: [workspaceId, handedOverByMembershipId], references: [workspaceId, id], onDelete: Restrict)
+  createdByMembership      Membership   @relation("ActionCreatedBy", fields: [workspaceId, createdByMembershipId], references: [workspaceId, id], onDelete: Restrict)
 
   @@unique([workspaceId, id])
   @@index([workspaceId, assignedMembershipId, status, dueOn], map: "actions_assigned_idx")
@@ -1121,6 +1125,7 @@ model Action {
   @@index([workspaceId, createdByMembershipId], map: "actions_creator_idx")
   @@index([workspaceId, contactId], map: "actions_contact_idx")
   @@index([workspaceId, propertyId], map: "actions_property_idx")
+  @@index([workspaceId, handedOverByMembershipId], map: "actions_handed_over_by_idx")
   @@index([workspaceId, closedByMembershipId], map: "actions_closed_by_idx")
   @@map("actions")
 }

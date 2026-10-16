@@ -697,3 +697,206 @@ describe("general action database security", () => {
     });
   });
 });
+
+describe("general action review follow-ups", () => {
+  const outOfBranch = (actor: Actor): Actor => ({ ...actor, branchIds: [] });
+
+  it("lets a creator outside the branch see but not change someone else's action", async () => {
+    await asActor(outOfBranch(actors.managerA12), async (client) => {
+      expect(await visible(client)).toEqual([ids.actionA2]);
+      for (const change of [
+        `"title" = 'Changed'`,
+        `"status" = 'cancelled', "closed_at" = CURRENT_TIMESTAMP,
+          "closed_by_membership_id" = '${ids.managerA12}'`,
+        `"assigned_membership_id" = '${ids.ownerA}'`,
+      ]) {
+        const result = await client.query(
+          `UPDATE "actions" SET ${change} WHERE "id" = $1::uuid`,
+          [ids.actionA2],
+        );
+        expect(result.rowCount, change).toBe(0);
+      }
+    });
+  });
+
+  it("lets an assignee outside the branch only finish or hand over", async () => {
+    await asActor(outOfBranch(actors.negotiatorA2), async (client) => {
+      for (const change of [
+        `"title" = 'Changed'`,
+        `"due_on" = '2026-11-01'`,
+        `"planned_for" = '2026-10-16T09:00:00Z'`,
+        `"contact_id" = '${ids.personA2}'`,
+      ]) {
+        await refused(client, "23514", () =>
+          client.query(`UPDATE "actions" SET ${change} WHERE "id" = $1::uuid`, [
+            ids.actionA2,
+          ]),
+        );
+      }
+      const finished = await client.query(
+        `UPDATE "actions" SET "status" = 'done',
+           "closed_by_membership_id" = $2::uuid WHERE "id" = $1::uuid`,
+        [ids.actionA2, ids.negotiatorA2],
+      );
+      expect(finished.rowCount).toBe(1);
+    });
+    // Handing over, the way Prisma does it (with RETURNING), keeps the action
+    // visible to the person who handed it over, who can no longer change it.
+    await asActor(outOfBranch(actors.negotiatorA2), async (client) => {
+      const handed = await client.query<{
+        handed_over_by_membership_id: string;
+      }>(
+        `UPDATE "actions" SET "assigned_membership_id" = $2::uuid
+         WHERE "id" = $1::uuid RETURNING "handed_over_by_membership_id"`,
+        [ids.actionA2, ids.managerA12],
+      );
+      expect(handed.rows[0].handed_over_by_membership_id).toBe(
+        ids.negotiatorA2,
+      );
+      expect(await visible(client)).toEqual([ids.actionA2]);
+      const after = await client.query(
+        `UPDATE "actions" SET "status" = 'done',
+           "closed_by_membership_id" = $2::uuid WHERE "id" = $1::uuid`,
+        [ids.actionA2, ids.negotiatorA2],
+      );
+      expect(after.rowCount).toBe(0);
+    });
+  });
+
+  it("never lets the hand-over record be written directly", async () => {
+    await asActor(actors.managerA12, async (client) => {
+      const result = await client.query<{
+        handed_over_by_membership_id: string | null;
+      }>(
+        `UPDATE "actions" SET "handed_over_by_membership_id" = $2::uuid
+         WHERE "id" = $1::uuid RETURNING "handed_over_by_membership_id"`,
+        [ids.actionA1, ids.ownerA],
+      );
+      expect(result.rows[0].handed_over_by_membership_id).toBeNull();
+    });
+  });
+
+  it("refuses writes by suspended and Read Only members", async () => {
+    const suspended: Actor = {
+      workspaceId: ids.workspaceA,
+      membershipId: ids.suspendedA1,
+      scope: "named_branches",
+      branchIds: [ids.branchA1],
+    };
+    await asActor(suspended, async (client) => {
+      await refused(client, "42501", () =>
+        insertAction(client, suspended, { assignee: ids.managerA1 }),
+      );
+      await refused(client, "42501", () =>
+        client.query(
+          `UPDATE "actions" SET "due_on" = '2026-11-01' WHERE "id" = $1::uuid`,
+          [ids.actionA1],
+        ),
+      );
+    });
+    await asActor(actors.readOnlyA1, async (client) => {
+      await refused(client, "42501", () =>
+        client.query(
+          `UPDATE "actions" SET "status" = 'cancelled',
+             "closed_by_membership_id" = $2::uuid WHERE "id" = $1::uuid`,
+          [ids.actionA1, ids.readOnlyA1],
+        ),
+      );
+    });
+  });
+
+  it("never swaps or clears a linked contact or property, and checks links added later", async () => {
+    await asActor(actors.managerA1, async (client) => {
+      const linked = await insertAction(client, actors.managerA1, {
+        contactId: ids.personA1,
+        propertyId: ids.propertyA1,
+      });
+      const actionId = linked.rows[0].id;
+      for (const change of [
+        `"contact_id" = '${ids.archivedA1}'`,
+        `"property_id" = '${ids.propertyA2}'`,
+        `"property_id" = NULL`,
+      ]) {
+        await refused(client, "23514", () =>
+          client.query(`UPDATE "actions" SET ${change} WHERE "id" = $1::uuid`, [
+            actionId,
+          ]),
+        );
+      }
+      await refused(client, "42501", () =>
+        client.query(
+          `UPDATE "actions" SET "contact_id" = $2::uuid WHERE "id" = $1::uuid`,
+          [ids.actionA1, ids.archivedA1],
+        ),
+      );
+      const property = await client.query(
+        `UPDATE "actions" SET "property_id" = $2::uuid WHERE "id" = $1::uuid`,
+        [ids.actionA1, ids.propertyA1],
+      );
+      expect(property.rowCount).toBe(1);
+    });
+  });
+
+  it("keeps id and workspace fixed and needs the closer on every closed action", async () => {
+    await asActor(actors.managerA1, async (client) => {
+      await refused(client, ["23514", "23503"], () =>
+        client.query(
+          `UPDATE "actions" SET "id" = gen_random_uuid() WHERE "id" = $1::uuid`,
+          [ids.actionA1],
+        ),
+      );
+      await refused(client, ["23514", "23503", "42501"], () =>
+        client.query(
+          `UPDATE "actions" SET "workspace_id" = $2::uuid WHERE "id" = $1::uuid`,
+          [ids.actionA1, ids.workspaceB],
+        ),
+      );
+      await refused(client, "23514", () =>
+        client.query(
+          `UPDATE "actions" SET "status" = 'done' WHERE "id" = $1::uuid`,
+          [ids.actionA1],
+        ),
+      );
+      const cancelled = await client.query(
+        `UPDATE "actions" SET "status" = 'cancelled',
+           "closed_by_membership_id" = $2::uuid WHERE "id" = $1::uuid`,
+        [ids.actionA1, ids.managerA1],
+      );
+      expect(cancelled.rowCount).toBe(1);
+    });
+  });
+
+  it("applies the assignee rule to agency-wide staff too", async () => {
+    await asActor(actors.ownerA, async (client) => {
+      await refused(client, "23514", () =>
+        insertAction(client, actors.ownerA, {
+          branchId: ids.branchA2,
+          assignee: ids.managerA1,
+        }),
+      );
+      const ok = await insertAction(client, actors.ownerA, {
+        branchId: ids.branchA2,
+        assignee: ids.ownerA,
+      });
+      expect(ok.rows).toHaveLength(1);
+    });
+  });
+
+  it("refuses to plan a closed lead next action", async () => {
+    await asActor(actors.managerA1, async (client) => {
+      await client.query(
+        `UPDATE "enquiry_tasks" SET "status" = 'done',
+           "closed_at" = CURRENT_TIMESTAMP,
+           "closed_by_membership_id" = $2::uuid WHERE "id" = $1::uuid`,
+        [ids.taskA1, ids.managerA1],
+      );
+      await refused(client, "23514", () =>
+        client.query(
+          `UPDATE "enquiry_tasks" SET "planned_for" = '2026-10-16T09:00:00Z'
+           WHERE "id" = $1::uuid`,
+          [ids.taskA1],
+        ),
+      );
+    });
+  });
+});

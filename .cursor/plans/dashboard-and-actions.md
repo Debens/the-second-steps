@@ -2,6 +2,16 @@
 
 **Status:** Proposal, approved in direction by the owner on 2026-10-16 (layout G from the design lab; general actions). No implementation has started. The design-lab mock-up is `/design-lab/dashboards`, option G, with notes in `.cursor/plans/dashboards.md`.
 
+## Progress
+
+- **D1 (2026-10-16):** migration `20261016200000_general_actions` (the `actions` table, its row-level security and rules, and `planned_for` on `enquiry_tasks`), the Prisma model, the `action.read` and `action.manage` permissions, and `tests/integration/action-security.test.ts` (14 database tests; the whole disposable suite passes, 172 tests). Schema and migration match apart from the known name-only differences. **Not applied to shared Supabase.**
+- **Independent review of D1 (2026-10-16, separate Opus agent):** no cross-agency or cross-branch leak; Read Only, suspended members, closing, immutability, link checks and grants held. Fixed before any shared application:
+  - a creator who had lost access to the action's branch could still edit, cancel or hand over someone else's action; the update rule no longer grants the creator anything (they can still see it);
+  - owner decision (2026-10-16): an assignee who has lost access to the branch may only **finish, cancel or hand over** their action (the database refuses other changes);
+  - handing an action over left it invisible to the person who did it, so the database refused the hand-over; whoever last handed it over is now recorded by the database (`handed_over_by_membership_id`) and keeps seeing it.
+  - 8 more database tests cover these and the review's other gaps (suspended and Read Only writes, link swaps and later links, fixed id and workspace, the cancelled path, agency-wide assignment, planning a closed lead next action, hand-over with RETURNING). A test proven to fail with the old rule; the disposable suite passes (180 tests).
+  - Accepted as in earlier chunks: the assignee check takes no lock, so a membership suspended at the same instant could slip through once; and a refused insert may report the assignee rule rather than the creator rule (the service must not rely on the code).
+
 ## Outcome
 
 Replace today's read-only Overview with the tabbed dashboard the owner chose: **Overview, Pipeline, Schedule and Team tabs** and an **Actions list always visible on the right**, in due order with the most overdue first. Staff add, finish, snooze, hand over and plan actions without leaving the page. **Add action** opens a pop-up. The page is built for later modules, but it shows only real data: nothing invented, and no placeholder tiles for modules that do not exist.
@@ -18,7 +28,7 @@ Replace today's read-only Overview with the tabbed dashboard the owner chose: **
 ### Two tables, one list
 
 - **Landlord-lead next actions stay in `enquiry_tasks`.** They carry reviewed lead rules (a lead needs an open next action; closing a lead closes its tasks), and migrating them is risky because the migration role cannot see rows under forced row-level security.
-- **General actions go in a new `actions` table:** title, type (call, email, send, chase, other), due date, optional planned start time, assignee (required), status (open, done, cancelled) with who and when it was closed, responsible branch (required, as for leads), and optional links to a lead, contact and property (same-workspace composite foreign keys, links checked when first made, never swapped).
+- **General actions go in a new `actions` table** (no lead link: an action about a lead is a lead next action in `enquiry_tasks`, as below): title, type (call, email, send, chase, other), due date, optional planned start time, assignee (required), status (open, done, cancelled) with who and when it was closed, responsible branch (required, as for leads), and optional links to a lead, contact and property (same-workspace composite foreign keys, links checked when first made, never swapped).
 - **The Add action pop-up chooses the table for the user.** If a lead is picked, it adds a lead next action (so the lead rule holds). Otherwise it creates a general action, optionally linked to a contact or property. The user sees one list.
 - A thin **work-item service** merges both sources into one due-ordered list and exposes the same operations on either: add, complete (optionally setting the next step in one go), snooze (change the due date), hand over (reassign), plan into an hour (a planned start time, which needs one new column on `enquiry_tasks`), and cancel. Later modules either add their own source to the merge or use general actions with links; this is the shared work-item model the roadmap calls SHARED-01.
 
@@ -48,6 +58,7 @@ Replace today's read-only Overview with the tabbed dashboard the owner chose: **
 
 - **Add and finish own actions:** every role except Read Only (Account Owner, Agency Admin, Branch Manager, Negotiator, Property Manager, Accounts). Read Only can view actions in its scope.
 - **Change someone else's action** (hand over, edit, finish or cancel): anyone who can add actions, for actions in a branch they can see. The new assignee must still be active, able to add actions and able to see the action's branch.
+- **Lost branch access:** an assignee may still finish, cancel or hand over their own actions there, nothing else; a creator can still see actions they created there but not change them; whoever last handed an action over keeps seeing it.
 - **Who sees an action:** its assignee and its creator always, plus anyone whose branch scope includes the action's responsible branch (workspace-wide staff see all).
 - **Team tab:** roles that work landlord leads (Account Owner, Agency Admin, Branch Manager, Negotiator, Property Manager), for colleagues in their branches.
 - **Recent activity:** everyone, limited to records they can see.
