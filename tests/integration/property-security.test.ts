@@ -608,6 +608,50 @@ describe("property database security", () => {
       });
     });
 
+    it("allows only one transfer record per property per transaction, so history cannot show phantom moves", async () => {
+      await asActor(actors.managerA12, async (client) => {
+        await transfer(client, {
+          from: ids.branchA1,
+          to: ids.branchA2,
+          membershipId: ids.membershipA12,
+        });
+        await moveProperty(client, ids.branchA2);
+        await expect(
+          transfer(client, {
+            from: ids.branchA2,
+            to: ids.branchA1,
+            membershipId: ids.membershipA12,
+          }),
+        ).rejects.toMatchObject({ code: "23505" });
+      });
+    });
+
+    it("cannot be fooled by a temporary table standing in for the transfer history", async () => {
+      await asActor(actors.managerA12, async (client) => {
+        await client.query(
+          `CREATE TEMP TABLE "property_branch_transfers"
+           (LIKE public."property_branch_transfers" INCLUDING DEFAULTS)`,
+        );
+        await client.query(
+          `INSERT INTO pg_temp."property_branch_transfers" (
+            "workspace_id", "property_id", "from_branch_id", "to_branch_id",
+            "reason", "transferred_by_membership_id"
+          ) VALUES ($1::uuid, $2::uuid, $3::uuid, $4::uuid, 'Fake',
+            $5::uuid)`,
+          [
+            ids.workspaceA,
+            ids.propertyA1,
+            ids.branchA1,
+            ids.branchA2,
+            ids.membershipA12,
+          ],
+        );
+        await expect(moveProperty(client, ids.branchA2)).rejects.toMatchObject({
+          code: "23514",
+        });
+      });
+    });
+
     it("rejects a transfer recorded by someone else", async () => {
       await asActor(actors.managerA12, async (client) => {
         await expect(
@@ -806,6 +850,10 @@ describe("property database security", () => {
       // personA2 belongs to branch A2, and also (through ownership) to A1.
       const client = await adminPool.connect();
       try {
+        await client.query("BEGIN");
+        // The ownership count update runs under row security, so the setup
+        // needs a workspace context like any real caller.
+        await setContext(client, actors.ownerAAll);
         await client.query(
           `INSERT INTO "contact_branch_links" (
             "workspace_id", "contact_id", "branch_id", "is_primary",
@@ -814,11 +862,16 @@ describe("property database security", () => {
             CURRENT_TIMESTAMP)`,
           [ids.workspaceA, ids.personA2, ids.branchA1, ids.membershipA1],
         );
-        return await insertOwnership(client, {
+        const ownershipId = await insertOwnership(client, {
           propertyId: ids.propertyA1,
           contactId: ids.personA2,
           membershipId: ids.membershipA1,
         });
+        await client.query("COMMIT");
+        return ownershipId;
+      } catch (error) {
+        await client.query("ROLLBACK");
+        throw error;
       } finally {
         client.release();
       }
@@ -889,6 +942,51 @@ describe("property database security", () => {
           [ids.personA2],
         );
         expect(archived.rowCount).toBe(1);
+      });
+    });
+
+    it("cannot change the ownership count from a temporary trigger function", async () => {
+      await asActor(actors.managerA1, async (client) => {
+        await client.query(`CREATE TEMP TABLE "bump_log" ("x" integer)`);
+        await client.query(
+          `CREATE FUNCTION pg_temp.bump() RETURNS trigger
+           LANGUAGE plpgsql AS $$
+           BEGIN
+             UPDATE public."contacts"
+             SET "current_property_ownership_count" = 7
+             WHERE "id" = '${ids.personA1}'::uuid;
+             RETURN NEW;
+           END $$`,
+        );
+        await client.query(
+          `CREATE TRIGGER "bump_trigger" BEFORE INSERT ON "bump_log"
+           FOR EACH ROW EXECUTE FUNCTION pg_temp.bump()`,
+        );
+        await expect(
+          client.query(`INSERT INTO "bump_log" ("x") VALUES (1)`),
+        ).rejects.toMatchObject({ code: "23514" });
+      });
+    });
+
+    it("cannot hide an ownership from the count with a temporary contacts table", async () => {
+      await asActor(actors.managerA1, async (client) => {
+        await client.query(
+          `CREATE TEMP TABLE "contacts" (LIKE public."contacts")`,
+        );
+        await insertOwnership(client, {
+          propertyId: ids.propertyA1,
+          contactId: ids.personA1,
+          membershipId: ids.membershipA1,
+        });
+        // The real contact must have been counted, so archiving is refused.
+        await expect(
+          client.query(
+            `UPDATE public."contacts" SET "status" = 'archived',
+              "archived_at" = CURRENT_TIMESTAMP
+             WHERE "id" = $1::uuid`,
+            [ids.personA1],
+          ),
+        ).rejects.toMatchObject({ code: "23514" });
       });
     });
 

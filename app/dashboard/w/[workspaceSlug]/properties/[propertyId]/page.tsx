@@ -29,6 +29,7 @@ import {
   getProperty,
 } from "@/core/properties/application/properties";
 import { listPropertyNotes } from "@/core/properties/application/property-notes";
+import { isUuid } from "@/core/properties/domain/ids";
 import { PROPERTY_FEATURE_GROUPS } from "@/core/properties/domain/property";
 import {
   FLOOR_AREA_UNIT_LABELS,
@@ -62,6 +63,7 @@ export default async function PropertyPage({
   searchParams: Promise<{ error?: string | string[]; voided?: string }>;
 }) {
   const { workspaceSlug, propertyId } = await params;
+  if (!isUuid(propertyId)) notFound();
   const listPath = `/dashboard/w/${workspaceSlug}/properties`;
   const path = `${listPath}/${propertyId}`;
   const user = await requireMfaUser(path, { workspaceSlug });

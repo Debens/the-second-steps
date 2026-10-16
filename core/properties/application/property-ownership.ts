@@ -12,8 +12,10 @@ import {
   parseOwnershipDate,
   validatePropertyReason,
 } from "@/core/properties/domain/property";
+import { isUuid } from "@/core/properties/domain/ids";
 import {
   PropertyRollback,
+  lockProperty,
   propertyAudit,
   propertyDeny,
   shareContactWithBranch,
@@ -119,11 +121,17 @@ export async function recordOwnerInTransaction(
   return ownership.id;
 }
 
+/**
+ * Reads the property after locking it, so ownership changes and branch
+ * transfers on one property cannot overlap and leave an owner unshared.
+ */
 async function findActiveProperty(
   transaction: PropertyTransaction,
   actor: PropertyActor,
   propertyId: string,
 ) {
+  if (!isUuid(propertyId)) return null;
+  await lockProperty(transaction, actor, propertyId);
   return transaction.property.findFirst({
     where: { id: propertyId, workspaceId: actor.workspaceId },
     select: { id: true, status: true, responsibleBranchId: true },
@@ -185,6 +193,10 @@ export function endPropertyOwnership(
         input.propertyId,
       );
     }
+    if (!isUuid(input.propertyId) || !isUuid(input.ownershipId)) {
+      return { ok: false, error: "ownership_not_found" };
+    }
+    await lockProperty(transaction, actor, input.propertyId);
     const ownership = await transaction.propertyOwnership.findFirst({
       where: {
         id: input.ownershipId,
@@ -333,13 +345,17 @@ export function transferPropertyBranch(
         input.propertyId,
       );
     }
-    // Lock the property so two transfers cannot both start from one branch.
-    await transaction.$queryRaw`
-      SELECT "id" FROM "properties"
-      WHERE "id" = ${input.propertyId}::uuid
-        AND "workspace_id" = ${actor.workspaceId}::uuid
-      FOR UPDATE
-    `;
+    if (!isUuid(input.toBranchId)) {
+      return propertyDeny(
+        transaction,
+        actor,
+        action,
+        "invalid_input",
+        input.propertyId,
+      );
+    }
+    // findActiveProperty locks the property, so two transfers cannot both
+    // start from one branch.
     const property = await findActiveProperty(
       transaction,
       actor,

@@ -18,6 +18,7 @@ import {
 import { getWorkspaceAccessContext } from "@/core/access/application/access-context";
 import { requireMfaUser } from "@/core/auth/mfa";
 import { listProperties } from "@/core/properties/application/properties";
+import { SEARCH_TEXT_MAX, isUuid } from "@/core/properties/domain/ids";
 import { PROPERTY_TYPE_LABELS } from "@/core/properties/domain/property-labels";
 import { getWorkspaceBranches } from "@/core/workspace/application/workspace-branches";
 
@@ -36,8 +37,9 @@ export default async function PropertiesPage({
   const path = `/dashboard/w/${workspaceSlug}/properties`;
   const user = await requireMfaUser(path, { workspaceSlug });
   const search = await searchParams;
-  const query = typeof search.q === "string" ? search.q : "";
-  const branchId = typeof search.branch === "string" ? search.branch : "";
+  const query =
+    typeof search.q === "string" ? search.q.slice(0, SEARCH_TEXT_MAX) : "";
+  const branchId = isUuid(search.branch) ? search.branch : "";
   const includeArchived = search.archived === "yes";
   const [properties, context, branches] = await Promise.all([
     listProperties({

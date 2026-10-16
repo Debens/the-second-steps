@@ -91,8 +91,37 @@ export async function withPropertyActor<T extends { ok: true }>(
     if (error instanceof PropertyRollback) {
       return { ok: false, error: error.error };
     }
+    // A race, or a row the user cannot see, can trip a uniqueness or check
+    // rule in the database. The data is still correct; say so politely.
+    if (isConflict(error)) return { ok: false, error: "invalid_state" };
     throw error;
   }
+}
+
+function isConflict(error: unknown) {
+  const code = (error as { code?: unknown } | null)?.code;
+  const text = String((error as { message?: unknown } | null)?.message ?? "");
+  return (
+    code === "P2002" ||
+    /unique constraint|violates check constraint|23505|23514/i.test(text)
+  );
+}
+
+/**
+ * Locks the property row for the rest of the transaction, so ownership
+ * changes and branch transfers on one property run one after the other.
+ */
+export async function lockProperty(
+  transaction: PropertyTransaction,
+  actor: PropertyActor,
+  propertyId: string,
+) {
+  await transaction.$queryRaw`
+    SELECT "id" FROM "properties"
+    WHERE "id" = ${propertyId}::uuid
+      AND "workspace_id" = ${actor.workspaceId}::uuid
+    FOR UPDATE
+  `;
 }
 
 /** Gives a contact a non-primary link to a branch, unless it already has one. */

@@ -41,6 +41,12 @@ import {
   voidPropertyNote,
 } from "@/core/properties/application/property-notes";
 import type { PropertyWriteError } from "@/core/properties/application/property-shared";
+import { SEARCH_TEXT_MAX, isUuid } from "@/core/properties/domain/ids";
+
+// Arguments bound in the page (workspace and record ids) are encrypted by
+// Next.js, but anything the browser sends when it calls an action, such as a
+// form field or an object argument, is untrusted. Read those explicitly and
+// never spread them into a call that carries the signed-in identity.
 
 function text(formData: FormData, name: string) {
   const value = formData.get(name);
@@ -172,12 +178,13 @@ export async function addOwnerAction(
 ): Promise<OwnerChangeState> {
   const path = `/dashboard/w/${workspaceSlug}/properties/${propertyId}`;
   const user = await requireMfaUser(path, { workspaceSlug });
+  if (!isUuid(owner?.contactId)) return ownerFailure("contact_not_found");
   const result = await addPropertyOwner({
     authSubject: user.id,
     workspaceSlug,
     propertyId,
     owner: {
-      contactId: String(owner.contactId),
+      contactId: owner.contactId,
       isLead: owner.isLead === true,
       startedOn: String(owner.startedOn ?? ""),
     },
@@ -220,8 +227,8 @@ export async function endOwnershipAction(
     workspaceSlug,
     propertyId,
     ownershipId,
-    reason: String(input.reason ?? ""),
-    endedOn: String(input.endedOn ?? ""),
+    reason: String(input?.reason ?? ""),
+    endedOn: String(input?.endedOn ?? ""),
   });
   if (!result.ok) return ownerFailure(result.error);
   revalidatePath(path);
@@ -259,7 +266,7 @@ export async function searchOwnerContactsAction(
   const contacts = await listContacts({
     authSubject: user.id,
     workspaceSlug,
-    query,
+    query: String(query ?? "").slice(0, SEARCH_TEXT_MAX),
   });
   return (contacts ?? []).slice(0, 20).map((contact) => ({
     id: contact.id,
@@ -277,10 +284,14 @@ export async function findDuplicatePropertiesAction(
     `/dashboard/w/${workspaceSlug}/properties`,
     { workspaceSlug },
   );
+  // Named fields only: a spread here would let the browser replace the
+  // signed-in identity or workspace.
   return findDuplicateProperties({
     authSubject: user.id,
     workspaceSlug,
-    ...address,
+    building: String(address?.building ?? "").slice(0, 160),
+    street: String(address?.street ?? "").slice(0, 160),
+    postcode: String(address?.postcode ?? "").slice(0, 16),
   });
 }
 
@@ -318,6 +329,15 @@ export async function quickAddOwnerAction(
     `/dashboard/w/${workspaceSlug}/properties`,
     { workspaceSlug },
   );
+  if (
+    !isUuid(branchId) ||
+    (input?.kind !== "person" && input?.kind !== "organisation")
+  ) {
+    return {
+      status: "error",
+      message: "Choose the responsible branch and the type of contact.",
+    };
+  }
   const email = String(input.email ?? "").trim();
   const telephone = String(input.telephone ?? "").trim();
   const points: ContactPointInput[] = [
@@ -480,7 +500,7 @@ function parseOwners(raw: string): OwnerInput[] | null {
     if (!Array.isArray(parsed) || parsed.length > 20) return null;
     return parsed.map((owner) => {
       if (
-        typeof owner?.contactId !== "string" ||
+        !isUuid(owner?.contactId) ||
         typeof owner.isLead !== "boolean" ||
         typeof owner.startedOn !== "string"
       ) {
@@ -543,10 +563,18 @@ export async function createPropertyAction(
     return { status: "error", message: "Choose only one lead landlord." };
   }
 
+  const branchId = text(formData, "branchId");
+  if (!isUuid(branchId)) {
+    return {
+      status: "error",
+      message: "Choose the responsible branch.",
+      fieldErrors: {},
+    };
+  }
   const result = await createProperty({
     authSubject: user.id,
     workspaceSlug,
-    branchId: text(formData, "branchId"),
+    branchId,
     details,
     owners,
   });

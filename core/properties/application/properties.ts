@@ -13,6 +13,7 @@ import {
   PropertyType,
 } from "@/core/db/generated/enums";
 import { resolveContactActor } from "@/core/contacts/application/contact-actor";
+import { SEARCH_TEXT_MAX } from "@/core/properties/domain/ids";
 import {
   buildNormalizedAddressKey,
   classifyAddressDuplicate,
@@ -377,7 +378,7 @@ export async function listProperties(
     take?: number;
   },
 ): Promise<PropertyListItem[]> {
-  const text = input.query?.trim();
+  const text = input.query?.trim().slice(0, SEARCH_TEXT_MAX);
   const postcode = text ? normalizePropertyPostcode(text) : null;
   const result = await withVerifiedIdentity(
     input.authSubject,

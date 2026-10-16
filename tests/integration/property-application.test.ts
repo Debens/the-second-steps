@@ -610,6 +610,58 @@ describe("property application layer", () => {
       ).resolves.toEqual({ ok: false, error: "invalid_state" });
     });
 
+    it("reports a clash politely when the current lead is hidden from the person changing the lead", async () => {
+      const hiddenLead = await createPerson("Hidden");
+      const visible = await createPerson("Visible");
+      const propertyId = await makeProperty({
+        owners: [{ contactId: hiddenLead, isLead: true, startedOn: "" }],
+      });
+      // The lead owner is now only linked to Branch B, so Branch A staff
+      // cannot see them or their ownership.
+      const client = await adminPool.connect();
+      try {
+        await client.query("BEGIN");
+        await client.query(
+          `UPDATE "contact_branch_links"
+           SET "is_primary" = false, "ended_at" = CURRENT_TIMESTAMP,
+             "updated_at" = CURRENT_TIMESTAMP
+           WHERE "contact_id" = $1::uuid`,
+          [hiddenLead],
+        );
+        await client.query(
+          `INSERT INTO "contact_branch_links" (
+            "workspace_id", "contact_id", "branch_id", "is_primary",
+            "created_by_membership_id", "updated_at"
+          ) SELECT $1::uuid, $2::uuid, $3::uuid, true, "id", CURRENT_TIMESTAMP
+            FROM "memberships" WHERE "workspace_id" = $1::uuid LIMIT 1`,
+          [ids.workspace, hiddenLead, ids.branchB],
+        );
+        await client.query("COMMIT");
+      } catch (error) {
+        await client.query("ROLLBACK");
+        throw error;
+      } finally {
+        client.release();
+      }
+
+      // Making someone else lead cannot clear the hidden lead, so the
+      // one-current-lead rule stops it. That is reported, not thrown.
+      await expect(
+        addPropertyOwner({
+          ...as("managerA"),
+          propertyId,
+          owner: { contactId: visible, isLead: true, startedOn: "" },
+        }),
+      ).resolves.toEqual({ ok: false, error: "invalid_state" });
+      expect(
+        await count(
+          `SELECT count(*) AS n FROM "property_ownerships"
+           WHERE "property_id" = $1 AND "ended_at" IS NULL`,
+          [propertyId],
+        ),
+      ).toBe(1);
+    });
+
     it("ends an ownership with a reason, keeping it as history", async () => {
       const contactId = await createPerson();
       const propertyId = await makeProperty({

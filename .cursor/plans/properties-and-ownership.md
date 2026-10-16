@@ -1,6 +1,6 @@
 # Properties and ownership (Chunk 4)
 
-**Status:** Approved by the owner on 2026-10-16, including the starter feature list. Stage 4A (database and security) is complete: disposable-database tests pass, an independent security review of the migration is still outstanding, and with owner approval the migration was applied to shared development Supabase and verified on 2026-10-16. Next: 4B services. 4B must show a friendly message when archiving a contact who still owns a property.
+**Status:** Approved by the owner on 2026-10-16, including the starter feature list. Stage 4A (database and security) is complete: disposable-database tests pass, an independent Opus review ran on 2026-10-16 (see the review notes below), and with owner approval the migration was applied to shared development Supabase and verified on 2026-10-16. Next: 4B services. 4B must show a friendly message when archiving a contact who still owns a property.
 
 ## Implementation notes (4A, 2026-10-16)
 
@@ -28,6 +28,17 @@ Decided now:
 - **Notes:** properties get the same notes timeline as contacts in this chunk.
 - **Navigation:** add a **Properties** area now. The **Landlords** area waits for Chunk 8, when its agreed columns can be filled.
 - **Responsible branch:** a Branch Manager or higher may transfer a property between branches they manage, with a reason. The old branch, new branch, actor, date, and reason are kept.
+
+## Independent security review (2026-10-16)
+
+A separate Opus agent reviewed the migration, services, actions and tests, and ran the full suites (no tenant-isolation break was found in the row-level security rules). Findings and outcomes:
+
+- **High, fixed:** `findDuplicatePropertiesAction` spread browser-supplied fields after the signed-in identity, so a crafted call could replace the identity or workspace. It now reads named fields only. All other actions were checked: browser-supplied ids, objects and query text are now validated and length-capped (`core/properties/domain/ids.ts`). Rule for future actions: never spread a browser-supplied object into a call that carries `authSubject`.
+- **Medium, fixed in migration `20261016140000_property_integrity_hardening`:** a session able to run its own SQL could use temporary tables or functions to shadow the real tables read by triggers (bypassing the transfer record rule and the ownership count). Every function we own now has a pinned search path, and the count can only be changed by a SECURITY DEFINER ownership trigger (checked through `current_user <> session_user`, not trigger depth).
+- **Low-medium, fixed in the same migration:** the transfer history could contain fake "reverse" transfers. There is now one transfer per property per transaction, and a record must match where the property actually ended up.
+- **Low, fixed in the services:** ownership changes now lock the property row (as branch transfers already did) so they cannot race a transfer, and uniqueness or check clashes from races or hidden rows return `invalid_state` instead of an error page.
+- **Tests added:** phantom transfer, temporary-table transfer history, temporary trigger function against the count, temporary contacts table, and a hidden lead landlord. The first four were confirmed to fail without the migration.
+- **For the owner to decide (not defects):** (1) adding an owner or transferring a property gives that branch lasting visibility of the owner contact, and ending the ownership does not remove it; (2) the archive refusal and the stored count tell a user that a contact owns a property they cannot see; (3) the transferred-to branch sees all earlier notes and the transfer reasons; (4) role checks are in the application only, not in row-level security, as for contacts.
 
 ## Data design
 
