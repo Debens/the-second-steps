@@ -1,6 +1,6 @@
 # Landlord leads, appraisals, and tasks (Chunk 5)
 
-**Status:** Approved and implemented through 5C. On 2026-10-16 ADR-031 clarified that this is specifically the **Landlord leads** workflow, not applicant enquiries, and the staff-facing terminology was updated. Internal database/code names remain temporarily. The checkpoint's independent review is done and its fixes are tested; applying the colleague-names migration to shared Supabase, demo data, a browser-write decision and the handover remain.
+**Status:** Approved and implemented through 5C. On 2026-10-16 ADR-031 clarified that this is specifically the **Landlord leads** workflow, not applicant enquiries, and the staff-facing terminology was updated. Internal database/code names remain temporarily. The checkpoint's independent review is done and its fixes are tested; the colleague-names migration was applied to shared Supabase and verified on 2026-10-16 (owner approved). Demo data, a browser-write decision and the handover remain.
 
 ## Outcome
 
