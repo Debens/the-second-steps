@@ -80,8 +80,52 @@ describe("workspace roles", () => {
         "property.create",
         "property.update",
         "property.note.create",
+        "enquiry.read",
+        "enquiry.create",
+        "enquiry.update",
       ]),
     );
+  });
+
+  it("lets property creators work enquiries and keeps lists and reopening with managers", () => {
+    for (const role of SYSTEM_ROLES) {
+      expect(hasPermission([role], "enquiry.read")).toBe(true);
+    }
+    const writers = [
+      "workspace_owner",
+      "agency_admin",
+      "branch_manager",
+      "negotiator",
+      "property_manager",
+    ] as const;
+    for (const role of writers) {
+      expect(hasPermission([role], "enquiry.create")).toBe(true);
+      expect(hasPermission([role], "enquiry.update")).toBe(true);
+    }
+    for (const role of ["accounts", "read_only"] as const) {
+      expect(hasPermission([role], "enquiry.create")).toBe(false);
+      expect(hasPermission([role], "enquiry.update")).toBe(false);
+    }
+    for (const role of [
+      "workspace_owner",
+      "agency_admin",
+      "branch_manager",
+    ] as const) {
+      expect(hasPermission([role], "enquiry.reopen")).toBe(true);
+    }
+    for (const role of [
+      "negotiator",
+      "property_manager",
+      "accounts",
+      "read_only",
+    ] as const) {
+      expect(hasPermission([role], "enquiry.reopen")).toBe(false);
+    }
+    for (const role of SYSTEM_ROLES) {
+      expect(hasPermission([role], "enquiry.settings.manage")).toBe(
+        role === "workspace_owner" || role === "agency_admin",
+      );
+    }
   });
 
   it("gives every role property read access but only writers create", () => {

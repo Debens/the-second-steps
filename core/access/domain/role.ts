@@ -51,6 +51,11 @@ const ROLE_PERMISSIONS: Readonly<Record<SystemRole, readonly Permission[]>> = {
     "property.branch.transfer",
     "property.note.create",
     "property.note.manage",
+    "enquiry.read",
+    "enquiry.create",
+    "enquiry.update",
+    "enquiry.reopen",
+    "enquiry.settings.manage",
   ],
   agency_admin: [
     "workspace.read",
@@ -79,6 +84,11 @@ const ROLE_PERMISSIONS: Readonly<Record<SystemRole, readonly Permission[]>> = {
     "property.branch.transfer",
     "property.note.create",
     "property.note.manage",
+    "enquiry.read",
+    "enquiry.create",
+    "enquiry.update",
+    "enquiry.reopen",
+    "enquiry.settings.manage",
   ],
   branch_manager: [
     "workspace.read",
@@ -100,6 +110,10 @@ const ROLE_PERMISSIONS: Readonly<Record<SystemRole, readonly Permission[]>> = {
     "property.branch.transfer",
     "property.note.create",
     "property.note.manage",
+    "enquiry.read",
+    "enquiry.create",
+    "enquiry.update",
+    "enquiry.reopen",
   ],
   negotiator: [
     "workspace.read",
@@ -112,6 +126,9 @@ const ROLE_PERMISSIONS: Readonly<Record<SystemRole, readonly Permission[]>> = {
     "property.create",
     "property.update",
     "property.note.create",
+    "enquiry.read",
+    "enquiry.create",
+    "enquiry.update",
   ],
   property_manager: [
     "workspace.read",
@@ -124,6 +141,9 @@ const ROLE_PERMISSIONS: Readonly<Record<SystemRole, readonly Permission[]>> = {
     "property.create",
     "property.update",
     "property.note.create",
+    "enquiry.read",
+    "enquiry.create",
+    "enquiry.update",
   ],
   accounts: [
     "workspace.read",
@@ -134,6 +154,7 @@ const ROLE_PERMISSIONS: Readonly<Record<SystemRole, readonly Permission[]>> = {
     "property.read",
     "property.update",
     "property.note.create",
+    "enquiry.read",
   ],
   read_only: [
     "workspace.read",
@@ -141,6 +162,7 @@ const ROLE_PERMISSIONS: Readonly<Record<SystemRole, readonly Permission[]>> = {
     "branch.read",
     "contact.read",
     "property.read",
+    "enquiry.read",
   ],
 };
 

@@ -8,6 +8,12 @@ Staff can log a landlord enquiry in seconds, move it through the agreed pipeline
 
 The agreed visible pipeline is **New enquiry → Appraisal booked → Appraisal completed → Instruction won / Lost / Postponed** (`.cursor/plans/landlord-property-onboarding.md`). Winning an enquiry records the outcome only; the instruction itself is created in Chunk 6.
 
+## Progress
+
+- **5A (2026-10-16):** migration `20261016170000_enquiries_appraisals_tasks`, Prisma models, permissions, and `tests/integration/enquiry-security.test.ts` (28 database tests) are written and pass on the disposable database. Not yet applied to shared Supabase: that waits for the independent review and owner approval.
+- **Implementation change to note:** the starter lists are not inserted by the migration or at workspace creation. Under forced row-level security a migration cannot see existing workspaces, so the application adds the starter entries the first time an agency uses its lists (5B), inside that agency's own security context. The outcome for users is the same.
+- **Also built in 5A:** properties, like contacts, now carry a protected open-enquiry count, so a property with an open enquiry cannot be archived (the agreed rule applies to both).
+
 ## Owner decisions
 
 Confirmed earlier in the landlord and property onboarding plan and still binding: quick enquiry capture needs a landlord name, at least one contact method, a property address or postcode, a lead source and a responsible branch; the lead source may be blank at first save but is required before an appraisal is completed; lost and postponed outcomes record a reason, postponed work may have a follow-up date, and both can be reopened; an appraisal records date and time, assigned staff, appointment status, expected monthly rent, recommended service type, proposed fee, notes and outcome; reminders are in-app only for now.

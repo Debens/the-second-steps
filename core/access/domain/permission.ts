@@ -26,6 +26,11 @@ export const PERMISSIONS = [
   "property.branch.transfer",
   "property.note.create",
   "property.note.manage",
+  "enquiry.read",
+  "enquiry.create",
+  "enquiry.update",
+  "enquiry.reopen",
+  "enquiry.settings.manage",
 ] as const;
 
 export type Permission = (typeof PERMISSIONS)[number];
