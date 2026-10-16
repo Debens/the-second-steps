@@ -328,7 +328,7 @@ export function QuickEnquiryForm({
           {pending && (
             <LoaderCircle className="animate-spin" aria-hidden="true" />
           )}
-          {pending ? "Saving…" : "Save enquiry"}
+          {pending ? "Saving…" : "Save landlord lead"}
         </Button>
       </div>
     </form>

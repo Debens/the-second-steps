@@ -7,7 +7,7 @@ const SETTINGS_TABS = [
   { label: "Details", segment: "" },
   { label: "Users & access", segment: "/users" },
   { label: "Branches", segment: "/branches" },
-  { label: "Enquiry lists", segment: "/enquiries" },
+  { label: "Landlord lead lists", segment: "/enquiries" },
 ] as const;
 
 export function SettingsTabs({ workspaceSlug }: { workspaceSlug: string }) {

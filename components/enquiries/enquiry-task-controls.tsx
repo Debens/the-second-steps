@@ -52,7 +52,7 @@ export function AddEnquiryTask({
           <DialogHeader>
             <DialogTitle>Add next action</DialogTitle>
             <DialogDescription>
-              Give this enquiry a clear owner and due date.
+              Give this landlord lead a clear owner and due date.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-2">

@@ -146,8 +146,8 @@ export async function createEnquiryAction(
       status: "error",
       message:
         result.error === "access_denied"
-          ? "You do not have access to create this enquiry in that branch."
-          : "The enquiry could not be saved. Refresh the page and try again.",
+          ? "You do not have access to create this landlord lead in that branch."
+          : "The landlord lead could not be saved. Refresh the page and try again.",
     };
   }
   revalidatePath(path);
@@ -459,7 +459,7 @@ export async function closeEnquiryAction(
     return { status: "error", message: failureMessage(result.error) };
   revalidatePath(path);
   revalidatePath(`/dashboard/w/${workspaceSlug}`, "layout");
-  return { status: "saved", message: "Enquiry outcome recorded." };
+  return { status: "saved", message: "Landlord-lead outcome recorded." };
 }
 
 export async function reopenEnquiryAction(
@@ -480,7 +480,7 @@ export async function reopenEnquiryAction(
     return { status: "error", message: failureMessage(result.error) };
   revalidatePath(path);
   revalidatePath(`/dashboard/w/${workspaceSlug}`, "layout");
-  return { status: "saved", message: "Enquiry reopened." };
+  return { status: "saved", message: "Landlord lead reopened." };
 }
 
 export async function completeAppraisalAction(

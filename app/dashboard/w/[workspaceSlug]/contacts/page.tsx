@@ -83,7 +83,7 @@ export default async function ContactsPage({
           <h1 className="text-2xl font-semibold tracking-tight">Contacts</h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
             Shared people and organisations. A contact becomes a landlord when
-            linked to an enquiry, property or instruction.
+            linked to a landlord lead, property or instruction.
           </p>
         </div>
         {canCreate && (

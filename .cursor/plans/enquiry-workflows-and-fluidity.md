@@ -30,7 +30,7 @@ The immediate goal is therefore clarity, not more code: agree the language and t
 
 ### Now
 
-Rename the current **Enquiries** navigation and page title to **Landlord leads**. This is the smallest honest correction and makes the existing workflow understandable without changing its database immediately.
+The current **Enquiries** navigation and staff-facing language were renamed to **Landlord leads** on 2026-10-16. This makes the existing workflow understandable without changing its database immediately.
 
 ### When applicant work is added
 
@@ -265,7 +265,7 @@ Approved on 2026-10-16:
 
 ### Stage 2 — clarify the existing landlord workflow
 
-- Apply the approved staff-facing rename and stage-specific language.
+- Staff-facing rename and stage-specific language completed on 2026-10-16.
 - Improve progression actions and instruction handoff where the prototype shows friction.
 - Keep the existing database table names temporarily if a rename adds risk without user value; record any technical naming debt explicitly.
 
@@ -316,4 +316,4 @@ Detailed referencing, affordability, AML/KYC, Right to Rent, insurance, deposits
 
 ## Recommended immediate next step
 
-Apply the small staff-facing **Landlord leads** terminology change before or alongside the planned Chunk 5 security checkpoint. Then use fictional scenarios to resolve Gates 2 and 3 before designing applicant tables or screens. The security review should validate the existing landlord-lead implementation without treating its internal `Enquiry` names as the future applicant model.
+Use fictional scenarios to resolve Gates 2 and 3 before designing applicant tables or screens. The security review should validate the existing landlord-lead implementation without treating its internal `Enquiry` names as the future applicant model.

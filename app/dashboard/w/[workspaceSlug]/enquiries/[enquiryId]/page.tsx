@@ -129,7 +129,7 @@ export default async function EnquiryPage({
         nativeButton={false}
       >
         <ArrowLeft aria-hidden="true" />
-        Back to enquiries
+        Back to landlord leads
       </Button>
       {query.error === "task" && (
         <div
@@ -216,7 +216,7 @@ export default async function EnquiryPage({
               <div>
                 <h2 className="text-base font-semibold">Next actions</h2>
                 <p className="text-sm text-muted-foreground">
-                  The earliest open action is shown on the enquiry list.
+                  The earliest open action is shown on the landlord lead list.
                 </p>
               </div>
               {canUpdate && isOpenStage(stage) && (
@@ -403,7 +403,7 @@ export default async function EnquiryPage({
         </div>
 
         <section className="grid content-start gap-5 border-t pt-6 lg:col-start-1 lg:row-start-2 2xl:col-start-3 2xl:row-start-1 2xl:border-t-0 2xl:border-l 2xl:pt-0 2xl:pl-10">
-          <h2 className="text-base font-semibold">Enquiry details</h2>
+          <h2 className="text-base font-semibold">Lead details</h2>
           <dl className="grid content-start gap-5">
             <Detail label="Property" value={address} icon={MapPin} />
             <Detail

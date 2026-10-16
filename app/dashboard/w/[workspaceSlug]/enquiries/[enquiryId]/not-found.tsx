@@ -9,7 +9,7 @@ export default function EnquiryNotFound() {
       <CardContent className="grid justify-items-center gap-4 py-12 text-center">
         <Inbox className="size-8 text-muted-foreground" aria-hidden="true" />
         <div>
-          <h1 className="text-lg font-semibold">Enquiry not found</h1>
+          <h1 className="text-lg font-semibold">Landlord lead not found</h1>
           <p className="mt-1 text-sm text-muted-foreground">
             It may be outside your branch access or no longer available.
           </p>
@@ -19,7 +19,7 @@ export default function EnquiryNotFound() {
           nativeButton={false}
           variant="outline"
         >
-          Back to enquiries
+          Back to landlord leads
         </Button>
       </CardContent>
     </Card>

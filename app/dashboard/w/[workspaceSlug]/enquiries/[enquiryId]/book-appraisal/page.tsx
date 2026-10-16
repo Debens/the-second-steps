@@ -47,7 +47,7 @@ export default async function BookAppraisalPage({
         nativeButton={false}
       >
         <ArrowLeft aria-hidden="true" />
-        Back to enquiry
+        Back to landlord lead
       </Button>
       <header>
         <p className="text-sm font-medium text-primary">{enquiry.reference}</p>

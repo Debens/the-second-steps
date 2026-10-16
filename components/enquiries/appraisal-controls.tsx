@@ -160,8 +160,8 @@ export function AppraisalControls({
             <DialogHeader>
               <DialogTitle>Close this appointment</DialogTitle>
               <DialogDescription>
-                The enquiry returns to New enquiry so another appraisal can be
-                booked.
+                The landlord lead returns to New lead so another appraisal can
+                be booked.
               </DialogDescription>
             </DialogHeader>
             <div className="grid gap-2">

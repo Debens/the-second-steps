@@ -161,7 +161,7 @@ export function EnquiryListSettings({
         <div>
           <h2 className="font-semibold">Lead sources</h2>
           <p className="text-sm text-muted-foreground">
-            Used to show where landlord enquiries came from.
+            Used to show where landlord leads came from.
           </p>
         </div>
         {canManage && <AddItem action={addAction} kind="lead_source" />}
@@ -189,8 +189,8 @@ export function EnquiryListSettings({
         <div>
           <h2 className="font-semibold">Outcome reasons</h2>
           <p className="text-sm text-muted-foreground">
-            Reasons for lost and postponed enquiries. What a reason applies to
-            cannot be changed after creation.
+            Reasons for lost and postponed landlord leads. What a reason applies
+            to cannot be changed after creation.
           </p>
         </div>
         {canManage && <AddItem action={addAction} kind="outcome_reason" />}

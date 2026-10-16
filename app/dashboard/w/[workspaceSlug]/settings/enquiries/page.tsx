@@ -26,9 +26,12 @@ export default async function EnquirySettingsPage({
   return (
     <div className="grid gap-8">
       <header>
-        <h1 className="text-xl font-semibold tracking-tight">Enquiry lists</h1>
+        <h1 className="text-xl font-semibold tracking-tight">
+          Landlord lead lists
+        </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Rename, reorder or hide the choices staff use when working enquiries.
+          Rename, reorder or hide the choices staff use when working landlord
+          leads.
         </p>
         {!canManage && (
           <p className="mt-3 rounded-lg bg-muted p-3 text-sm">

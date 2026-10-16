@@ -53,7 +53,7 @@ export default async function WorkspaceDashboardPage({
       icon: Inbox,
       items: attention.unactionedEnquiries,
       tone: "text-warning",
-      empty: "Every new enquiry has a next action.",
+      empty: "Every new landlord lead has a next action.",
       detail: (item: (typeof attention.unactionedEnquiries)[number]) =>
         `Received ${dateFormat.format(item.createdAt)}`,
     },
@@ -71,7 +71,7 @@ export default async function WorkspaceDashboardPage({
       icon: AlertCircle,
       items: overdue,
       tone: "text-destructive",
-      empty: "You have no overdue enquiry actions.",
+      empty: "You have no overdue landlord-lead actions.",
       detail: (item: (typeof overdue)[number]) =>
         `Due ${dateFormat.format(item.dueOn)}`,
     },
@@ -80,7 +80,7 @@ export default async function WorkspaceDashboardPage({
       icon: CheckSquare2,
       items: upcoming,
       tone: "text-primary",
-      empty: "You have no enquiry actions due in the next 7 days.",
+      empty: "You have no landlord-lead actions due in the next 7 days.",
       detail: (item: (typeof upcoming)[number]) =>
         `Due ${dateFormat.format(item.dueOn)}`,
     },
@@ -94,12 +94,12 @@ export default async function WorkspaceDashboardPage({
           Needs attention
         </h1>
         <p className="mt-1 text-sm text-muted-foreground">
-          Your enquiry work for today and the coming week.
+          Your landlord-lead work for today and the coming week.
         </p>
       </header>
       <section
         className="grid gap-4 md:grid-cols-2 xl:grid-cols-4"
-        aria-label="Enquiry work needing attention"
+        aria-label="Landlord-lead work needing attention"
       >
         {groups.map(({ label, icon: Icon, items, tone, empty, detail }) => (
           <Card key={label} className="min-w-0">

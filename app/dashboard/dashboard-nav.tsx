@@ -33,7 +33,7 @@ function NavigationItems({
   const base = `/dashboard/w/${workspaceSlug}`;
   const items = [
     { label: "Overview", icon: Home, href: base },
-    { label: "Enquiries", icon: Inbox, href: `${base}/enquiries` },
+    { label: "Landlord leads", icon: Inbox, href: `${base}/enquiries` },
     { label: "Properties", icon: Building2, href: `${base}/properties` },
     { label: "Contacts", icon: ContactRound, href: `${base}/contacts` },
     { label: "Settings", icon: Settings, href: `${base}/settings` },

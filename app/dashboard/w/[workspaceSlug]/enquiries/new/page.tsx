@@ -45,11 +45,13 @@ export default async function NewEnquiryPage({
         nativeButton={false}
       >
         <ArrowLeft aria-hidden="true" />
-        Back to enquiries
+        Back to landlord leads
       </Button>
       <div>
-        <p className="text-sm text-muted-foreground">Enquiries</p>
-        <h1 className="text-2xl font-semibold tracking-tight">Quick enquiry</h1>
+        <p className="text-sm text-muted-foreground">Landlord leads</p>
+        <h1 className="text-2xl font-semibold tracking-tight">
+          Quick landlord lead
+        </h1>
         <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
           Capture the landlord, property and next step now. Create the full
           contact and property records when the appraisal is booked.
@@ -69,7 +71,7 @@ export default async function NewEnquiryPage({
       ) : (
         <Card>
           <CardContent className="py-8 text-sm text-muted-foreground">
-            You need access to an active branch before creating an enquiry.
+            You need access to an active branch before creating a landlord lead.
           </CardContent>
         </Card>
       )}

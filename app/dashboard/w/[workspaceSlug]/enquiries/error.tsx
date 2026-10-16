@@ -11,11 +11,11 @@ export default function EnquiriesError({ reset }: { reset: () => void }) {
         <CircleAlert className="size-8 text-destructive" aria-hidden="true" />
         <div>
           <h1 className="text-lg font-semibold">
-            Enquiries could not be loaded
+            Landlord leads could not be loaded
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Try again. If the problem continues, no enquiry information has been
-            changed.
+            Try again. If the problem continues, no landlord-lead information
+            has been changed.
           </p>
         </div>
         <Button type="button" variant="outline" onClick={reset}>

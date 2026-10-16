@@ -6,7 +6,7 @@ import type {
 
 export const ENQUIRY_STAGE_LABELS: Readonly<Record<EnquiryStageCode, string>> =
   {
-    new_enquiry: "New enquiry",
+    new_enquiry: "New lead",
     appraisal_booked: "Appraisal booked",
     appraisal_completed: "Appraisal completed",
     won: "Instruction won",

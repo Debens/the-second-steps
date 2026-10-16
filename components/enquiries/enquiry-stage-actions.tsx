@@ -82,10 +82,10 @@ export function EnquiryStageActions({
           <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-lg">
             <form action={closeFormAction} className="grid gap-5">
               <DialogHeader>
-                <DialogTitle>Record enquiry outcome</DialogTitle>
+                <DialogTitle>Record landlord-lead outcome</DialogTitle>
                 <DialogDescription>
                   This closes open next actions and any scheduled appraisal.
-                  Lost and postponed enquiries can be reopened later.
+                  Lost and postponed landlord leads can be reopened later.
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-2">
@@ -161,7 +161,7 @@ export function EnquiryStageActions({
           <DialogContent>
             <form action={reopenFormAction} className="grid gap-5">
               <DialogHeader>
-                <DialogTitle>Reopen this enquiry?</DialogTitle>
+                <DialogTitle>Reopen this landlord lead?</DialogTitle>
                 <DialogDescription>
                   The outcome is cleared. Closed next actions are kept as
                   history, so add a new next action afterwards.
@@ -183,7 +183,7 @@ export function EnquiryStageActions({
                   Cancel
                 </DialogClose>
                 <Button type="submit" disabled={reopenPending}>
-                  {reopenPending ? "Reopening…" : "Reopen enquiry"}
+                  {reopenPending ? "Reopening…" : "Reopen landlord lead"}
                 </Button>
               </DialogFooter>
             </form>

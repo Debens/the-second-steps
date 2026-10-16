@@ -15,7 +15,7 @@ export default function EnquiriesLoading() {
           ))}
         </CardContent>
       </Card>
-      <span className="sr-only">Loading enquiries</span>
+      <span className="sr-only">Loading landlord leads</span>
     </div>
   );
 }

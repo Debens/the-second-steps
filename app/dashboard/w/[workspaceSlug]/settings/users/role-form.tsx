@@ -31,7 +31,8 @@ const ROLE_DESCRIPTIONS: Readonly<Record<SystemRole, string>> = {
   workspace_owner: "Account ownership, commercial settings and senior access.",
   agency_admin: "Ordinary staff, branches and agency settings.",
   branch_manager: "Staff visibility and work within assigned branches.",
-  negotiator: "Listings, enquiries, viewings, offers and applications.",
+  negotiator:
+    "Landlord leads, listings, applicants, property enquiries, viewings, offers and applications.",
   property_manager: "Tenancies, maintenance and compliance work.",
   accounts: "Financial work when the accounting module is available.",
   read_only: "View permitted information without making changes.",

@@ -105,7 +105,9 @@ export default async function EnquiriesPage({
     <div className="grid gap-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Enquiries</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            Landlord leads
+          </h1>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
             Landlord leads, appraisal progress and the next action needed.
           </p>
@@ -113,7 +115,7 @@ export default async function EnquiriesPage({
         {canCreate && (
           <Button render={<Link href={`${path}/new`} />} nativeButton={false}>
             <Plus aria-hidden="true" />
-            Quick enquiry
+            Quick landlord lead
           </Button>
         )}
       </div>
@@ -122,13 +124,13 @@ export default async function EnquiriesPage({
           className="rounded-lg bg-success-soft p-4 text-sm text-success"
           role="status"
         >
-          Enquiry saved. It is ready for the next action.
+          Landlord lead saved. It is ready for the next action.
         </div>
       )}
       <form className="grid gap-4 md:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_auto_auto_auto_auto_auto] xl:items-end">
         <div className="grid gap-2 md:col-span-2 xl:col-span-1">
           <label className="text-sm font-medium" htmlFor="q">
-            Search enquiries
+            Search landlord leads
           </label>
           <div className="relative">
             <Search
@@ -220,14 +222,16 @@ export default async function EnquiriesPage({
             />
             <div>
               <p className="font-medium">
-                {filtering ? "No enquiries found" : "No enquiries yet"}
+                {filtering
+                  ? "No landlord leads found"
+                  : "No landlord leads yet"}
               </p>
               <p className="text-sm text-muted-foreground">
                 {filtering
                   ? "Try changing the search or filters."
                   : canCreate
-                    ? "Capture the first landlord enquiry to get started."
-                    : "Enquiries in your branches will appear here."}
+                    ? "Capture the first landlord lead to get started."
+                    : "Landlord leads in your branches will appear here."}
               </p>
             </div>
           </CardContent>

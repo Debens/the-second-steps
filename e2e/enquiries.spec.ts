@@ -14,30 +14,30 @@ async function signInAsOwner(page: Page) {
   });
 }
 
-test("enquiry workspace routes and quick capture are usable", async ({
+test("landlord-lead workspace routes and quick capture are usable", async ({
   page,
 }) => {
   await signInAsOwner(page);
   await expect(
     page.getByRole("heading", { name: "Needs attention" }),
   ).toBeVisible();
-  await page.getByRole("link", { name: "Enquiries" }).click();
+  await page.getByRole("link", { name: "Landlord leads" }).click();
   await expect(
-    page.getByRole("heading", { name: "Enquiries", exact: true }),
+    page.getByRole("heading", { name: "Landlord leads", exact: true }),
   ).toBeVisible();
-  await expect(page.getByLabel("Search enquiries")).toBeVisible();
-  await page.getByRole("button", { name: "Quick enquiry" }).click();
+  await expect(page.getByLabel("Search landlord leads")).toBeVisible();
+  await page.getByRole("button", { name: "Quick landlord lead" }).click();
   await expect(
-    page.getByRole("heading", { name: "Quick enquiry" }),
+    page.getByRole("heading", { name: "Quick landlord lead" }),
   ).toBeVisible();
   await expect(page.getByLabel("Landlord name")).toBeVisible();
   await expect(page.getByLabel("Responsible branch")).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "Save enquiry" }),
+    page.getByRole("button", { name: "Save landlord lead" }),
   ).toBeVisible();
 });
 
-test("enquiry settings support mobile dark mode without overflow", async ({
+test("landlord-lead settings support mobile dark mode without overflow", async ({
   page,
 }) => {
   await page.setViewportSize({ width: 390, height: 844 });
@@ -46,7 +46,7 @@ test("enquiry settings support mobile dark mode without overflow", async ({
   await page.getByRole("button", { name: "Dark theme" }).click();
   await expect(page.locator("html")).toHaveClass(/dark/);
   await expect(
-    page.getByRole("heading", { name: "Enquiry lists" }),
+    page.getByRole("heading", { name: "Landlord lead lists" }),
   ).toBeVisible();
   await expect(
     page.getByRole("heading", { name: "Lead sources" }),

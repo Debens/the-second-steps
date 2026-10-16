@@ -57,7 +57,7 @@ We will **not** implement every lifecycle area in the PoC. See `ROADMAP.md`.
 - An **applicant** is a person or household looking to rent. They are not called a tenant until a tenancy exists.
 - A **property enquiry** is an applicant's interest in one advertised listing. One applicant may enquire about several listings, and one listing may receive enquiries from many applicants.
 - Viewings, offers, applications, and tenancies remain distinct connected records. Progression carries reviewed information forward without overwriting the earlier history.
-- The current proof-of-concept feature was originally labelled **Enquiries** but is specifically the landlord-lead workflow. Its staff-facing rename remains an implementation task.
+- The current proof-of-concept feature was originally labelled **Enquiries** but is specifically the landlord-lead workflow. It is now labelled **Landlord leads** for staff; internal code and database names may remain temporarily.
 
 ## Commercial model (confirmed shape; details unresolved)
 
