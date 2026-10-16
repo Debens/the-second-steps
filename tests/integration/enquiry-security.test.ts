@@ -900,16 +900,15 @@ describe("enquiry database security", () => {
           feeValue: 1200,
         });
         const appraisalId = booked.rows[0].id;
-        await refused(client, "23514", () =>
-          client.query(
-            `UPDATE "appraisals" SET "status" = 'completed' WHERE "id" = $1::uuid`,
-            [appraisalId],
-          ),
-        );
-        await client.query(
-          `UPDATE "appraisals" SET "status" = 'cancelled' WHERE "id" = $1::uuid`,
+        // The completion time is stamped by the database, whatever is sent.
+        const completed = await client.query(
+          `UPDATE "appraisals" SET "status" = 'completed',
+            "completed_at" = TIMESTAMPTZ '1999-01-01'
+           WHERE "id" = $1::uuid
+           RETURNING "completed_at" = transaction_timestamp() AS stamped`,
           [appraisalId],
         );
+        expect(completed.rows).toEqual([{ stamped: true }]);
         await refused(client, "23514", () =>
           client.query(
             `UPDATE "appraisals" SET "notes" = 'Changed' WHERE "id" = $1::uuid`,
@@ -1018,6 +1017,382 @@ describe("enquiry database security", () => {
             [taskId],
           ),
         );
+      });
+    });
+  });
+
+  describe("review follow-ups", () => {
+    it("shows no rows of any enquiry table without a verified context", async () => {
+      for (const table of [
+        "landlord_enquiries",
+        "enquiry_stage_history",
+        "appraisals",
+        "enquiry_tasks",
+        "lead_sources",
+        "enquiry_outcome_reasons",
+      ]) {
+        const result = await runtimePool.query(`SELECT "id" FROM "${table}"`);
+        expect(result.rows, table).toHaveLength(0);
+      }
+    });
+
+    it("refuses a history row written while someone else made the real change", async () => {
+      const phantom = await runtimePool.connect();
+      const real = await runtimePool.connect();
+      try {
+        await phantom.query("BEGIN");
+        await setContext(phantom, actors.managerA1);
+        await recordStage(phantom, {
+          enquiryId: ids.enquiryA1,
+          from: "new_enquiry",
+          to: "lost",
+          reason: "Phantom",
+          membershipId: ids.membershipA1,
+        });
+
+        await real.query("BEGIN");
+        await setContext(real, actors.ownerAAll);
+        await recordStage(real, {
+          enquiryId: ids.enquiryA1,
+          from: "new_enquiry",
+          to: "lost",
+          reason: "Real",
+          membershipId: ids.membershipAAll,
+        });
+        await setStage(real, ids.enquiryA1, "lost", ids.lostReasonA);
+        await real.query("COMMIT");
+
+        await expect(phantom.query("COMMIT")).rejects.toMatchObject({
+          code: "23514",
+        });
+      } finally {
+        await phantom.query("ROLLBACK").catch(() => undefined);
+        await real.query("ROLLBACK").catch(() => undefined);
+        phantom.release();
+        real.release();
+      }
+      const history = await adminPool.query(
+        `SELECT "reason" FROM "enquiry_stage_history" WHERE "enquiry_id" = $1`,
+        [ids.enquiryA1],
+      );
+      expect(history.rows).toEqual([{ reason: "Real" }]);
+    });
+
+    it("refuses a branch transfer record written while someone else moved the property", async () => {
+      const phantom = await runtimePool.connect();
+      const real = await runtimePool.connect();
+      const transferSql = `INSERT INTO "property_branch_transfers" (
+        "workspace_id", "property_id", "from_branch_id", "to_branch_id",
+        "reason", "transferred_by_membership_id"
+      ) VALUES ($1::uuid, $2::uuid, $3::uuid, $4::uuid, $5, $6::uuid)`;
+      try {
+        await phantom.query("BEGIN");
+        await setContext(phantom, actors.managerA12);
+        await phantom.query(transferSql, [
+          ids.workspaceA,
+          ids.propertyA1,
+          ids.branchA1,
+          ids.branchA2,
+          "Phantom",
+          ids.membershipA12,
+        ]);
+
+        await real.query("BEGIN");
+        await setContext(real, actors.ownerAAll);
+        await real.query(transferSql, [
+          ids.workspaceA,
+          ids.propertyA1,
+          ids.branchA1,
+          ids.branchA2,
+          "Real",
+          ids.membershipAAll,
+        ]);
+        await real.query(
+          `UPDATE "properties" SET "responsible_branch_id" = $2::uuid
+           WHERE "id" = $1::uuid`,
+          [ids.propertyA1, ids.branchA2],
+        );
+        await real.query("COMMIT");
+
+        await expect(phantom.query("COMMIT")).rejects.toMatchObject({
+          code: "23514",
+        });
+      } finally {
+        await phantom.query("ROLLBACK").catch(() => undefined);
+        await real.query("ROLLBACK").catch(() => undefined);
+        phantom.release();
+        real.release();
+      }
+    });
+
+    it("never locks branch staff out of an enquiry whose linked records sit in another branch", async () => {
+      // The owner links an A1 enquiry to Branch A2's contact and property.
+      const enquiryId = randomUUID();
+      const owner = await runtimePool.connect();
+      try {
+        await owner.query("BEGIN");
+        await setContext(owner, actors.ownerAAll);
+        await insertEnquiry(owner, {
+          id: enquiryId,
+          contactId: ids.personA2,
+          propertyId: ids.propertyA2,
+          membershipId: ids.membershipAAll,
+        });
+        await owner.query("COMMIT");
+      } finally {
+        owner.release();
+      }
+      expect(await linkedCount("contacts", ids.personA2)).toBe(1);
+
+      const client = await runtimePool.connect();
+      try {
+        await client.query("BEGIN");
+        await setContext(client, actors.managerA1);
+        const updated = await client.query(
+          `UPDATE "landlord_enquiries" SET "summary" = 'Spoke to landlord'
+           WHERE "id" = $1::uuid`,
+          [enquiryId],
+        );
+        expect(updated.rowCount).toBe(1);
+        await recordStage(client, {
+          enquiryId,
+          from: "new_enquiry",
+          to: "lost",
+          reason: "Chose another agent",
+          membershipId: ids.membershipA1,
+        });
+        await setStage(client, enquiryId, "lost", ids.lostReasonA);
+        // The user's own scope is restored after the count update.
+        const scope = await client.query(
+          `SELECT current_setting('app.membership_scope_mode') AS mode`,
+        );
+        expect(scope.rows).toEqual([{ mode: "named_branches" }]);
+        await client.query("COMMIT");
+      } finally {
+        client.release();
+      }
+      expect(await linkedCount("contacts", ids.personA2)).toBe(0);
+      expect(await linkedCount("properties", ids.propertyA2)).toBe(0);
+    });
+
+    it("refuses writes to another branch's appraisals, tasks and history", async () => {
+      await asActor(actors.managerA1, async (client) => {
+        await refused(client, "42501", () =>
+          client.query(
+            `INSERT INTO "enquiry_tasks" (
+              "workspace_id", "enquiry_id", "title", "due_on",
+              "assigned_membership_id", "created_by_membership_id", "updated_at"
+            ) VALUES ($1::uuid, $2::uuid, 'Call', CURRENT_DATE, $3::uuid,
+              $3::uuid, CURRENT_TIMESTAMP)`,
+            [ids.workspaceA, ids.enquiryA2, ids.membershipA1],
+          ),
+        );
+        await refused(client, "42501", () =>
+          recordStage(client, {
+            enquiryId: ids.enquiryA2,
+            from: "new_enquiry",
+            to: "lost",
+            reason: "Not mine",
+            membershipId: ids.membershipA1,
+          }),
+        );
+        const update = await client.query(
+          `UPDATE "landlord_enquiries" SET "summary" = 'Not mine'
+           WHERE "id" = $1::uuid`,
+          [ids.enquiryA2],
+        );
+        expect(update.rowCount).toBe(0);
+      });
+    });
+
+    it("counts a contact and property linked after the enquiry was logged, but never archived ones", async () => {
+      await asActor(actors.managerA1, async (client) => {
+        await client.query(
+          `UPDATE "landlord_enquiries"
+           SET "contact_id" = $2::uuid, "property_id" = $3::uuid
+           WHERE "id" = $1::uuid`,
+          [ids.enquiryA1, ids.personA1, ids.propertyA1],
+        );
+        const counts = await client.query(
+          `SELECT "current_open_enquiry_count" AS n FROM "contacts"
+           WHERE "id" = $1::uuid`,
+          [ids.personA1],
+        );
+        expect(counts.rows).toEqual([{ n: 1 }]);
+      });
+
+      await adminPool.query(
+        `UPDATE "properties" SET "status" = 'archived',
+          "archived_at" = CURRENT_TIMESTAMP WHERE "id" = $1::uuid`,
+        [ids.propertyA1],
+      );
+      await asActor(actors.managerA1, async (client) => {
+        await refused(client, "42501", () =>
+          client.query(
+            `UPDATE "landlord_enquiries" SET "property_id" = $2::uuid
+             WHERE "id" = $1::uuid`,
+            [ids.enquiryA1, ids.propertyA1],
+          ),
+        );
+      });
+    });
+
+    it("cannot change a contact's counts from a temporary trigger function", async () => {
+      await asActor(actors.managerA1, async (client) => {
+        await client.query(`CREATE TEMP TABLE "bump_log" ("x" integer)`);
+        await client.query(
+          `CREATE FUNCTION pg_temp.bump() RETURNS trigger
+           LANGUAGE plpgsql AS $$
+           BEGIN
+             UPDATE public."contacts"
+             SET "current_open_enquiry_count" = 4
+             WHERE "id" = '${ids.personA1}'::uuid;
+             RETURN NEW;
+           END $$`,
+        );
+        await client.query(
+          `CREATE TRIGGER "bump_trigger" BEFORE INSERT ON "bump_log"
+           FOR EACH ROW EXECUTE FUNCTION pg_temp.bump()`,
+        );
+        await refused(client, "23514", () =>
+          client.query(`INSERT INTO "bump_log" ("x") VALUES (1)`),
+        );
+      });
+    });
+
+    it("keeps an enquiry's reference and branch fixed", async () => {
+      await asActor(actors.managerA12, async (client) => {
+        await refused(client, "23514", () =>
+          client.query(
+            `UPDATE "landlord_enquiries" SET "reference" = 'ENQ-ZZZZ2222'
+             WHERE "id" = $1::uuid`,
+            [ids.enquiryA1],
+          ),
+        );
+        await refused(client, "23514", () =>
+          client.query(
+            `UPDATE "landlord_enquiries" SET "responsible_branch_id" = $2::uuid
+             WHERE "id" = $1::uuid`,
+            [ids.enquiryA1, ids.branchA2],
+          ),
+        );
+      });
+    });
+
+    it("refuses hidden list items as new choices and keeps a reason's outcome type", async () => {
+      await adminPool.query(
+        `UPDATE "enquiry_outcome_reasons" SET "status" = 'hidden'
+         WHERE "id" = $1::uuid`,
+        [ids.lostReasonA],
+      );
+      await adminPool.query(
+        `UPDATE "lead_sources" SET "status" = 'hidden' WHERE "id" = $1::uuid`,
+        [ids.sourceA],
+      );
+      await asActor(actors.managerA1, async (client) => {
+        await recordStage(client, {
+          enquiryId: ids.enquiryA1,
+          from: "new_enquiry",
+          to: "lost",
+          reason: "Gone",
+          membershipId: ids.membershipA1,
+        });
+        await refused(client, "23514", () =>
+          setStage(client, ids.enquiryA1, "lost", ids.lostReasonA),
+        );
+        await refused(client, "23514", () =>
+          client.query(
+            `UPDATE "landlord_enquiries" SET "lead_source_id" = $2::uuid
+             WHERE "id" = $1::uuid`,
+            [ids.enquiryA1, ids.sourceA],
+          ),
+        );
+      });
+      await asActor(actors.ownerAAll, async (client) => {
+        await refused(client, "23514", () =>
+          client.query(
+            `UPDATE "enquiry_outcome_reasons" SET "applies_to" = 'postponed'
+             WHERE "id" = $1::uuid`,
+            [ids.lostReasonA],
+          ),
+        );
+      });
+    });
+
+    it("keeps a won enquiry final", async () => {
+      // A won enquiry set up directly, with its contact, property and source.
+      const wonId = randomUUID();
+      await adminPool.query(
+        `INSERT INTO "landlord_enquiries" (
+          "id", "workspace_id", "reference", "responsible_branch_id", "stage",
+          "enquirer_name", "enquirer_telephone", "contact_id", "property_id",
+          "lead_source_id", "created_by_membership_id", "updated_at"
+        ) VALUES ($1::uuid, $2::uuid, 'ENQ-GGGG2222', $3::uuid, 'won', 'Pat',
+          '07700 900444', $4::uuid, $5::uuid, $6::uuid, $7::uuid,
+          CURRENT_TIMESTAMP)`,
+        [
+          wonId,
+          ids.workspaceA,
+          ids.branchA1,
+          ids.personA1,
+          ids.propertyA1,
+          ids.sourceA,
+          ids.membershipA1,
+        ],
+      );
+      await asActor(actors.managerA1, async (client) => {
+        await refused(client, "23514", () =>
+          recordStage(client, {
+            enquiryId: wonId,
+            from: "won",
+            to: "new_enquiry",
+            reason: "Undo",
+            membershipId: ids.membershipA1,
+          }),
+        );
+        await refused(client, "23514", () =>
+          setStage(client, wonId, "new_enquiry"),
+        );
+      });
+    });
+
+    it("stamps stage and closing times from the database", async () => {
+      await asActor(actors.managerA1, async (client) => {
+        const enquiryId = randomUUID();
+        await client.query(
+          `INSERT INTO "landlord_enquiries" (
+            "id", "workspace_id", "reference", "responsible_branch_id",
+            "enquirer_name", "enquirer_telephone", "postcode",
+            "stage_changed_at", "created_by_membership_id", "updated_at"
+          ) VALUES ($1::uuid, $2::uuid, 'ENQ-FFFF2222', $3::uuid, 'Pat',
+            '07700 900333', 'SW1A 1AA', TIMESTAMPTZ '2001-01-01', $4::uuid,
+            CURRENT_TIMESTAMP)`,
+          [enquiryId, ids.workspaceA, ids.branchA1, ids.membershipA1],
+        );
+        const stamped = await client.query(
+          `SELECT "stage_changed_at" = transaction_timestamp() AS fresh
+           FROM "landlord_enquiries" WHERE "id" = $1::uuid`,
+          [enquiryId],
+        );
+        expect(stamped.rows).toEqual([{ fresh: true }]);
+
+        const task = await client.query<{ id: string }>(
+          `INSERT INTO "enquiry_tasks" (
+            "workspace_id", "enquiry_id", "title", "due_on",
+            "assigned_membership_id", "created_by_membership_id", "updated_at"
+          ) VALUES ($1::uuid, $2::uuid, 'Call', CURRENT_DATE, $3::uuid,
+            $3::uuid, CURRENT_TIMESTAMP) RETURNING "id"`,
+          [ids.workspaceA, enquiryId, ids.membershipA1],
+        );
+        const closed = await client.query(
+          `UPDATE "enquiry_tasks" SET "status" = 'done',
+            "closed_at" = TIMESTAMPTZ '1999-01-01',
+            "closed_by_membership_id" = $2::uuid
+           WHERE "id" = $1::uuid
+           RETURNING "closed_at" = transaction_timestamp() AS fresh`,
+          [task.rows[0].id, ids.membershipA1],
+        );
+        expect(closed.rows).toEqual([{ fresh: true }]);
       });
     });
   });

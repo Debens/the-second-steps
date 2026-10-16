@@ -79,9 +79,29 @@ $$;
 CREATE TRIGGER "lead_sources_protect_identity"
 BEFORE UPDATE ON "lead_sources"
 FOR EACH ROW EXECUTE FUNCTION "public"."protect_enquiry_list_item"();
+
+-- A reason's outcome type is part of its meaning once enquiries use it.
+CREATE FUNCTION "public"."protect_enquiry_outcome_reason"()
+RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = pg_catalog, public, pg_temp
+AS $$
+BEGIN
+  IF NEW."id" <> OLD."id"
+    OR NEW."workspace_id" <> OLD."workspace_id"
+    OR NEW."applies_to" <> OLD."applies_to"
+    OR NEW."created_at" <> OLD."created_at"
+  THEN
+    RAISE EXCEPTION 'outcome reason identity cannot be changed'
+      USING ERRCODE = '23514';
+  END IF;
+  RETURN NEW;
+END;
+$$;
+
 CREATE TRIGGER "enquiry_outcome_reasons_protect_identity"
 BEFORE UPDATE ON "enquiry_outcome_reasons"
-FOR EACH ROW EXECUTE FUNCTION "public"."protect_enquiry_list_item"();
+FOR EACH ROW EXECUTE FUNCTION "public"."protect_enquiry_outcome_reason"();
 
 CREATE TABLE "landlord_enquiries" (
   "id" uuid NOT NULL DEFAULT gen_random_uuid(),
@@ -233,8 +253,9 @@ CREATE TABLE "enquiry_stage_history" (
     FOREIGN KEY ("workspace_id", "changed_by_membership_id")
     REFERENCES "memberships"("workspace_id", "id")
     ON DELETE RESTRICT ON UPDATE CASCADE,
+  -- A won enquiry is final: Chunk 6 builds the instruction on it.
   CONSTRAINT "enquiry_stage_history_change_check" CHECK (
-    "from_stage" <> "to_stage"
+    "from_stage" <> "to_stage" AND "from_stage" <> 'won'
   ),
   -- Closing an enquiry or moving it backwards always needs a reason.
   CONSTRAINT "enquiry_stage_history_reason_check" CHECK (
@@ -287,6 +308,11 @@ BEGIN
       USING ERRCODE = '23514';
   END IF;
 
+  IF OLD."stage" = 'won' AND NEW."stage" <> 'won' THEN
+    RAISE EXCEPTION 'a won enquiry cannot be reopened'
+      USING ERRCODE = '23514';
+  END IF;
+
   IF NEW."stage" <> OLD."stage" THEN
     IF NOT EXISTS (
       SELECT 1 FROM "enquiry_stage_history"
@@ -314,34 +340,112 @@ CREATE TRIGGER "landlord_enquiries_enforce_rules"
 BEFORE UPDATE ON "landlord_enquiries"
 FOR EACH ROW EXECUTE FUNCTION "public"."enforce_enquiry_rules"();
 
--- An outcome reason must be one the agency offers for that outcome.
-CREATE FUNCTION "public"."validate_enquiry_outcome_reason"()
+-- The stage time always comes from the database, so it can be used to match
+-- a stage change to its history row.
+CREATE FUNCTION "public"."stamp_new_enquiry"()
 RETURNS trigger
 LANGUAGE plpgsql
 SET search_path = pg_catalog, public, pg_temp
 AS $$
 BEGIN
-  IF NEW."outcome_reason_id" IS NOT NULL AND NOT EXISTS (
-    SELECT 1 FROM "enquiry_outcome_reasons"
-    WHERE "workspace_id" = NEW."workspace_id"
-      AND "id" = NEW."outcome_reason_id"
-      AND "applies_to"::text IN ('both', NEW."stage"::text)
-  ) THEN
-    RAISE EXCEPTION 'outcome reason does not apply to this outcome'
-      USING ERRCODE = '23514';
-  END IF;
+  NEW."stage_changed_at" := transaction_timestamp();
   RETURN NEW;
 END;
 $$;
 
-CREATE TRIGGER "landlord_enquiries_validate_outcome_reason"
-BEFORE INSERT OR UPDATE OF "outcome_reason_id", "stage"
-ON "landlord_enquiries"
-FOR EACH ROW
-WHEN (NEW."outcome_reason_id" IS NOT NULL)
-EXECUTE FUNCTION "public"."validate_enquiry_outcome_reason"();
+CREATE TRIGGER "landlord_enquiries_stamp_new"
+BEFORE INSERT ON "landlord_enquiries"
+FOR EACH ROW EXECUTE FUNCTION "public"."stamp_new_enquiry"();
 
--- A history row is kept only if the enquiry really ended at that stage.
+-- Checks every choice made on an enquiry when it is first made: the outcome
+-- reason fits the outcome and is offered, the lead source is offered, and a
+-- newly linked contact or property is visible to the actor and still active.
+-- Choices already made are not re-checked, so a later change to a list or a
+-- record's branch never locks staff out of their own enquiry.
+CREATE FUNCTION "public"."validate_enquiry_choices"()
+RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = pg_catalog, public, pg_temp
+AS $$
+DECLARE
+  is_new boolean := TG_OP = 'INSERT';
+  item_status "enquiry_list_item_status";
+  item_kind "enquiry_outcome_kind";
+BEGIN
+  -- A list item from another agency is not found here and is refused by
+  -- the foreign key instead.
+  IF NEW."outcome_reason_id" IS NOT NULL AND (
+    is_new
+    OR NEW."outcome_reason_id" IS DISTINCT FROM OLD."outcome_reason_id"
+    OR NEW."stage" <> OLD."stage"
+  ) THEN
+    SELECT "status", "applies_to" INTO item_status, item_kind
+    FROM "enquiry_outcome_reasons"
+    WHERE "workspace_id" = NEW."workspace_id"
+      AND "id" = NEW."outcome_reason_id";
+    IF FOUND AND (
+      item_kind::text NOT IN ('both', NEW."stage"::text)
+      OR (
+        item_status <> 'active'
+        AND (
+          is_new
+          OR NEW."outcome_reason_id" IS DISTINCT FROM OLD."outcome_reason_id"
+        )
+      )
+    ) THEN
+      RAISE EXCEPTION 'outcome reason is not offered for this outcome'
+        USING ERRCODE = '23514';
+    END IF;
+  END IF;
+
+  IF NEW."lead_source_id" IS NOT NULL AND (
+    is_new OR NEW."lead_source_id" IS DISTINCT FROM OLD."lead_source_id"
+  ) THEN
+    SELECT "status" INTO item_status
+    FROM "lead_sources"
+    WHERE "workspace_id" = NEW."workspace_id"
+      AND "id" = NEW."lead_source_id";
+    IF FOUND AND item_status <> 'active' THEN
+      RAISE EXCEPTION 'lead source is not offered'
+        USING ERRCODE = '23514';
+    END IF;
+  END IF;
+
+  IF NEW."contact_id" IS NOT NULL AND (
+    is_new OR OLD."contact_id" IS NULL
+  ) AND NOT EXISTS (
+    SELECT 1 FROM "contacts"
+    WHERE "workspace_id" = NEW."workspace_id"
+      AND "id" = NEW."contact_id"
+      AND "status" = 'active'
+  ) THEN
+    RAISE EXCEPTION 'enquiry contact must be an active contact you can see'
+      USING ERRCODE = '42501';
+  END IF;
+
+  IF NEW."property_id" IS NOT NULL AND (
+    is_new OR OLD."property_id" IS NULL
+  ) AND NOT EXISTS (
+    SELECT 1 FROM "properties"
+    WHERE "workspace_id" = NEW."workspace_id"
+      AND "id" = NEW."property_id"
+      AND "status" = 'active'
+  ) THEN
+    RAISE EXCEPTION 'enquiry property must be an active property you can see'
+      USING ERRCODE = '42501';
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+CREATE TRIGGER "landlord_enquiries_validate_choices"
+BEFORE INSERT OR UPDATE ON "landlord_enquiries"
+FOR EACH ROW EXECUTE FUNCTION "public"."validate_enquiry_choices"();
+
+-- A history row is kept only if this transaction really moved the enquiry to
+-- that stage. Matching the stage time stops a row written while another
+-- transaction made the same change from being credited to the wrong person.
 CREATE FUNCTION "public"."enforce_enquiry_stage_applied"()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -353,6 +457,7 @@ BEGIN
     WHERE "workspace_id" = NEW."workspace_id"
       AND "id" = NEW."enquiry_id"
       AND "stage" = NEW."to_stage"
+      AND "stage_changed_at" = NEW."created_at"
   ) THEN
     RAISE EXCEPTION 'an enquiry stage record must match the enquiry'
       USING ERRCODE = '23514';
@@ -453,6 +558,10 @@ BEGIN
     RAISE EXCEPTION 'a finished appraisal cannot be changed'
       USING ERRCODE = '23514';
   END IF;
+  -- The completion time always comes from the database.
+  IF NEW."status" = 'completed' THEN
+    NEW."completed_at" := transaction_timestamp();
+  END IF;
   RETURN NEW;
 END;
 $$;
@@ -543,6 +652,10 @@ BEGIN
     RAISE EXCEPTION 'a closed task cannot be changed'
       USING ERRCODE = '23514';
   END IF;
+  -- The closing time always comes from the database.
+  IF NEW."status" <> 'open' THEN
+    NEW."closed_at" := transaction_timestamp();
+  END IF;
   RETURN NEW;
 END;
 $$;
@@ -568,8 +681,19 @@ ADD CONSTRAINT "properties_open_enquiry_count_check" CHECK (
   AND ("status" = 'active' OR "current_open_enquiry_count" = 0)
 );
 
--- Protected counts may only be changed by an owner-run (SECURITY DEFINER)
--- trigger, which runs as a different role from the connected session.
+-- Protected counts may only be changed by the owner-run (SECURITY DEFINER)
+-- count triggers, so the role making the change must be their owner.
+CREATE FUNCTION "public"."is_link_count_maintainer"()
+RETURNS boolean
+LANGUAGE sql
+STABLE
+SET search_path = pg_catalog, public, pg_temp
+AS $$
+  SELECT current_user = pg_get_userbyid(p.proowner)
+  FROM pg_proc p
+  WHERE p.oid = 'public.maintain_contact_ownership_count()'::regprocedure
+$$;
+
 CREATE OR REPLACE FUNCTION "public"."protect_contact_ownership_count"()
 RETURNS trigger
 LANGUAGE plpgsql
@@ -590,7 +714,7 @@ BEGIN
         OLD."current_property_ownership_count"
       OR NEW."current_open_enquiry_count" <> OLD."current_open_enquiry_count"
     )
-    AND current_user = session_user
+    AND NOT "public"."is_link_count_maintainer"()
   THEN
     RAISE EXCEPTION 'linked record counts are maintained by the database'
       USING ERRCODE = '23514';
@@ -619,7 +743,7 @@ BEGIN
   END IF;
   IF TG_OP = 'UPDATE'
     AND NEW."current_open_enquiry_count" <> OLD."current_open_enquiry_count"
-    AND current_user = session_user
+    AND NOT "public"."is_link_count_maintainer"()
   THEN
     RAISE EXCEPTION 'open enquiry count is maintained by the database'
       USING ERRCODE = '23514';
@@ -646,6 +770,7 @@ DECLARE
   contact_delta integer;
   property_delta integer;
   updated_rows integer;
+  saved_scope text := current_setting('app.membership_scope_mode', true);
 BEGIN
   IF TG_OP = 'UPDATE' THEN
     old_open := OLD."stage" IN (
@@ -664,6 +789,17 @@ BEGIN
     - (CASE WHEN TG_OP = 'UPDATE' AND old_open AND OLD."property_id" IS NOT NULL
         THEN 1 ELSE 0 END);
 
+  IF contact_delta = 0 AND property_delta = 0 THEN
+    RETURN NEW;
+  END IF;
+
+  -- The linked records may since have moved to a branch this user cannot
+  -- update (for example after a property transfer). Closing or reopening
+  -- their own enquiry must still keep the counts right, so the two count
+  -- updates below run with agency-wide scope. They stay inside the user's
+  -- agency, touch only the linked rows, and change only the counts.
+  PERFORM set_config('app.membership_scope_mode', 'workspace', true);
+
   IF contact_delta <> 0 THEN
     UPDATE "contacts"
     SET "current_open_enquiry_count" =
@@ -671,7 +807,7 @@ BEGIN
     WHERE "workspace_id" = NEW."workspace_id" AND "id" = NEW."contact_id";
     GET DIAGNOSTICS updated_rows = ROW_COUNT;
     IF updated_rows <> 1 THEN
-      RAISE EXCEPTION 'enquiry contact is not available to this user'
+      RAISE EXCEPTION 'enquiry contact count could not be updated'
         USING ERRCODE = '42501';
     END IF;
   END IF;
@@ -683,11 +819,14 @@ BEGIN
     WHERE "workspace_id" = NEW."workspace_id" AND "id" = NEW."property_id";
     GET DIAGNOSTICS updated_rows = ROW_COUNT;
     IF updated_rows <> 1 THEN
-      RAISE EXCEPTION 'enquiry property is not available to this user'
+      RAISE EXCEPTION 'enquiry property count could not be updated'
         USING ERRCODE = '42501';
     END IF;
   END IF;
 
+  PERFORM set_config(
+    'app.membership_scope_mode', COALESCE(saved_scope, ''), true
+  );
   RETURN NEW;
 END;
 $$;
@@ -696,6 +835,72 @@ CREATE TRIGGER "landlord_enquiries_maintain_link_counts"
 AFTER INSERT OR UPDATE OF "stage", "contact_id", "property_id"
 ON "landlord_enquiries"
 FOR EACH ROW EXECUTE FUNCTION "public"."maintain_enquiry_link_counts"();
+
+-- Review follow-up for property branch transfers: match a transfer record to
+-- the move made in the same transaction, as for enquiry stage history.
+ALTER TABLE "properties"
+ADD COLUMN "branch_changed_at" timestamptz(6) NOT NULL
+  DEFAULT CURRENT_TIMESTAMP;
+
+CREATE OR REPLACE FUNCTION "public"."enforce_property_rules"()
+RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = pg_catalog, public, pg_temp
+AS $$
+BEGIN
+  IF NEW."id" <> OLD."id"
+    OR NEW."workspace_id" <> OLD."workspace_id"
+    OR NEW."reference" <> OLD."reference"
+    OR NEW."created_by_membership_id" <> OLD."created_by_membership_id"
+    OR NEW."created_at" <> OLD."created_at"
+  THEN
+    RAISE EXCEPTION 'immutable property fields cannot be changed'
+      USING ERRCODE = '23514';
+  END IF;
+
+  IF NEW."responsible_branch_id" <> OLD."responsible_branch_id" THEN
+    IF NOT EXISTS (
+      SELECT 1 FROM "property_branch_transfers"
+      WHERE "workspace_id" = NEW."workspace_id"
+        AND "property_id" = NEW."id"
+        AND "from_branch_id" = OLD."responsible_branch_id"
+        AND "to_branch_id" = NEW."responsible_branch_id"
+        AND "transferred_by_membership_id" =
+          NULLIF(current_setting('app.membership_id', true), '')::uuid
+        AND "created_at" = transaction_timestamp()
+    ) THEN
+      RAISE EXCEPTION 'property branch changes require a transfer record'
+        USING ERRCODE = '23514';
+    END IF;
+    NEW."branch_changed_at" := transaction_timestamp();
+  ELSE
+    NEW."branch_changed_at" := OLD."branch_changed_at";
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
+
+CREATE OR REPLACE FUNCTION "public"."enforce_property_transfer_applied"()
+RETURNS trigger
+LANGUAGE plpgsql
+SET search_path = pg_catalog, public, pg_temp
+AS $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM "properties"
+    WHERE "workspace_id" = NEW."workspace_id"
+      AND "id" = NEW."property_id"
+      AND "responsible_branch_id" = NEW."to_branch_id"
+      AND "branch_changed_at" = NEW."created_at"
+  ) THEN
+    RAISE EXCEPTION 'a property transfer must move the property'
+      USING ERRCODE = '23514';
+  END IF;
+
+  RETURN NEW;
+END;
+$$;
 
 ALTER TABLE "lead_sources" ENABLE ROW LEVEL SECURITY;
 ALTER TABLE "lead_sources" FORCE ROW LEVEL SECURITY;
@@ -714,17 +919,17 @@ ALTER TABLE "enquiry_tasks" FORCE ROW LEVEL SECURITY;
 CREATE POLICY "lead_source_select_in_workspace" ON "lead_sources"
 FOR SELECT USING (
   "workspace_id" = NULLIF(current_setting('app.workspace_id', true), '')::uuid
-  AND NULLIF(current_setting('app.membership_id', true), '') IS NOT NULL
+  AND NULLIF(current_setting('app.membership_id', true), '')::uuid IS NOT NULL
 );
 CREATE POLICY "lead_source_insert_in_workspace" ON "lead_sources"
 FOR INSERT WITH CHECK (
   "workspace_id" = NULLIF(current_setting('app.workspace_id', true), '')::uuid
-  AND NULLIF(current_setting('app.membership_id', true), '') IS NOT NULL
+  AND NULLIF(current_setting('app.membership_id', true), '')::uuid IS NOT NULL
 );
 CREATE POLICY "lead_source_update_in_workspace" ON "lead_sources"
 FOR UPDATE USING (
   "workspace_id" = NULLIF(current_setting('app.workspace_id', true), '')::uuid
-  AND NULLIF(current_setting('app.membership_id', true), '') IS NOT NULL
+  AND NULLIF(current_setting('app.membership_id', true), '')::uuid IS NOT NULL
 ) WITH CHECK (
   "workspace_id" = NULLIF(current_setting('app.workspace_id', true), '')::uuid
 );
@@ -732,17 +937,17 @@ FOR UPDATE USING (
 CREATE POLICY "outcome_reason_select_in_workspace" ON "enquiry_outcome_reasons"
 FOR SELECT USING (
   "workspace_id" = NULLIF(current_setting('app.workspace_id', true), '')::uuid
-  AND NULLIF(current_setting('app.membership_id', true), '') IS NOT NULL
+  AND NULLIF(current_setting('app.membership_id', true), '')::uuid IS NOT NULL
 );
 CREATE POLICY "outcome_reason_insert_in_workspace" ON "enquiry_outcome_reasons"
 FOR INSERT WITH CHECK (
   "workspace_id" = NULLIF(current_setting('app.workspace_id', true), '')::uuid
-  AND NULLIF(current_setting('app.membership_id', true), '') IS NOT NULL
+  AND NULLIF(current_setting('app.membership_id', true), '')::uuid IS NOT NULL
 );
 CREATE POLICY "outcome_reason_update_in_workspace" ON "enquiry_outcome_reasons"
 FOR UPDATE USING (
   "workspace_id" = NULLIF(current_setting('app.workspace_id', true), '')::uuid
-  AND NULLIF(current_setting('app.membership_id', true), '') IS NOT NULL
+  AND NULLIF(current_setting('app.membership_id', true), '')::uuid IS NOT NULL
 ) WITH CHECK (
   "workspace_id" = NULLIF(current_setting('app.workspace_id', true), '')::uuid
 );
@@ -809,21 +1014,9 @@ FOR UPDATE USING (
     )
   )
 ) WITH CHECK (
+  -- Newly linked records are checked by validate_enquiry_choices; existing
+  -- links are not re-checked, so staff are never locked out of an enquiry.
   "workspace_id" = NULLIF(current_setting('app.workspace_id', true), '')::uuid
-  AND (
-    "contact_id" IS NULL OR EXISTS (
-      SELECT 1 FROM "contacts"
-      WHERE "contacts"."workspace_id" = "landlord_enquiries"."workspace_id"
-        AND "contacts"."id" = "landlord_enquiries"."contact_id"
-    )
-  )
-  AND (
-    "property_id" IS NULL OR EXISTS (
-      SELECT 1 FROM "properties"
-      WHERE "properties"."workspace_id" = "landlord_enquiries"."workspace_id"
-        AND "properties"."id" = "landlord_enquiries"."property_id"
-    )
-  )
 );
 
 CREATE POLICY "enquiry_stage_history_select_in_scope" ON "enquiry_stage_history"

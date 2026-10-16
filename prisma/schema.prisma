@@ -782,6 +782,8 @@ model Property {
   generalNotes            String?                  @map("general_notes") @db.VarChar(2000)
   // Maintained by a database trigger; the application must never write it.
   currentOpenEnquiryCount Int                      @default(0) @map("current_open_enquiry_count")
+  // Set by a database trigger whenever the responsible branch changes.
+  branchChangedAt         DateTime                 @default(now()) @map("branch_changed_at") @db.Timestamptz(6)
   archivedAt              DateTime?                @map("archived_at") @db.Timestamptz(6)
   createdByMembershipId   String                   @map("created_by_membership_id") @db.Uuid
   createdAt               DateTime                 @default(now()) @map("created_at") @db.Timestamptz(6)

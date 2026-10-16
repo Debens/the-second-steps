@@ -13,6 +13,13 @@ The agreed visible pipeline is **New enquiry → Appraisal booked → Appraisal 
 - **5A (2026-10-16):** migration `20261016170000_enquiries_appraisals_tasks`, Prisma models, permissions, and `tests/integration/enquiry-security.test.ts` (28 database tests) are written and pass on the disposable database. Not yet applied to shared Supabase: that waits for the independent review and owner approval.
 - **Implementation change to note:** the starter lists are not inserted by the migration or at workspace creation. Under forced row-level security a migration cannot see existing workspaces, so the application adds the starter entries the first time an agency uses its lists (5B), inside that agency's own security context. The outcome for users is the same.
 - **Also built in 5A:** properties, like contacts, now carry a protected open-enquiry count, so a property with an open enquiry cannot be archived (the agreed rule applies to both).
+- **Independent review of 5A (2026-10-16, separate Opus agent):** no cross-agency or cross-branch leak; the property-review lessons held. Fixed before any shared application:
+  - two people making the same stage change at once could leave a false history row credited to the wrong person; history (and, the same issue, property branch-transfer) records now must match a database-stamped change time (`stage_changed_at`, new `properties.branch_changed_at`);
+  - branch staff could be locked out of their own enquiry when a linked contact or property later sat in another branch; links are now checked only when first made, and the protected counts update agency-wide for just those rows;
+  - hidden lead sources and reasons could be newly chosen, a reason's outcome type could change, archived records could be linked, stage, completion and closing times could be forged, and a won enquiry could be reopened; all now refused;
+  - the count protection now checks for the count triggers' owner, not merely a different role.
+    42 enquiry database tests cover these, including the two concurrent-change races.
+- **Carried into 5B by the review:** the services must assign appraisals, next actions and enquiry leads only to active members who can see the enquiry's branch (the database checks only that they belong to the agency).
 
 ## Owner decisions
 
@@ -23,7 +30,7 @@ Decided on 2026-10-16:
 - **Real records are created late.** An enquiry holds the typed name, contact details and address. Staff may instead pick an existing contact or property. The real contact and property records are created, or matched to existing ones with the usual duplicate warnings, when the appraisal is booked. Unqualified leads therefore never clutter the contact or property lists.
 - **Lead sources** are a per-agency editable list, pre-filled with a UK lettings starter list (below).
 - **Next actions** apply to enquiries and appraisals only in this chunk. A general to-do feature for any record is a later addition.
-- **Who can work enquiries:** the same people who can create properties (Account Owner, Agency Admin, Branch Manager, Negotiator, Property Manager). Accounts and Read Only can only view. Branch Manager or higher can reopen lost or postponed enquiries and edit the agency's lists.
+- **Who can work enquiries:** the same people who can create properties (Account Owner, Agency Admin, Branch Manager, Negotiator, Property Manager). Accounts and Read Only can only view. Branch Manager or higher can reopen lost or postponed enquiries. Account Owner and Agency Admin edit the agency's lists (as agreed in conversation: "editable by agency admins").
 - **Lost and postponed reasons** are chosen from an editable list, with an optional note. A starter list is pre-filled.
 - **No notes timeline on enquiries at first.** An enquiry has a short summary, its stage history and its next actions. A notes timeline can be added later in the same way as for properties.
 - **One simple proposed fee** on an appraisal (percentage or fixed amount, VAT inclusive or exclusive). Full fee structures come with instructions in Chunk 6.
@@ -35,7 +42,7 @@ All tables are workspace-owned, use workspace-aware composite foreign keys, forc
 
 ### `LeadSource` → `lead_sources` and `EnquiryOutcomeReason` → `enquiry_outcome_reasons`
 
-Per-workspace lists: `name` (unique per workspace, case-insensitive), `status` (`active` or `hidden`), `sortOrder`. Reasons also carry `appliesTo` (`lost`, `postponed` or `both`). Hiding keeps history intact and never deletes. The starter lists are inserted for every existing workspace by the migration and for every new workspace when it is created (customer creation and sandbox provisioning both call one shared function).
+Per-workspace lists: `name` (unique per workspace, case-insensitive), `status` (`active` or `hidden`), `sortOrder`. Reasons also carry `appliesTo` (`lost`, `postponed` or `both`). Hiding keeps history intact and never deletes; a hidden item cannot be newly chosen, and a reason's outcome type cannot change once created. The starter lists are added by the application the first time an agency uses its lists (see Progress).
 
 Starter lead sources: Rightmove, Zoopla, OnTheMarket, Own website, Phone call, Walk-in, Landlord referral, Tenant referral, Existing landlord (another property), Social media, Leaflet or advert, Local event, Other.
 
