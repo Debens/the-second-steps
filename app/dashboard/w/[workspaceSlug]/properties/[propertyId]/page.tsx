@@ -17,6 +17,7 @@ import {
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { ContactNotes } from "@/components/contacts/contact-notes";
+import { ManageOwners } from "@/components/properties/manage-owners";
 import { PropertyArchiveControl } from "@/components/properties/property-archive-control";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -36,9 +37,14 @@ import {
   PROPERTY_TYPE_LABELS,
 } from "@/core/properties/domain/property-labels";
 import {
+  addOwnerAction,
   addPropertyNoteAction,
   changePropertyArchiveAction,
   editPropertyNoteAction,
+  endOwnershipAction,
+  quickAddOwnerAction,
+  searchOwnerContactsAction,
+  setLeadOwnerAction,
   voidPropertyNoteAction,
 } from "../actions";
 
@@ -149,17 +155,50 @@ export default async function PropertyPage({
               </div>
             </div>
           </div>
-          {property.can.archive && (
+          {(property.can.manageOwners || property.can.archive) && (
             <div className="flex flex-wrap gap-2">
-              <PropertyArchiveControl
-                action={changePropertyArchiveAction.bind(
-                  null,
-                  workspaceSlug,
-                  propertyId,
-                  property.archived,
-                )}
-                archived={property.archived}
-              />
+              {property.can.manageOwners && (
+                <ManageOwners
+                  owners={currentOwners.map((owner) => ({
+                    ownershipId: owner.id,
+                    contactId: owner.contactId,
+                    name: owner.name,
+                    kind: owner.contactKind,
+                    reference: owner.contactReference,
+                    isLead: owner.isLead,
+                    since: formatDate(owner.startedOn),
+                  }))}
+                  propertyBranchId={property.responsibleBranch.id}
+                  addOwner={addOwnerAction.bind(
+                    null,
+                    workspaceSlug,
+                    propertyId,
+                  )}
+                  endOwnership={endOwnershipAction.bind(
+                    null,
+                    workspaceSlug,
+                    propertyId,
+                  )}
+                  setLead={setLeadOwnerAction.bind(
+                    null,
+                    workspaceSlug,
+                    propertyId,
+                  )}
+                  quickAdd={quickAddOwnerAction.bind(null, workspaceSlug)}
+                  search={searchOwnerContactsAction.bind(null, workspaceSlug)}
+                />
+              )}
+              {property.can.archive && (
+                <PropertyArchiveControl
+                  action={changePropertyArchiveAction.bind(
+                    null,
+                    workspaceSlug,
+                    propertyId,
+                    property.archived,
+                  )}
+                  archived={property.archived}
+                />
+              )}
             </div>
           )}
           <dl className="grid gap-5 border-t pt-6">

@@ -23,7 +23,7 @@ import { OptionSelect } from "@/components/ui/option-select";
 
 type Owner = OwnerContactResult & { isLead: boolean; startedOn: string };
 
-type QuickAdd = (
+export type QuickAdd = (
   branchId: string,
   input: QuickAddOwnerInput & {
     email: string;
@@ -32,11 +32,11 @@ type QuickAdd = (
   },
 ) => Promise<QuickAddOwnerState>;
 
-function kindLabel(kind: OwnerContactResult["kind"]) {
+export function kindLabel(kind: OwnerContactResult["kind"]) {
   return kind === "person" ? "Person" : "Organisation";
 }
 
-function QuickAddDialog({
+export function QuickAddDialog({
   branchId,
   onCreated,
   quickAdd,

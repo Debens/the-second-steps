@@ -25,7 +25,12 @@ import {
   reactivateProperty,
   type PropertyDuplicate,
 } from "@/core/properties/application/properties";
-import type { OwnerInput } from "@/core/properties/application/property-ownership";
+import {
+  addPropertyOwner,
+  endPropertyOwnership,
+  setPropertyLeadOwner,
+  type OwnerInput,
+} from "@/core/properties/application/property-ownership";
 import {
   validatePropertyDetails,
   type PropertyDetailsInput,
@@ -139,6 +144,90 @@ export async function changePropertyArchiveAction(
   revalidatePath(path);
   revalidatePath(`/dashboard/w/${workspaceSlug}/properties`);
   redirect(path);
+}
+
+export type OwnerChangeState = {
+  status: "saved" | "error";
+  message: string;
+};
+
+function ownerFailure(error: PropertyWriteError): OwnerChangeState {
+  return {
+    status: "error",
+    message:
+      error === "invalid_input"
+        ? "Check the reason and dates, then try again."
+        : error === "invalid_state"
+          ? "That change is no longer possible. They may already be an owner or the ownership may have ended."
+          : error === "contact_not_found" || error === "ownership_not_found"
+            ? "That owner could not be found. Refresh the page and try again."
+            : "The change could not be saved. Check your access and try again.",
+  };
+}
+
+export async function addOwnerAction(
+  workspaceSlug: string,
+  propertyId: string,
+  owner: { contactId: string; isLead: boolean; startedOn: string },
+): Promise<OwnerChangeState> {
+  const path = `/dashboard/w/${workspaceSlug}/properties/${propertyId}`;
+  const user = await requireMfaUser(path, { workspaceSlug });
+  const result = await addPropertyOwner({
+    authSubject: user.id,
+    workspaceSlug,
+    propertyId,
+    owner: {
+      contactId: String(owner.contactId),
+      isLead: owner.isLead === true,
+      startedOn: String(owner.startedOn ?? ""),
+    },
+  });
+  if (!result.ok) return ownerFailure(result.error);
+  revalidatePath(path);
+  revalidatePath(`/dashboard/w/${workspaceSlug}/contacts`, "layout");
+  return { status: "saved", message: "Owner added." };
+}
+
+export async function setLeadOwnerAction(
+  workspaceSlug: string,
+  propertyId: string,
+  ownershipId: string,
+): Promise<OwnerChangeState> {
+  const path = `/dashboard/w/${workspaceSlug}/properties/${propertyId}`;
+  const user = await requireMfaUser(path, { workspaceSlug });
+  const result = await setPropertyLeadOwner({
+    authSubject: user.id,
+    workspaceSlug,
+    propertyId,
+    ownershipId,
+  });
+  if (!result.ok) return ownerFailure(result.error);
+  revalidatePath(path);
+  revalidatePath(`/dashboard/w/${workspaceSlug}/properties`);
+  return { status: "saved", message: "Lead landlord changed." };
+}
+
+export async function endOwnershipAction(
+  workspaceSlug: string,
+  propertyId: string,
+  ownershipId: string,
+  input: { reason: string; endedOn: string },
+): Promise<OwnerChangeState> {
+  const path = `/dashboard/w/${workspaceSlug}/properties/${propertyId}`;
+  const user = await requireMfaUser(path, { workspaceSlug });
+  const result = await endPropertyOwnership({
+    authSubject: user.id,
+    workspaceSlug,
+    propertyId,
+    ownershipId,
+    reason: String(input.reason ?? ""),
+    endedOn: String(input.endedOn ?? ""),
+  });
+  if (!result.ok) return ownerFailure(result.error);
+  revalidatePath(path);
+  revalidatePath(`/dashboard/w/${workspaceSlug}/properties`);
+  revalidatePath(`/dashboard/w/${workspaceSlug}/contacts`, "layout");
+  return { status: "saved", message: "Ownership ended." };
 }
 
 export type OwnerContactResult = {

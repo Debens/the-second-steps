@@ -121,7 +121,7 @@ Letting policies (pets, smokers, students, and so on) are not property features 
 
 1. **4A — database and security:** schema, migration, RLS, permissions, and disposable-database isolation tests; Opus review; owner approval to apply to shared Supabase.
 2. **4B — services:** create, update, archive, transfer, ownership add/end/lead, duplicates, and notes, with application tests.
-3. **4C — interface:** list, create, record, contact Properties section, and browser checks.
+3. **4C — interface:** list, create, record, contact Properties section, and browser checks. Delivered 2026-10-16: list, create, record, contact section and the **Manage owners** dialog (add, make lead, end with reason). **Deferred by the owner:** the Edit property dialog and the Transfer branch dialog; their services (`updateProperty`, `transferPropertyBranch`) are built and tested, so only the screens remain. Demo data (9 properties, 3 extra contacts) was added to the Oakfield sandbox workspace on 2026-10-16, plus one archived browser-check property.
 4. **Checkpoint:** full relevant checks, documentation, and a short handover.
 
 ## Validation plan
