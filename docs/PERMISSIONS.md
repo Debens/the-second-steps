@@ -24,15 +24,15 @@ Users with `membership.read` may see the first name, last name, and sign-in emai
 
 Memberships are for people operating a workspace. The first fixed role set is implemented:
 
-| Role               | Intent                                                                        |
-| ------------------ | ----------------------------------------------------------------------------- |
-| `workspace_owner`  | **Account Owner** in the UI; customer account, access, and commercial control |
-| `agency_admin`     | Agency users, branches, permissions, and all agency records                   |
-| `branch_manager`   | Views staff and operates within approved branches; cannot administer roles    |
-| `negotiator`       | Listings, enquiries, viewings, offers, and applications                       |
-| `property_manager` | Tenancies, inspections, maintenance, and compliance                           |
-| `accounts`         | Financial records when accounting exists                                      |
-| `read_only`        | Reporting or training within its granted scope                                |
+| Role               | Intent                                                                                       |
+| ------------------ | -------------------------------------------------------------------------------------------- |
+| `workspace_owner`  | **Account Owner** in the UI; customer account, access, and commercial control                |
+| `agency_admin`     | Agency users, branches, permissions, and all agency records                                  |
+| `branch_manager`   | Views staff and operates within approved branches; cannot administer roles                   |
+| `negotiator`       | Landlord leads, listings, applicants, property enquiries, viewings, offers, and applications |
+| `property_manager` | Tenancies, inspections, maintenance, and compliance                                          |
+| `accounts`         | Financial records when accounting exists                                                     |
+| `read_only`        | Reporting or training within its granted scope                                               |
 
 A membership may hold several roles. `read_only` is exclusive and cannot be combined with another role. Only an existing Account Owner can grant or remove `workspace_owner`; Agency Admins can administer ordinary staff roles. Self-role changes and removal of the final active Account Owner are denied. Role changes are serialised per workspace and database triggers protect the last active owner after the hardening migration is applied. The current permissions cover the access foundation only; each later product module must add its own narrow permissions.
 
@@ -58,7 +58,7 @@ Feature flags control whether a capability is available; they do not grant membe
 
 Applicants, tenants, guarantors, and invited landlords use resource-specific participations and grants rather than broad agency membership.
 
-- Applicant: their enquiries, viewings, applications, own submissions, requested checks, signing, and move-in tasks.
+- Applicant: their property enquiries, viewings, applications, own submissions, requested checks, signing, and move-in tasks.
 - Tenant: relevant current/historical tenancies, permitted documents and balances, their maintenance, communications, renewals, notices, and move-out tasks.
 - Guarantor: only their requested checks, submissions, obligations, and relevant documents.
 - Invited landlord: only properties, statements, documents, maintenance, or actions the managing workspace explicitly shares.

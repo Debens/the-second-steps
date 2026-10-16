@@ -109,7 +109,7 @@ Plans are versioned so later catalogue edits do not silently change existing ter
 
 Core owns only neutral platform concepts. Optional modules own their records and cannot require another optional module.
 
-- CRM: listings, enquiries, viewings, offers.
+- CRM: landlord leads, instructions, listings, applicants and reusable requirements, property enquiries, viewings, and offers. A property enquiry links an applicant to one listing; it is not the applicant, viewing, offer, or application itself.
 - Pre-tenancy: applications, applicant parties, tasks, agreements, move-in.
 - Referencing: native reference cases, subjects, evidence, reviews, provider requests, and outcomes.
 - AML / identity / Right to Rent: native cases and workflows with external specialist adapters where approved.

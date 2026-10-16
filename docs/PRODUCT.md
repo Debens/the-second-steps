@@ -26,7 +26,7 @@ We will **not** implement every lifecycle area in the PoC. See `ROADMAP.md`.
 - Landlords, tenants, applicants, and other contacts
 - Property records and marketing
 - Property portal publishing
-- Enquiries, viewings, and offers
+- Landlord leads, applicant property enquiries, viewings, and offers
 - Tenant referencing and affordability checks
 - AML, KYC, and identity verification
 - Right to Rent
@@ -50,6 +50,14 @@ We will **not** implement every lifecycle area in the PoC. See `ROADMAP.md`.
 7. **One identity, explicit contexts** — business membership and personal participation are separate; access follows the current workspace, relationship, resource, and field.
 8. **Commercial independence** — Zayto does not assume access to Blinc software, data, documents, supplier credentials, or commercial arrangements.
 9. **Data portability** — established customers must be able to bring appropriate legacy CRM data into Zayto and later export their Zayto data in documented, usable formats. Core models must preserve provenance and history without becoming shaped around one supplier.
+
+## CRM terminology (confirmed)
+
+- A **landlord lead** is a potential instruction concerning a property. The landlord-lead journey is appraisal through instruction won, lost, or postponed.
+- An **applicant** is a person or household looking to rent. They are not called a tenant until a tenancy exists.
+- A **property enquiry** is an applicant's interest in one advertised listing. One applicant may enquire about several listings, and one listing may receive enquiries from many applicants.
+- Viewings, offers, applications, and tenancies remain distinct connected records. Progression carries reviewed information forward without overwriting the earlier history.
+- The current proof-of-concept feature was originally labelled **Enquiries** but is specifically the landlord-lead workflow. Its staff-facing rename remains an implementation task.
 
 ## Commercial model (confirmed shape; details unresolved)
 

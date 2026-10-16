@@ -1,12 +1,12 @@
-# Enquiries, appraisals, and tasks (Chunk 5)
+# Landlord leads, appraisals, and tasks (Chunk 5)
 
-**Status:** Approved by the owner on 2026-10-16 (all design questions answered the same day). Stages 5A (database and security) and 5B (services) are implemented and verified. The 5C interface is implemented and its non-mutating browser coverage passes; the checkpoint remains next.
+**Status:** Approved and implemented through 5C. On 2026-10-16 ADR-031 clarified that this is specifically the **Landlord leads** workflow, not applicant enquiries. The existing staff-facing Enquiries label still needs the separately approved rename; internal database/code names may remain temporarily. The checkpoint remains next.
 
 ## Outcome
 
-Staff can log a landlord enquiry in seconds, move it through the agreed pipeline, book and record appraisals, and always see what needs doing next. Open enquiries cannot be forgotten: each has an owned next action with a due date, and anything due or overdue appears on the workspace Overview.
+Staff can log a landlord lead in seconds, move it through the agreed pipeline, book and record appraisals, and always see what needs doing next. Open landlord leads cannot be forgotten: each has an owned next action with a due date, and anything due or overdue appears on the workspace Overview.
 
-The agreed visible pipeline is **New enquiry → Appraisal booked → Appraisal completed → Instruction won / Lost / Postponed** (`.cursor/plans/landlord-property-onboarding.md`). Winning an enquiry records the outcome only; the instruction itself is created in Chunk 6.
+The agreed visible pipeline is **New lead → Appraisal booked → Appraisal completed → Instruction won / Lost / Postponed** (`.cursor/plans/landlord-property-onboarding.md`). Winning a lead records the outcome only; the instruction itself is created in Chunk 6. Existing internal `Enquiry` names describe the implemented landlord-lead record and do not define the future applicant/property-enquiry model.
 
 ## Progress
 
@@ -25,7 +25,7 @@ The agreed visible pipeline is **New enquiry → Appraisal booked → Appraisal 
 
 ## Owner decisions
 
-Confirmed earlier in the landlord and property onboarding plan and still binding: quick enquiry capture needs a landlord name, at least one contact method, a property address or postcode, a lead source and a responsible branch; the lead source may be blank at first save but is required before an appraisal is completed; lost and postponed outcomes record a reason, postponed work may have a follow-up date, and both can be reopened; an appraisal records date and time, assigned staff, appointment status, expected monthly rent, recommended service type, proposed fee, notes and outcome; reminders are in-app only for now.
+Confirmed earlier in the landlord and property onboarding plan and still binding: quick landlord-lead capture needs a landlord name, at least one contact method, a property address or postcode, a lead source and a responsible branch; the lead source may be blank at first save but is required before an appraisal is completed; lost and postponed outcomes record a reason, postponed work may have a follow-up date, and both can be reopened; an appraisal records date and time, assigned staff, appointment status, expected monthly rent, recommended service type, proposed fee, notes and outcome; reminders are in-app only for now.
 
 Decided on 2026-10-16:
 
@@ -103,10 +103,10 @@ Append-only: `enquiryId`, `fromStage`, `toStage`, `reason`, actor, timestamp. Wr
 
 ## Interface
 
-- **Enquiries** in the navigation: a list with stage, enquirer, address or postcode, lead source, branch, appraisal date, next action and due date (overdue marked), with filters for stage, branch and assigned staff. Lost and postponed are hidden by default behind **Include lost and postponed**.
-- **Quick enquiry** form: name, phone or email, address or postcode, lead source, branch, and an optional first next action. Saves in one step. A visible "incomplete" flag appears if no next action is set.
-- **Enquiry record** in the ADR-030 profile-sidebar layout: stage progress and the actions allowed at the current stage, next actions with due dates, appraisals (book, record outcome), details, and stage history. Booking an appraisal opens a short review of duplicate contact and property matches before the real records are created or linked.
-- **Overview** gains a "Needs attention" area: new enquiries awaiting action, today's appraisals, and overdue and upcoming next actions for the signed-in user.
+- **Landlord leads** in the navigation: a list with stage, landlord, address or postcode, lead source, branch, appraisal date, next action and due date (overdue marked), with filters for stage, branch and assigned staff. Lost and postponed are hidden by default behind **Include lost and postponed**.
+- **Quick landlord lead** form: name, phone or email, address or postcode, lead source, branch, and an optional first next action. Saves in one step. A visible "incomplete" flag appears if no next action is set.
+- **Landlord-lead record** in the ADR-030 profile-sidebar layout: stage progress and the actions allowed at the current stage, next actions with due dates, appraisals (book, record outcome), details, and stage history. Booking an appraisal opens a short review of duplicate contact and property matches before the real records are created or linked.
+- **Overview** gains a "Needs attention" area: new landlord leads awaiting action, today's appraisals, and overdue and upcoming next actions for the signed-in user.
 - **Settings:** a small page to edit lead sources and outcome reasons (add, rename, reorder, hide).
 - Light and dark themes, phone, tablet and desktop.
 

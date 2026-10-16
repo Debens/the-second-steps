@@ -28,11 +28,11 @@ This milestone ends at **Ready to market**. Marketing content, photographs, floo
 - Organisations can link several people, with an optional primary contact. A person may be linked to several organisations.
 - People and organisations can hold several telephone numbers and email addresses, with preferred entries, a preferred communication channel, and channel-specific do-not-use restrictions. Marketing consent is separate.
 - An individual landlord has one address. An organisation has a registered address and an optional different correspondence address.
-- A completed individual landlord requires first name, surname, and at least one telephone number or email address. A completed organisation landlord requires its legal name plus either its own telephone/email or a linked primary person with contact details. Draft enquiries may remain temporarily incomplete but cannot progress past appraisal completion without these details.
+- A completed individual landlord requires first name, surname, and at least one telephone number or email address. A completed organisation landlord requires its legal name plus either its own telephone/email or a linked primary person with contact details. Draft landlord leads may remain temporarily incomplete but cannot progress past appraisal completion without these details.
 - Do not collect date of birth, identity documents, bank details, tax information, or other sensitive data until an approved workflow requires it.
 - Notes are separate dated and attributed timeline entries. Only Branch Manager or higher may edit or void them; the original, replacement, author, timestamp, and reason remain auditable. A voided note is hidden from the ordinary timeline, not erased.
 - Lost, postponed, withdrawn, former, and archived history remains searchable and can be reactivated where valid. Ordinary users do not permanently delete core records.
-- Records with an active enquiry, instruction, ownership relationship, property relationship, or tenancy cannot be archived until the relationship is resolved or transferred.
+- Records with an active landlord lead, instruction, ownership relationship, property relationship, or tenancy cannot be archived until the relationship is resolved or transferred.
 - Key records receive immutable, human-readable system references. Custom reference formats are deferred.
 
 ### Landlords and branches
@@ -59,14 +59,14 @@ This milestone ends at **Ready to market**. Marketing content, photographs, floo
 - Parking and outdoor-space details use standard selectable features plus free text for unusual details.
 - Photographs and floor plans belong to the later marketing slice.
 
-### Enquiries, appraisals, and work
+### Landlord leads, appraisals, and work
 
-- Quick enquiry capture requires landlord name, at least one contact method, property address or postcode, lead source, and responsible branch.
+- Quick landlord-lead capture requires landlord name, at least one contact method, property address or postcode, lead source, and responsible branch.
 - Lead source uses a configurable workspace list. It is optional at first quick save and required before appraisal completion.
-- The initial visible pipeline is **New enquiry → Appraisal booked → Appraisal completed → Instruction won / Lost / Postponed**.
+- The initial visible pipeline is **New lead → Appraisal booked → Appraisal completed → Instruction won / Lost / Postponed**. ADR-031 reserves **Property enquiry** for an applicant's interest in a listing.
 - Lost and postponed outcomes record a reason; postponed work may include a future follow-up date. Both remain searchable and reopenable.
 - An appraisal records date/time, assigned staff member, appointment status, expected monthly rent, recommended service type, proposed fee, notes, and outcome.
-- Every open enquiry needs an owned next action and due date. A quick enquiry may be saved before this is supplied, but Zayto immediately flags it as incomplete.
+- Every open landlord lead needs an owned next action and due date. A quick lead may be saved before this is supplied, but Zayto immediately flags it as incomplete.
 - Follow-up reminders are initially in-app dashboard items. Email, SMS, and other outbound notifications wait for approved job and delivery infrastructure.
 
 ### Instructions and commercial terms
@@ -100,10 +100,10 @@ The first milestone implements only Onboarding and Ready to market. On market is
 - Landlord list defaults: name, individual/organisation, Properties with us, current pipeline stage, responsible branch, lead staff member, and next action.
 - Property list defaults: address, landlord, branch, lead staff member, journey stage, service type, proposed rent, and next action.
 - Lists use filters rather than excessive columns. Current records are the default; Include lost and Include archived are separate options.
-- Landlord pages contain Overview, Properties, Enquiries/Appraisals, Activity, and Documents, plus People for organisations.
+- Landlord pages contain Overview, Properties, Leads/Appraisals, Activity, and Documents, plus People for organisations.
 - Property pages contain Overview, Ownership, Instruction, Activity, and Documents. The summary exposes the current stage, landlord, branch, lead, service, and next action.
 - One prominent workspace search eventually covers all record types and labels each result type. Phase 1 searches landlords, organisations, properties, and instructions by appropriate names, contact details, references, addresses, postcodes, and registration numbers. Results respect branch and record permissions.
-- Initial dashboard content includes new enquiries awaiting action, today's appraisals, overdue/upcoming tasks, properties by journey stage, and recently updated records.
+- Initial dashboard content includes new landlord leads awaiting action, today's appraisals, overdue/upcoming tasks, properties by journey stage, and recently updated records.
 - Active-tenancy, pre-tenancy, ending, management, and other module metrics appear only after their underlying modules and permissions exist.
 
 ## Proposed data relationships for review
@@ -210,9 +210,9 @@ Memberships with several operational roles receive the union of those roles' per
 - **Review:** joint/organisation ownership, no percentage requirement, historical transitions, duplicate addresses, and isolation tests.
 - The detailed Chunk 4 design and owner decisions are in `.cursor/plans/properties-and-ownership.md`.
 
-### Chunk 5 — enquiries, appraisals, and tasks
+### Chunk 5 — landlord leads, appraisals, and tasks
 
-- Add quick enquiry, configurable lead sources, approved pipeline, appraisal details, next actions, reasons, and in-app dashboard work.
+- Add quick landlord-lead capture, configurable lead sources, approved pipeline, appraisal details, next actions, reasons, and in-app dashboard work.
 - **Review:** save-draft behaviour, overdue work, lost/postponed search, stage history, and role/branch scope.
 
 ### Chunk 6 — instructions and terms
@@ -223,7 +223,7 @@ Memberships with several operational roles receive the union of those roles' per
 
 ### Chunk 7 — guided onboarding
 
-- Join existing/new landlord, organisation, property, ownership, enquiry, appraisal, and instruction records in one resumable task-led flow.
+- Join existing/new landlord, organisation, property, ownership, landlord-lead, appraisal, and instruction records in one resumable task-led flow.
 - **Review:** duplicate avoidance, partial drafts, clear completion state, mobile/tablet/desktop usability, and no re-entry of established data.
 
 ### Chunk 8 — lists, records, search, and dashboard
@@ -241,6 +241,6 @@ CSV import follows stable manual workflows and must be ready before a pilot agen
 
 ## Next approval gate
 
-Chunks 1 to 4 are built (the Chunk 4 properties work was completed on 2026-10-16, with the Edit property and Transfer branch screens deferred). The next gate is owner approval of the Chunk 5 design in `.cursor/plans/enquiries-appraisals-tasks.md`. Keep merge, landlord-summary and later chunk work behind their own chunk gates.
+Chunks 1 to 5C are built (with the documented deferred screens and browser-write fixture). ADR-031 subsequently clarified the Chunk 5 staff-facing name as **Landlord leads**. The next gate is the Chunk 5 checkpoint and UI terminology update before Chunk 6 instructions. Keep merge, landlord-summary and later chunk work behind their own chunk gates.
 
 Later decisions, not blockers for Chunk 2: private document storage; native e-signing; detailed ownership checks; address finder; retention/erasure periods; marketing readiness and publishing; communications delivery; CSV mapping/import; and design-partner recruitment.

@@ -22,18 +22,18 @@ Core capabilities exist for every workspace but do not imply entitlement to ever
 
 ## Independently entitled modules
 
-| Module               | Responsibility                                                                            |
-| -------------------- | ----------------------------------------------------------------------------------------- |
-| CRM                  | Instructions, listings, enquiries, viewings, offers, and agency pipeline                  |
-| Pre-tenancy          | Applications, applicant households, tasks, agreements, and move-in                        |
-| Referencing          | Native Zayto reference cases, evidence, reviews, outcomes, and provider orchestration     |
-| AML / KYC / identity | Native cases, review, consent, evidence, and approved specialist data adapters            |
-| Right to Rent        | Native workflow and evidence only when written rules and approved services exist          |
-| Property management  | Tenancies, maintenance, inspections, renewals, and operational compliance records         |
-| Accounting           | Ledger, charges, receipts, allocations, reconciliation; requires separate design approval |
-| Insurance            | Product and transaction workflow without invented underwriting                            |
-| Portals / publishing | Provider-independent property publication and inbound events                              |
-| Sales                | Later module reusing neutral people/property concepts without lettings dependencies       |
+| Module               | Responsibility                                                                                                    |
+| -------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| CRM                  | Landlord leads, instructions, listings, applicants, property enquiries, viewings, offers, and the agency pipeline |
+| Pre-tenancy          | Applications, applicant households, tasks, agreements, and move-in                                                |
+| Referencing          | Native Zayto reference cases, evidence, reviews, outcomes, and provider orchestration                             |
+| AML / KYC / identity | Native cases, review, consent, evidence, and approved specialist data adapters                                    |
+| Right to Rent        | Native workflow and evidence only when written rules and approved services exist                                  |
+| Property management  | Tenancies, maintenance, inspections, renewals, and operational compliance records                                 |
+| Accounting           | Ledger, charges, receipts, allocations, reconciliation; requires separate design approval                         |
+| Insurance            | Product and transaction workflow without invented underwriting                                                    |
+| Portals / publishing | Provider-independent property publication and inbound events                                                      |
+| Sales                | Later module reusing neutral people/property concepts without lettings dependencies                               |
 
 A workspace may subscribe to one module without buying an unrelated module. Referencing or pre-tenancy must work without CRM; an independent landlord workspace must be able to buy standalone services.
 
@@ -41,7 +41,7 @@ A workspace may subscribe to one module without buying an unrelated module. Refe
 
 The personal portal composes capabilities from entitled modules:
 
-- Applicant: enquiries, viewings, offers, applications, checks, evidence, communications, signing, and move-in.
+- Applicant: property enquiries, viewings, offers, applications, checks, evidence, communications, signing, and move-in.
 - Tenant: current/history, agreements and documents, permitted financial views, maintenance, communications, renewals, notices, move-out, and deposit information.
 - Guarantor: their checks, financial evidence, obligations, and relevant signing.
 - Invited landlord: only explicitly shared management information and actions.

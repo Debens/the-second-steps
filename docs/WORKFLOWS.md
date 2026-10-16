@@ -8,16 +8,41 @@ An agency or independent landlord receives a workspace. Owners invite operators 
 
 Agency onboarding is controlled for the proof of concept. Whether independent landlords may self-register for a free or paid workspace is unresolved.
 
+## CRM intake and terminology
+
+An incoming enquiry is an event that must be routed into the correct workflow; it is not one universal record type.
+
+```text
+Incoming contact
+  ├─ landlord wants agency help
+  │    → Landlord lead → Appraisal → Instruction
+  │
+  └─ renter wants a home
+       → Applicant + Requirements
+           → Property enquiry → Viewing → Offer → Application → Tenancy
+```
+
+The current proof of concept implements the landlord-lead side only. Applicant/property-enquiry work remains a separate future workflow. The planned staff work area is a **Pipeline** with distinct views rather than a single table mixing both kinds of work.
+
+## Landlord-lead journey
+
+1. Capture the landlord, contact method, property/postcode, source, branch, owner, and next action without forcing complete permanent records too early.
+2. Qualify the opportunity and either continue follow-up, book an appraisal, postpone it, or record it lost.
+3. When an appraisal is booked, review duplicates and create or link the durable landlord and property records.
+4. Record the appraisal recommendation and follow-up until the lead is won, lost, or postponed.
+5. A won lead starts a separately reviewed instruction; it does not silently become one.
+
 ## Applicant journey
 
-1. Enquire about a property and request or book a viewing where supported.
-2. Make an offer or begin an application.
-3. Claim an expiring, purpose-bound invitation with an existing or new Zayto identity.
-4. Confirm reusable personal details and submit case-specific information.
-5. Complete their own referencing, identity, and Right to Rent tasks when those modules and rules exist.
-6. Upload private evidence and see permitted progress, messages, and notifications.
-7. Review and sign relevant tenancy documents.
-8. Complete move-in tasks.
+1. Be identified as an existing or new applicant, with reusable non-sensitive requirements when appropriate.
+2. Make a general search enquiry or a property enquiry linked to a particular listing.
+3. Request or book a viewing where supported, then preserve attendance, feedback, and follow-up separately.
+4. Make an offer; an accepted offer remains distinct from the application it may start.
+5. Claim an expiring, purpose-bound application invitation with an existing or new Zayto identity.
+6. Confirm reusable personal details and submit case-specific information.
+7. Complete their own referencing, identity, and Right to Rent tasks when those modules and rules exist.
+8. Upload private evidence and see permitted progress, messages, and notifications.
+9. Review and sign relevant tenancy documents, then complete move-in tasks.
 
 Joint applicants may see explicitly shared household/application information, never one another's confidential financial, identity, or referencing data by default.
 
@@ -49,7 +74,8 @@ An invited landlord uses the same identity but receives narrow participation and
 ## Lettings lifecycle
 
 ```text
-Landlord + Property → Listing → Enquiry / Viewing / Offer
+Landlord lead → Appraisal → Instruction → Property onboarding → Listing
+        → Applicant + Property enquiry → Viewing → Offer
         → Application + participant-private submissions
         → Referencing / identity / Right to Rent cases
         → Agreement + Tenancy participations
