@@ -4,7 +4,7 @@
 
 ## Progress
 
-- **D1 (2026-10-16):** migration `20261016200000_general_actions` (the `actions` table, its row-level security and rules, and `planned_for` on `enquiry_tasks`), the Prisma model, the `action.read` and `action.manage` permissions, and `tests/integration/action-security.test.ts` (14 database tests; the whole disposable suite passes, 172 tests). Schema and migration match apart from the known name-only differences. **Not applied to shared Supabase.**
+- **D1 (2026-10-16):** migration `20261016200000_general_actions` (the `actions` table, its row-level security and rules, and `planned_for` on `enquiry_tasks`), the Prisma model, the `action.read` and `action.manage` permissions, and `tests/integration/action-security.test.ts` (14 database tests; the whole disposable suite passes, 172 tests). Schema and migration match apart from the known name-only differences. **Applied to shared development Supabase and verified on 2026-10-16** after the review and its fixes, with the owner's approval (row-level security forced, the app role has no delete, all 31 functions pin their search path, new columns present). **Next: D2 services** (Sonnet is sufficient).
 - **Independent review of D1 (2026-10-16, separate Opus agent):** no cross-agency or cross-branch leak; Read Only, suspended members, closing, immutability, link checks and grants held. Fixed before any shared application:
   - a creator who had lost access to the action's branch could still edit, cancel or hand over someone else's action; the update rule no longer grants the creator anything (they can still see it);
   - owner decision (2026-10-16): an assignee who has lost access to the branch may only **finish, cancel or hand over** their action (the database refuses other changes);
