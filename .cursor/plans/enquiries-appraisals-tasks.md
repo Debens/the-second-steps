@@ -34,6 +34,37 @@ The agreed visible pipeline is **New lead → Appraisal booked → Appraisal com
     42 enquiry database tests cover these, including the two concurrent-change races.
 - **Carried into 5B by the review:** the services must assign appraisals, next actions and enquiry leads only to active members who can see the enquiry's branch (the database checks only that they belong to the agency).
 
+## Handover (2026-10-16)
+
+**Built and live in development:** landlord leads (internally still "enquiries"), appraisals, next actions, outcomes with reasons, and the agency's editable lead-source and reason lists, in the database, services and screens. Everything is applied to shared development Supabase, committed and pushed.
+
+**Where things are**
+
+- Screens: **Landlord leads** in the navigation (`app/dashboard/w/[workspaceSlug]/enquiries/`: list, quick lead, record page, book-appraisal page), the Overview "Needs attention" panels (`app/dashboard/w/[workspaceSlug]/page.tsx`), and lists under Settings (`settings/enquiries/`). Components are in `components/enquiries/`.
+- Logic: `core/enquiries/` (rules in `domain/`; `application/` holds `enquiries.ts` for create, edit, list and stage changes, `appraisals.ts` for booking, completing and cancelling, `enquiry-tasks.ts` for next actions and the Overview query, `enquiry-lists.ts` for settings and starter lists, and `enquiry-shared.ts` for the shared actor, rollback and assignment checks).
+- Database: migrations `20261016170000_enquiries_appraisals_tasks` and `20261016190000_lead_worker_colleague_names`. The app can never delete lead data, and every table is workspace- and branch-scoped with row-level security.
+- Tests: `tests/integration/enquiry-security.test.ts` (database rules, 42), `tests/integration/enquiry-application.test.ts` (services and review follow-ups), `core/enquiries/domain/enquiry.test.ts` (13), and `e2e/enquiries.spec.ts` (browser, read-only). Run `npm run test:integration` (needs Docker) for the database ones; run browser checks with `--workers=1`.
+- Demo data: ten fictional leads in the Oakfield sandbox workspace (see Progress).
+
+**Not built yet**
+
+- Branch transfer for leads (design: reuse the property pattern), a notes timeline on leads, reminders by email or SMS, web-form and portal lead capture, CSV import, and creating the instruction from a won lead (Chunk 6).
+- Browser tests that save a lead, move a stage or finish a booking (these would leave data in the shared demo agency; they are covered by the database-backed service tests instead, and a cleanable fixture is optional).
+- **Edit lead details** has a tested service (`updateEnquiry`) but no screen or server action yet, so a lead's name, contact details, address, summary, source and lead person cannot be changed on screen after it is created. This is the main gap; add it next.
+
+**Things to know before changing this area**
+
+- New server actions must read browser-supplied values by name, validate ids with `isUuid`, and cap text and lists. Never spread a browser object into a call carrying `authSubject`.
+- A change that writes more than once must throw `EnquiryRollback` after its first write. Only one stage change per lead per transaction is possible (the history safeguard); the stage change helper writes history first, then updates the lead.
+- Take the lead's row lock (`lockEnquiry`) before reading its stage.
+- Colleague names can be hidden from some roles by the database; always use `staffName` and never assume an identity is present.
+- The open-lead counts on contacts and properties are maintained only by a database trigger. Archiving checks them first and shows a clear message.
+- Staff can be assigned work only if active, able to update leads and able to see the lead's branch (`canAssignEnquiryWork`).
+- Booking a landlord's appraisal on an existing property can add them as an owner by owner decision (see Owner decisions).
+- Restart the dev server after `prisma generate`.
+
+**Open items for the owner:** the same three ownership questions as properties (see that plan); whether a won lead should stay in the default list; and reopening a lead whose contact or property has since been archived, which is refused with a general message.
+
 ## Owner decisions
 
 Confirmed earlier in the landlord and property onboarding plan and still binding: quick landlord-lead capture needs a landlord name, at least one contact method, a property address or postcode, a lead source and a responsible branch; the lead source may be blank at first save but is required before an appraisal is completed; lost and postponed outcomes record a reason, postponed work may have a follow-up date, and both can be reopened; an appraisal records date and time, assigned staff, appointment status, expected monthly rent, recommended service type, proposed fee, notes and outcome; reminders are in-app only for now.
