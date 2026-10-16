@@ -279,7 +279,7 @@ The confirmed detailed requirements, proposed data relationships, reviewed deliv
 5. Build contact/organisation create, view, edit, archive, and search paths using existing UI/application patterns.
 6. Add property and historical ownership models with workspace-aware relationships, RLS, validation, and isolation tests.
 7. Build property and ownership create/view/edit flows with connected landlord/property navigation.
-8. Add instructions and service selection as records separate from ownership and future listings; include status history, responsible branch, permissions, audit, and tests.
+8. Add instructions and service selection as records separate from ownership and future listings. The product workflow is approved; next review the exact Chunk 6A schema, row-level security, permissions, history, constraints, audit and migration tests before implementation.
 9. Add the connected onboarding workspace: useful search/filtering, related-record views, basic activity history, empty/error states, and responsive light/dark browser coverage.
 10. Decide private document storage and either add the approved upload/register slice or explicitly carry file upload as the next dependency; then run one milestone verification checkpoint.
 
